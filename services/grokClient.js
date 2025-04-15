@@ -143,15 +143,8 @@ class GrokClient {
    */
   extractMentions(text) {
     if (!text) {
-      console.log("Empty text provided for mention detection");
       return [];
     }
-    
-    // In ra thông tin chi tiết hơn về văn bản đầu vào để debug
-    console.log("------- MENTION DETECTION DEBUG -------");
-    console.log("Raw input text:", text);
-    console.log("Text length:", text.length);
-    console.log("Character codes:", [...text].map(c => `${c}:${c.charCodeAt(0)}`).join(', '));
     
     // Mở rộng regex để phát hiện nhiều loại đề cập khác nhau
     // Bao gồm các định dạng phổ biến từ nhiều nền tảng
@@ -167,38 +160,15 @@ class GrokClient {
     const matches = [];
     
     // Kiểm tra từng pattern và thu thập kết quả
-    patterns.forEach((pattern, index) => {
+    patterns.forEach(pattern => {
       let match;
       const patternCopy = new RegExp(pattern.source, pattern.flags);
       
       while ((match = patternCopy.exec(text)) !== null) {
-        const username = match[1];
-        console.log(`Found mention with pattern ${index + 1}:`, username);
-        matches.push(username);
+        matches.push(match[1]);
       }
     });
     
-    // Kiểm tra trực tiếp kí tự @ để xác nhận
-    const atSymbolCount = (text.match(/@/g) || []).length;
-    console.log(`Total @ symbols in text: ${atSymbolCount}`);
-    
-    if (matches.length > 0) {
-      console.log(`Total mentions detected: ${matches.length}`);
-    } else {
-      if (atSymbolCount > 0) {
-        console.log("@ symbols found but no mentions matched. Check regex patterns.");
-        // Bổ sung kiểm tra thủ công để tìm vấn đề
-        text.split(' ').forEach(word => {
-          if (word.includes('@')) {
-            console.log("Word containing @:", word);
-          }
-        });
-      } else {
-        console.log("No @ symbols found in text");
-      }
-    }
-    
-    console.log("------- END DEBUG -------");
     return [...new Set(matches)]; // Remove duplicates
   }
 
