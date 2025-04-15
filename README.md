@@ -5,12 +5,15 @@ Bot Discord sử dụng X.AI (Grok) API thông qua Anthropic SDK để cung cấ
 ## Tính năng
 
 - Phản hồi trò chuyện AI với X.AI (đề cập đến bot với câu hỏi của bạn)
-- Tạo hình ảnh với X.AI (đề cập đến bot với `/image [mô tả]`)
+- Tạo hình ảnh với X.AI (đề cập đến bot với `vẽ [mô tả]`)
 - Tạo mã với X.AI (đề cập đến bot với các truy vấn liên quan đến lập trình)
 
 ## Thiết lập
 
 1. Clone repository này
+   ```
+   git clone https://gitlab.com/s4ory/GrokAIbot.git
+   ```
 2. Cài đặt:
    ```
    npm install
