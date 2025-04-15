@@ -37,9 +37,12 @@ class GrokClient {
       // Trích xuất bất kỳ đề cập người dùng nào từ lời nhắc
       const mentions = this.extractMentions(prompt);
       if (mentions.length > 0) {
-        console.log(`Detected mentions in message: ${mentions.join(', ')}`);
+        console.log(`Phát hiện đề cập trong tin nhắn: ${mentions.join(', ')}`);
         // Xóa các đề cập để tránh nhầm lẫn trong quá trình xử lý AI
+        const originalPrompt = prompt;
         prompt = this.removeMentions(prompt);
+        console.log(`Tin nhắn trước: "${originalPrompt}"`);
+        console.log(`Tin nhắn sau khi loại bỏ đề cập: "${prompt}"`);
       }
       
       // Kiểm tra xem lời nhắc có phải là lệnh tạo hình ảnh không (với hỗ trợ lệnh tiếng Việt mở rộng)
@@ -104,22 +107,88 @@ class GrokClient {
    * @returns {Array} - Mảng tên người dùng đã được đề cập
    */
   extractMentions(text) {
-    const mentionRegex = /@(\w+)/g;
-    const matches = text.match(mentionRegex);
+    if (!text) {
+      console.log("Empty text provided for mention detection");
+      return [];
+    }
     
-    if (!matches) return [];
+    // In ra thông tin chi tiết hơn về văn bản đầu vào để debug
+    console.log("------- MENTION DETECTION DEBUG -------");
+    console.log("Raw input text:", text);
+    console.log("Text length:", text.length);
+    console.log("Character codes:", [...text].map(c => `${c}:${c.charCodeAt(0)}`).join(', '));
     
-    // Xóa ký hiệu @ và trả về chỉ tên người dùng
-    return matches.map(mention => mention.substring(1));
+    // Mở rộng regex để phát hiện nhiều loại đề cập khác nhau
+    // Bao gồm các định dạng phổ biến từ nhiều nền tảng
+    const patterns = [
+      /@([\w.-]+)/g,                 // Định dạng cơ bản: @username
+      /@"([^"]+)"/g,                 // Định dạng có dấu ngoặc kép: @"User Name"
+      /@'([^']+)'/g,                 // Định dạng có dấu ngoặc đơn: @'User Name'
+      /<@!?(\d+)>/g,                 // Định dạng Discord: <@123456789>
+      /\[(@[^\]]+)\]/g,              // Định dạng có ngoặc vuông: [@username]
+      /@(\S+)/g                      // Bắt bất kỳ chuỗi không khoảng trắng nào theo sau @ 
+    ];
+    
+    const matches = [];
+    
+    // Kiểm tra từng pattern và thu thập kết quả
+    patterns.forEach((pattern, index) => {
+      let match;
+      const patternCopy = new RegExp(pattern.source, pattern.flags);
+      
+      while ((match = patternCopy.exec(text)) !== null) {
+        const username = match[1];
+        console.log(`Found mention with pattern ${index + 1}:`, username);
+        matches.push(username);
+      }
+    });
+    
+    // Kiểm tra trực tiếp kí tự @ để xác nhận
+    const atSymbolCount = (text.match(/@/g) || []).length;
+    console.log(`Total @ symbols in text: ${atSymbolCount}`);
+    
+    if (matches.length > 0) {
+      console.log(`Total mentions detected: ${matches.length}`);
+    } else {
+      if (atSymbolCount > 0) {
+        console.log("@ symbols found but no mentions matched. Check regex patterns.");
+        // Bổ sung kiểm tra thủ công để tìm vấn đề
+        text.split(' ').forEach(word => {
+          if (word.includes('@')) {
+            console.log("Word containing @:", word);
+          }
+        });
+      } else {
+        console.log("No @ symbols found in text");
+      }
+    }
+    
+    console.log("------- END DEBUG -------");
+    return [...new Set(matches)]; // Remove duplicates
   }
-  
+
   /**
    * Xóa đề cập @username khỏi văn bản
    * @param {string} text - Văn bản đầu vào để xóa đề cập
    * @returns {string} - Văn bản đã xóa đề cập
    */
   removeMentions(text) {
-    return text.replace(/@\w+\s?/g, '').trim();
+    // Cập nhật các pattern xóa để khớp với tất cả các loại đề cập đã phát hiện
+    const patterns = [
+      /@[\w.-]+\s?/g,
+      /@"[^"]+"\s?/g,
+      /@'[^']+'\s?/g,
+      /<@!?\d+>\s?/g,
+      /\[@[^\]]+\]\s?/g,
+      /@\S+\s?/g
+    ];
+    
+    let result = text;
+    patterns.forEach(pattern => {
+      result = result.replace(pattern, '');
+    });
+    
+    return result.trim();
   }
   
   /**
@@ -231,6 +300,84 @@ class GrokClient {
       }
       return false;
     }
+  }
+
+  /**
+   * Xử lý đề cập từ tin nhắn Discord
+   * @param {Discord.Message} message - Đối tượng tin nhắn Discord
+   * @returns {Object} - Thông tin về đề cập và nội dung đã xử lý
+   */
+  async processDiscordMessage(message) {
+    try {
+      // Lấy nội dung gốc của tin nhắn
+      const originalContent = message.content;
+      console.log("Discord message original content:", originalContent);
+      
+      // Thu thập thông tin đề cập sử dụng Discord.js API
+      const mentionedUsers = Array.from(message.mentions.users.values());
+      const mentionedRoles = Array.from(message.mentions.roles.values());
+      const mentionedChannels = Array.from(message.mentions.channels.values());
+      
+      // Log thông tin đề cập
+      if (mentionedUsers.length > 0) {
+        console.log(`Discord mentions - Users: ${mentionedUsers.map(u => u.username).join(', ')}`);
+      }
+      if (mentionedRoles.length > 0) {
+        console.log(`Discord mentions - Roles: ${mentionedRoles.map(r => r.name).join(', ')}`);
+      }
+      if (mentionedChannels.length > 0) {
+        console.log(`Discord mentions - Channels: ${mentionedChannels.map(c => c.name).join(', ')}`);
+      }
+      
+      // Xóa đề cập sử dụng Discord.js cleanContent
+      let cleanContent = message.cleanContent;
+      
+      // Nếu cleanContent không hoạt động đúng, thủ công thay thế các định dạng đề cập của Discord
+      if (cleanContent.includes('<@') || cleanContent.includes('<#') || cleanContent.includes('<@&')) {
+        cleanContent = originalContent
+          .replace(/<@!?(\d+)>/g, '') // Xóa user mentions
+          .replace(/<#(\d+)>/g, '')   // Xóa channel mentions
+          .replace(/<@&(\d+)>/g, '')  // Xóa role mentions
+          .trim();
+      }
+      
+      console.log("Discord message clean content:", cleanContent);
+      
+      // Tạo danh sách tên đề cập để trả về
+      const mentions = [
+        ...mentionedUsers.map(user => user.username),
+        ...mentionedRoles.map(role => `role:${role.name}`),
+        ...mentionedChannels.map(channel => `channel:${channel.name}`)
+      ];
+      
+      // Trả về cả danh sách đề cập và nội dung đã làm sạch
+      return {
+        mentions: mentions,
+        cleanContent: cleanContent,
+        hasMentions: mentions.length > 0
+      };
+    } catch (error) {
+      console.error("Lỗi khi xử lý tin nhắn Discord:", error);
+      // Trả về đối tượng mặc định nếu có lỗi
+      return {
+        mentions: [],
+        cleanContent: message.content || "",
+        hasMentions: false
+      };
+    }
+  }
+  
+  /**
+   * Xử lý prompt từ Discord và gửi đến API
+   * @param {Discord.Message} message - Đối tượng tin nhắn Discord
+   * @returns {Promise<string>} - Phản hồi từ AI
+   */
+  async getCompletionFromDiscord(message) {
+    // Xử lý đề cập và làm sạch nội dung
+    const processedMessage = await this.processDiscordMessage(message);
+    
+    // Sử dụng nội dung đã làm sạch để gửi đến API
+    return await this.getCompletion(processedMessage.cleanContent);
   }
 }
 
