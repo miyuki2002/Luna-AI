@@ -273,8 +273,6 @@ class GrokClient {
    */
   async testConnection() {
     try {
-      console.log(`Đang kiểm tra kết nối tới X.AI API...`);
-      
       const axiosInstance = axios.create({
         baseURL: 'https://api.x.ai',
         headers: {

@@ -18,6 +18,15 @@ const client = new Client({
 client.once(Events.ClientReady, async () => {
   console.log(`Đăng nhập với tên ${client.user.tag} (Luna)`);
   console.log('Bot đang trực tuyến và sẵn sàng giúp đỡ!');
+  
+  // Kiểm tra kết nối với X.AI API
+  console.log('Đang kiểm tra kết nối với X.AI API...');
+  const connected = await grokClient.testConnection();
+  if (connected) {
+    console.log('✅ Kết nối thành công với X.AI API');
+  } else {
+    console.warn('⚠️ Không thể kết nối tới X.AI API. Vui lòng kiểm tra API key và kết nối mạng của bạn.');
+  }
 });
 
 // Xử lý tin nhắn
