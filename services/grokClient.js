@@ -9,10 +9,10 @@ class GrokClient {
     this.checkTLSSecurity();
     
     // Lấy API key từ biến môi trường
-    this.apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
+    this.apiKey = process.env.XAI_API_KEY;
     
     if (!this.apiKey) {
-      throw new Error('XAI_API_KEY hoặc GROK_API_KEY không được đặt trong biến môi trường');
+      throw new Error('XAI_API_KEY không được đặt trong biến môi trường');
     }
     
     // Khởi tạo client Anthropic với cấu hình X.AI
