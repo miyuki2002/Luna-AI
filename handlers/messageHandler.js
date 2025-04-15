@@ -82,16 +82,8 @@ async function handleImageGeneration(message, prompt) {
   await message.channel.sendTyping();
   
   try {
-    const imageUrl = await grokClient.generateImage(prompt);
-    
-    const embed = new EmbedBuilder()
-      .setTitle('Hình Ảnh Được Tạo')
-      .setDescription(`Mô tả: ${prompt}`)
-      .setImage(imageUrl)
-      .setColor('#0099ff')
-      .setTimestamp();
-      
-    await message.reply({ embeds: [embed] });
+    // Sử dụng phương thức mới để xử lý hình ảnh cho Discord
+    await grokClient.handleDiscordImageGeneration(message, prompt);
   } catch (error) {
     console.error('Lỗi khi tạo hình ảnh:', error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');

@@ -73,7 +73,7 @@ class GrokClient {
   /**
    * Nhận phản hồi trò chuyện từ API
    */
-  async getCompletion(prompt) {
+  async getCompletion(prompt, message = null) {
     try {
       // Trích xuất bất kỳ đề cập người dùng nào từ lời nhắc
       const mentions = this.extractMentions(prompt);
@@ -96,7 +96,12 @@ class GrokClient {
         const commandUsed = imageMatch[1];
         console.log(`Detected image generation command "${commandUsed}". Prompt: ${imagePrompt}`);
         
-        // Tạo hình ảnh và trả về trực tiếp URL
+        // Nếu có message object (từ Discord), xử lý bằng Discord handler
+        if (message) {
+          return await this.handleDiscordImageGeneration(message, imagePrompt);
+        }
+        
+        // Nếu không, tạo hình ảnh và trả về URL như thông thường
         return await this.generateImage(imagePrompt);
       }
       
@@ -133,6 +138,56 @@ class GrokClient {
         console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
       }
       return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
+    }
+  }
+  
+  /**
+   * Xử lý yêu cầu tạo hình ảnh từ Discord
+   * @param {Discord.Message} message - Tin nhắn Discord
+   * @param {string} prompt - Mô tả hình ảnh cần tạo
+   * @returns {Promise<string>} - Thông báo xác nhận
+   */
+  async handleDiscordImageGeneration(message, prompt) {
+    try {
+      if (!prompt) {
+        return "Vui lòng cung cấp mô tả cho hình ảnh bạn muốn tôi tạo.";
+      }
+      
+      // Import messageHandler theo cách tránh circular dependency
+      const { EmbedBuilder } = require('discord.js');
+      
+      // Thông báo đang xử lý
+      await message.channel.sendTyping();
+      
+      // Tạo hình ảnh sử dụng API
+      const imageUrl = await this.generateImage(prompt);
+      
+      // Nếu nhận được thông báo lỗi thay vì URL, trả về thông báo đó
+      if (imageUrl.startsWith('Xin lỗi')) {
+        await message.reply(imageUrl);
+        return imageUrl;
+      }
+      
+      // Tạo embed và gửi trả lời
+      const embed = new EmbedBuilder()
+        .setTitle('Hình Ảnh Được Tạo')
+        .setDescription(`Mô tả: ${prompt}`)
+        .setImage(imageUrl)
+        .setColor('#0099ff')
+        .setTimestamp();
+        
+      await message.reply({ embeds: [embed] });
+      
+      // Trả về thông báo xác nhận để phương thức gọi biết xử lý thành công
+      return "Đã tạo và gửi hình ảnh thành công!";
+    } catch (error) {
+      console.error('Lỗi khi tạo hình ảnh cho Discord:', error);
+      
+      if (message) {
+        await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');
+      }
+      
+      return `Xin lỗi, không thể tạo hình ảnh: ${error.message}`;
     }
   }
   
@@ -348,8 +403,8 @@ class GrokClient {
     // Xử lý đề cập và làm sạch nội dung
     const processedMessage = await this.processDiscordMessage(message);
     
-    // Sử dụng nội dung đã làm sạch để gửi đến API
-    return await this.getCompletion(processedMessage.cleanContent);
+    // Sử dụng nội dung đã làm sạch để gửi đến API, kèm theo message object
+    return await this.getCompletion(processedMessage.cleanContent, message);
   }
 }
 
