@@ -177,24 +177,6 @@ class GrokClient {
    * @param {string} text - Văn bản đầu vào để xóa đề cập
    * @returns {string} - Văn bản đã xóa đề cập
    */
-  removeMentions(text) {
-    // Cập nhật các pattern xóa để khớp với tất cả các loại đề cập đã phát hiện
-    const patterns = [
-      /@[\w.-]+\s?/g,
-      /@"[^"]+"\s?/g,
-      /@'[^']+'\s?/g,
-      /<@!?\d+>\s?/g,
-      /\[@[^\]]+\]\s?/g,
-      /@\S+\s?/g
-    ];
-    
-    let result = text;
-    patterns.forEach(pattern => {
-      result = result.replace(pattern, '');
-    });
-    
-    return result.trim();
-  }
   
   /**
    * Nhận phản hồi mã từ API
