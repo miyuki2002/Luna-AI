@@ -1,8 +1,13 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 class GrokClient {
   constructor() {
+    // Kiểm tra cài đặt TLS không an toàn và cảnh báo
+    this.checkTLSSecurity();
+    
     // Lấy API key từ biến môi trường
     this.apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
     
@@ -29,6 +34,42 @@ class GrokClient {
     console.log(`Mô hình tạo hình ảnh: ${this.imageModel}`);
   }
   
+  /**
+   * Kiểm tra cài đặt bảo mật TLS
+   */
+  checkTLSSecurity() {
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
+      console.warn('\x1b[31m%s\x1b[0m', '⚠️ CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0 ⚠️');
+      console.warn('\x1b[33m%s\x1b[0m', 'Cài đặt này làm vô hiệu hóa xác minh chứng chỉ SSL/TLS, khiến tất cả kết nối HTTPS không an toàn!');
+      console.warn('\x1b[33m%s\x1b[0m', 'Điều này chỉ nên được sử dụng trong môi trường phát triển, KHÔNG BAO GIỜ trong sản xuất.');
+      console.warn('\x1b[36m%s\x1b[0m', 'Để khắc phục, hãy xóa biến môi trường NODE_TLS_REJECT_UNAUTHORIZED=0 hoặc sử dụng giải pháp bảo mật hơn.');
+      console.warn('\x1b[36m%s\x1b[0m', 'Nếu bạn đang gặp vấn đề với chứng chỉ tự ký, hãy cấu hình đường dẫn chứng chỉ CA trong thiết lập axios.');
+    }
+  }
+  
+  /**
+   * Tạo cấu hình Axios với xử lý chứng chỉ phù hợp
+   */
+  createSecureAxiosInstance(baseURL) {
+    const options = {
+      baseURL: baseURL || 'https://api.x.ai',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    // Nếu có đường dẫn chứng chỉ CA tùy chỉnh (cho môi trường phát triển với chứng chỉ tự ký)
+    const certPath = process.env.CUSTOM_CA_CERT_PATH;
+    if (certPath && fs.existsSync(certPath)) {
+      const ca = fs.readFileSync(certPath);
+      options.httpsAgent = new require('https').Agent({ ca });
+      console.log(`Đang sử dụng chứng chỉ CA tùy chỉnh từ: ${certPath}`);
+    }
+    
+    return axios.create(options);
+  }
+
   /**
    * Nhận phản hồi trò chuyện từ API
    */
@@ -61,15 +102,9 @@ class GrokClient {
       
       console.log(`Đang gửi yêu cầu chat completion đến ${this.defaultModel}...`);
       
-      // Sử dụng Axios trực tiếp thay vì SDK để đảm bảo định dạng tin nhắn chính xác
-      const axiosInstance = axios.create({
-        baseURL: 'https://api.x.ai',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
-        }
-      });
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+      axiosInstance.defaults.headers['anthropic-version'] = '2023-06-01';
       
       // Thêm hướng dẫn cụ thể về phong cách trả lời
       const enhancedPrompt = `Reply like a smart, sweet, and charming young woman. Use gentle, friendly language — nothing too stiff or robotic. If it fits the context, feel free to sprinkle in light humor or kind encouragement. Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${prompt}`;
@@ -198,14 +233,9 @@ class GrokClient {
     try {
       const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
       
-      const axiosInstance = axios.create({
-        baseURL: 'https://api.x.ai',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
-        }
-      });
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+      axiosInstance.defaults.headers['anthropic-version'] = '2023-06-01';
       
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.defaultModel,
@@ -233,13 +263,8 @@ class GrokClient {
     try {
       console.log(`Đang tạo hình ảnh với mô hình ${this.imageModel}...`);
       
-      const axiosInstance = axios.create({
-        baseURL: 'https://api.x.ai',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
       const response = await axiosInstance.post('/v1/images/generations', {
         model: this.imageModel,
@@ -273,13 +298,10 @@ class GrokClient {
    */
   async testConnection() {
     try {
-      const axiosInstance = axios.create({
-        baseURL: 'https://api.x.ai',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      console.log(`Đang kiểm tra kết nối tới X.AI API...`);
+      
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
       // Thử lấy danh sách models
       const response = await axiosInstance.get('/v1/models');
