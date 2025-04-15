@@ -12,7 +12,7 @@ Bot Discord sử dụng X.AI (Grok) API thông qua Anthropic SDK để cung cấ
 
 1. Clone repository này
    ```
-   git clone https://gitlab.com/s4ory/GrokAIbot.git
+   git clone https://gitlab.com/s4ory/Luna.git
    ```
 2. Cài đặt:
    ```
