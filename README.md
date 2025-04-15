@@ -11,7 +11,7 @@ Bot Discord sử dụng X.AI (Grok) API thông qua Anthropic SDK để cung cấ
 ## Thiết lập
 
 1. Clone repository này
-2. Cài đặt các gói phụ thuộc:
+2. Cài đặt:
    ```
    npm install
    ```
