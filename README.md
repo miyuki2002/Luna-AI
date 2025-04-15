@@ -27,9 +27,9 @@ Bot Discord sử dụng X.AI (Grok) API thông qua Anthropic SDK để cung cấ
 
 ## Cách sử dụng
 
-- **Trò chuyện thông thường**: @Luna Thời tiết hôm nay thế nào?
-- **Tạo hình ảnh**: @Luna /image hoàng hôn đẹp trên núi
-- **Nhận trợ giúp về mã**: @Luna Viết một hàm đảo ngược chuỗi trong JavaScript
+- **Trò chuyện thông thường**: @s4ory Thời tiết hôm nay thế nào?
+- **Tạo hình ảnh**: @s4ory /image hoàng hôn đẹp trên núi
+- **Nhận trợ giúp về mã**: @s4ory Viết một hàm đảo ngược chuỗi trong JavaScript
 
 ## Yêu cầu
 
