@@ -18,12 +18,23 @@ Bot Discord sử dụng X.AI (Grok) API thông qua Anthropic SDK để cung cấ
    ```
    npm install
    ```
-3. Tạo tệp `.env` với khóa API X.AI của bạn:
+3. Sao chép file mẫu cấu hình và đổi tên thành `.env`:
+   ```
+   # Trên Linux/macOS
+   cp example.env .env
+   
+   # Trên Windows Command Prompt
+   copy example.env .env
+   
+   # Trên Windows PowerShell
+   Copy-Item example.env .env
+   ```
+4. Chỉnh sửa tệp `.env` với khóa API X.AI của bạn:
    ```
    DISCORD_TOKEN=token_discord_bot_của_bạn
    XAI_API_KEY=khóa_api_xai_của_bạn
    ```
-4. Khởi động bot:
+5. Khởi động bot:
    ```
    npm start
    ```
