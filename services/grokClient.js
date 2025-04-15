@@ -109,7 +109,7 @@ class GrokClient {
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      axiosInstance.defaults.headers['anthropic-version'] = '2023-06-01';
+      axiosInstance.defaults.headers['anthropic-version'] = '2025-04-15';
       
       // Thêm hướng dẫn cụ thể về phong cách trả lời
       const enhancedPrompt = `Reply like a smart, sweet, and charming young woman. Use gentle, friendly language — nothing too stiff or robotic. If it fits the context, feel free to sprinkle in light humor or kind encouragement. Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${prompt}`;
@@ -242,7 +242,7 @@ class GrokClient {
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      axiosInstance.defaults.headers['anthropic-version'] = '2023-06-01';
+      axiosInstance.defaults.headers['anthropic-version'] = '2025-04-15';
       
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.defaultModel,
