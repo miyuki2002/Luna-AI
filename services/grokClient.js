@@ -38,8 +38,41 @@ class GrokClient {
     storageDB.setMaxConversationLength(10);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
     
+    // Khởi tạo mẫu lời chào
+    this.initializeGreetingPatterns();
+    
     console.log(`Model chat: ${this.CoreModel} & ${this.Model}`);
     console.log(`Model tạo hình ảnh: ${this.imageModel}`);
+  }
+
+  /**
+   * Khởi tạo các mẫu lời chào từ MongoDB
+   */
+  async initializeGreetingPatterns() {
+    try {
+      // Khởi tạo mẫu lời chào mặc định nếu chưa có
+      await storageDB.initializeDefaultGreetingPatterns();
+      
+      // Tải mẫu lời chào từ cơ sở dữ liệu
+      this.greetingPatterns = await storageDB.getGreetingPatterns();
+      console.log(`Đã tải ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
+    } catch (error) {
+      console.error('Lỗi khi khởi tạo mẫu lời chào:', error);
+      // Fallback to empty array if there's an error
+      this.greetingPatterns = [];
+    }
+  }
+
+  /**
+   * Cập nhật mẫu lời chào từ cơ sở dữ liệu
+   */
+  async refreshGreetingPatterns() {
+    try {
+      this.greetingPatterns = await storageDB.getGreetingPatterns();
+      console.log(`Đã cập nhật ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
+    } catch (error) {
+      console.error('Lỗi khi cập nhật mẫu lời chào:', error);
+    }
   }
 
   /**
@@ -171,34 +204,61 @@ class GrokClient {
       
       // Lọc bỏ các lời chào thông thường ở đầu tin nhắn nếu không phải cuộc trò chuyện mới
       if (!isNewConversation) {
-        // Danh sách các mẫu lời chào thông dụng
-        const greetingPatterns = [
-          /^(xin\s+)?chào\s+(bạn|các\s+bạn|cậu|mọi\s+người)(\s*[,.!])*\s*/i,
-          /^(hi|hello|hey|hii+|hee+y|hế\s+lô|hê\s+lô)(\s+there)?(\s*[,.!])*\s*/i,
-          /^mình(\s+là|là)?\s+(luna|grok|ai|trợ\s+lý)(\s+đây)?(\s*[,.!])*\s*/i,
-          /^(chào\s+buổi\s+(sáng|chiều|tối)|good\s+(morning|afternoon|evening))(\s*[,.!])*\s*/i,
-          /^(rất)?\s*vui\s+(được\s+)?gặp\s+(lại\s+)?(bạn|cậu)(\s*[,.!])*\s*/i
-        ];
-        
-        // Áp dụng từng mẫu lọc
-        for (const pattern of greetingPatterns) {
-          content = content.replace(pattern, '');
+        // Sử dụng mẫu lời chào từ cơ sở dữ liệu
+        if (!this.greetingPatterns || this.greetingPatterns.length === 0) {
+          // Nếu chưa tải được mẫu lời chào, tải lại
+          await this.refreshGreetingPatterns();
         }
         
-        // Xử lý trường hợp sau khi lọc, tin nhắn bắt đầu bằng dấu câu
-        content = content.replace(/^[,.!:;]\s*/, '');
+        // Áp dụng từng mẫu lọc
+        let contentChanged = false;
+        let originalLength = content.length;
+        
+        for (const pattern of this.greetingPatterns) {
+          const previousContent = content;
+          content = content.replace(pattern, '');
+          
+          // Kiểm tra nếu có sự thay đổi
+          if (previousContent !== content) {
+            contentChanged = true;
+          }
+        }
+        
+        // Xử lý sau khi lọc - giữ nguyên logic hiện tại
+        content = content.replace(/^[\s,.!:;]+/, '');
         
         // Viết hoa chữ cái đầu tiên nếu cần
         if (content.length > 0) {
           content = content.charAt(0).toUpperCase() + content.slice(1);
         }
+        
+        // Nếu nội dung bị thay đổi quá nhiều, có thể là lời chào phức tạp - kiểm tra thêm
+        if (contentChanged && content.length < originalLength * 0.7 && content.length < 20) {
+          // Nếu nội dung còn lại quá ngắn, có thể toàn bộ là lời chào
+          // Kiểm tra thêm các từ khóa phổ biến
+          const commonFiller = /^(uhm|hmm|well|so|vậy|thế|đó|nha|nhé|ok|okay|nào|giờ)/i;
+          content = content.replace(commonFiller, '');
+          
+          // Lại dọn dẹp và viết hoa
+          content = content.replace(/^[\s,.!:;]+/, '');
+          if (content.length > 0) {
+            content = content.charAt(0).toUpperCase() + content.slice(1);
+          }
+        }
+        
+        // Nếu nội dung sau khi lọc quá ngắn, hãy kiểm tra xem có phải là lời chào kèm thông tin hay không
+        if (content.length < 10 && originalLength > 50) {
+          // Phục hồi nội dung gốc nhưng bỏ 30 ký tự đầu (thường là lời chào)
+          const potentialContentStart = originalLength > 30 ? 30 : Math.floor(originalLength / 2);
+          content = content || originalContent.substring(potentialContentStart).trim();
+          
+          // Viết hoa lại chữ cái đầu
+          if (content.length > 0) {
+            content = content.charAt(0).toUpperCase() + content.slice(1);
+          }
+        }
       } else if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
         content = `Hii~ mình là ${this.Model} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
-      }
-      
-      // Chỉ thỉnh thoảng đề cập đến phiên bản model khi là cuộc trò chuyện mới
-      if (Math.random() < 0.1 && content.length < 100 && isNewConversation) {
-        content += ` (Mình là ${this.Model} - một phiên bản của Luna) 💖`;
       }
       
       return content;
@@ -746,6 +806,26 @@ class GrokClient {
    */
   async getCompletionFromDiscord(message) {
     const processedMessage = await this.processDiscordMessage(message);
+    
+    // Thêm lệnh để quản lý mẫu lời chào (chỉ cho quản trị viên)
+    if (message.member && message.member.permissions.has('ADMINISTRATOR')) {
+      if (processedMessage.cleanContent.startsWith('!addgreeting ')) {
+        const pattern = processedMessage.cleanContent.substring(13).trim();
+        if (pattern) {
+          const added = await storageDB.addGreetingPattern(pattern, 'i', 'Mẫu được thêm thủ công');
+          await this.refreshGreetingPatterns();
+          return added ? 
+            `✅ Đã thêm mẫu lời chào: \`${pattern}\`` : 
+            `❌ Mẫu lời chào đã tồn tại hoặc không hợp lệ`;
+        }
+        return "❓ Hãy cung cấp mẫu regex hợp lệ";
+      }
+      
+      if (processedMessage.cleanContent === '!greetingpatterns') {
+        await this.refreshGreetingPatterns();
+        return `📋 Hiện có ${this.greetingPatterns.length} mẫu lời chào trong cơ sở dữ liệu`;
+      }
+    }
     
     if (processedMessage.cleanContent.toLowerCase() === 'reset conversation' || 
         processedMessage.cleanContent.toLowerCase() === 'xóa lịch sử' ||
