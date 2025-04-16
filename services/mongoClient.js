@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const initSystem = require('./initSystem.js');
 
 class MongoDBClient {
   constructor() {
@@ -39,6 +40,12 @@ class MongoDBClient {
       await this.db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await this.db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       
+      // REMOVE THIS - THIS IS CAUSING THE CIRCULAR DEPENDENCY
+      // if (!initSystem.getStatus().services.mongodb) {
+      //   console.log('MongoDB đang đợi trong hàng đợi khởi tạo...');
+      //   await initSystem.waitForReady();
+      // }
+      
       return this.db;
     } catch (error) {
       this.isConnecting = false;
@@ -59,6 +66,20 @@ class MongoDBClient {
   getDb() {
     if (!this.db) {
       throw new Error('Chưa kết nối tới MongoDB. Hãy gọi connect() trước.');
+    }
+    return this.db;
+  }
+
+  // Phương thức mới để lấy DB một cách an toàn
+  async getDbSafe() {
+    // Nếu chưa kết nối, hãy kết nối
+    if (!this.db) {
+      try {
+        await this.connect();
+      } catch (error) {
+        console.error('Không thể kết nối đến MongoDB:', error);
+        throw new Error('Không thể kết nối đến MongoDB. Vui lòng kiểm tra kết nối và cấu hình.');
+      }
     }
     return this.db;
   }

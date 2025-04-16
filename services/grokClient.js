@@ -1,7 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
-const path = require('path');
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 
@@ -38,8 +37,11 @@ class GrokClient {
     storageDB.setMaxConversationLength(10);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
     
-    // Khởi tạo mẫu lời chào
-    this.initializeGreetingPatterns();
+    // DỌN DẸP: Không gọi initializeGreetingPatterns trực tiếp trong constructor nữa
+    // this.initializeGreetingPatterns();
+    
+    // Khởi tạo mảng rỗng để sử dụng trước khi có dữ liệu từ MongoDB
+    this.greetingPatterns = [];
     
     console.log(`Model chat: ${this.CoreModel} & ${this.Model}`);
     console.log(`Model tạo hình ảnh: ${this.imageModel}`);
@@ -58,7 +60,6 @@ class GrokClient {
       console.log(`Đã tải ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
     } catch (error) {
       console.error('Lỗi khi khởi tạo mẫu lời chào:', error);
-      // Fallback to empty array if there's an error
       this.greetingPatterns = [];
     }
   }
