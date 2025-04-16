@@ -21,13 +21,22 @@ const client = new Client({
 client.commands = new Collection();
 
 // Tải các lệnh
-const commands = loadCommands(client);
+const commandCount = loadCommands(client);
+console.log(`Đang tải ${commandCount} lệnh vào bộ nhớ...`);
 
 // Sử dụng handler cho sự kiện ready
-handleReady(client, () => commands);
+handleReady(client, () => commandCount);
+
+// Chuẩn bị mảng commands JSON để deploy
+const commandsJson = [];
+for (const [name, command] of client.commands) {
+  if ('data' in command && 'execute' in command) {
+    commandsJson.push(command.data.toJSON());
+  }
+}
 
 // Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
-setupGuildHandlers(client, commands.map(cmd => cmd.data.toJSON()));
+setupGuildHandlers(client, commandsJson);
 
 // Xử lý tin nhắn
 client.on(Events.MessageCreate, async message => {
