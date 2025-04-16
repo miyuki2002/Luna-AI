@@ -1,52 +1,54 @@
-# Bot AI Luna cho Discord (X.AI)
+# Luna - Bot Trợ Lý AI Cho Discord
 
-Bot Discord sử dụng X.AI (Grok) API thông qua Anthropic SDK để cung cấp trò chuyện AI, tạo hình ảnh và phản hồi mã. Bot này tự xưng là "Luna".
+<div align="center">
+  <img src="./assets/luna-avatar.png" alt="Ảnh Đại Diện Bot Luna" width="200" height="200" style="border-radius: 50%;">
+  <br>
+  <em>Người bạn đồng hành AI thân thiện của bạn</em>
+</div>
 
-## Tính năng
+## Tổng Quan
 
-- Phản hồi trò chuyện AI với X.AI (đề cập đến bot với câu hỏi của bạn)
-- Tạo hình ảnh với X.AI (đề cập đến bot với `vẽ [mô tả]`)
-- Tạo mã với X.AI (đề cập đến bot với các truy vấn liên quan đến lập trình)
+Luna là một bot Discord được hỗ trợ bởi API Grok của X.AI. Cô ấy có tính cách thân thiện, gần gũi và có thể hỗ trợ nhiều nhiệm vụ bao gồm trò chuyện, tạo mã nguồn và tạo hình ảnh.
 
-## Thiết lập
+## Tính Năng
+
+- 💬 **Trò Chuyện Tự Nhiên**: Chat với Luna một cách thân thiện và tự nhiên
+- 🖼️ **Tạo Hình Ảnh**: Tạo hình ảnh bằng các lệnh đơn giản như "vẽ [mô tả]"
+- 💻 **Hỗ Trợ Lập Trình**: Nhận trợ giúp cho các nhiệm vụ lập trình
+- 🔄 **Bộ Nhớ Liên Tục**: Luna ghi nhớ ngữ cảnh cuộc trò chuyện để tương tác tự nhiên hơn
+- ⚙️ **Quản Lý Máy Chủ**: Tự động triển khai lệnh khi tham gia máy chủ mới
+
+## Cài Đặt
 
 1. Clone repository này
+2. Cài đặt dependencies với lệnh `npm install`
+3. Tạo file `.env` với các biến sau:
    ```
-   git clone https://gitlab.com/s4ory/Luna.git
+   DISCORD_TOKEN=discord_bot_token_của_bạn
+   CLIENT_ID=discord_client_id_của_bạn
+   XAI_API_KEY=xai_api_key_của_bạn
+   MONGODB_URI=chuỗi_kết_nối_mongodb_của_bạn
    ```
-2. Cài đặt:
-   ```
-   npm install
-   ```
-3. Sao chép file mẫu cấu hình và đổi tên thành `.env`:
-   ```
-   # Trên Linux/macOS
-   cp example.env .env
-   
-   # Trên Windows Command Prompt
-   copy example.env .env
-   
-   # Trên Windows PowerShell
-   Copy-Item example.env .env
-   ```
-4. Chỉnh sửa tệp `.env` với khóa API X.AI của bạn:
-   ```
-   DISCORD_TOKEN=token_discord_bot_của_bạn
-   XAI_API_KEY=khóa_api_xai_của_bạn
-   ```
-5. Khởi động bot:
-   ```
-   npm start
-   ```
+4. Chạy bot với lệnh `node index.js`
 
-## Cách sử dụng
+## Cách Sử Dụng
 
-- **Trò chuyện thông thường**: `@mentionbot` Thời tiết hôm nay thế nào?
-- **Tạo hình ảnh**: `@mentionbot` /image hoàng hôn đẹp trên núi
-- **Nhận trợ giúp về mã**: `@mentionbot` Viết một hàm đảo ngược chuỗi trong JavaScript
+- Nhắc đến Luna (`@Luna`) trong bất kỳ kênh nào để bắt đầu trò chuyện
+- Sử dụng lệnh `/` cho các chức năng cụ thể
+- Gõ `reset conversation` hoặc `xóa lịch sử` để bắt đầu cuộc trò chuyện mới
 
-## Yêu cầu
+## Các Lệnh
 
-- Node.js 16.x trở lên
-- Discord.js v14
-- Quyền truy cập API X.AI
+| Lệnh | Mô Tả |
+|---------|-------------|
+| `/help` | Hiển thị các lệnh có sẵn |
+| `/ping` | Kiểm tra thời gian phản hồi của bot |
+| `/about` | Thông tin về Luna |
+
+## Đóng Góp
+
+Chào đón mọi đóng góp, báo lỗi và yêu cầu tính năng mới!
+
+## Giấy Phép
+
+MIT
