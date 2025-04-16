@@ -246,11 +246,8 @@ class GrokClient {
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       const response = await axiosInstance.get('/v1/models');
-      
-      console.log('Kết nối thành công với X.AI API!');
       if (response.data && response.data.data) {
-        console.log(`Đang sử dụng model API: ${this.defaultModel}`);
-        console.log(`Hiển thị cho người dùng: ${this.displayModelName}`);
+        console.log('Kết nối thành công với X.AI API!');
       }
       
       return true;
