@@ -2,7 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const messageHandler = require('./messageHandler'); // Thêm import messageHandler
+const messageHandler = require('../handlers/messageHandler.js'); // Thêm import messageHandler
 
 class GrokClient {
   constructor() {
