@@ -10,6 +10,8 @@
 
 Luna là một bot Discord được hỗ trợ bởi API Grok của X.AI. Cô ấy có tính cách thân thiện, gần gũi và có thể hỗ trợ nhiều nhiệm vụ bao gồm trò chuyện, tạo mã nguồn và tạo hình ảnh.
 
+> Sau khoản thời gian đắn đo suy nghĩ, tôi quyết định thay đổi API sang X.AI thay vì Anthropic AI (Claude) như trước. Nếu các bạn vẫn muốn dùng API của Anthropic thì thay  baseURL `https://api.x.ai/v1` sang `https://api.anthropic.com/v1`.
+
 ## Tính Năng
 
 - 💬 **Trò Chuyện Tự Nhiên**: Chat với Luna một cách thân thiện và tự nhiên
