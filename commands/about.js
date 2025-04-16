@@ -9,7 +9,7 @@ module.exports = {
 	
 	async execute(interaction) {
 		// Lấy thông tin về model từ grokClient - fix method name
-		const modelName = grokClient.getModelName();
+		const modelName = grokClient.displayModelName;
 		
 		// Tính thời gian hoạt động của bot
 		const uptime = process.uptime();
@@ -66,7 +66,7 @@ module.exports = {
 					value: '[GitHub](https://gitlab.com/s4ory/luna) | [Báo cáo lỗi](https://gitlab.com/s4ory/luna/-/issues) | [Website](https://luna.dev)'
 				}
 			)
-			.setFooter({ text: 'Luna Bot v1.0.0 | Powered by X.AI | Made with 💜' })
+			.setFooter({ text: 'Luna Bot v1.0.0' })
 			.setTimestamp();
 
 		// Tạo các nút tương tác
