@@ -15,13 +15,13 @@ Luna là một bot Discord được hỗ trợ bởi API Grok của X.AI. Cô �
 - 💬 **Trò Chuyện Tự Nhiên**: Chat với Luna một cách thân thiện và tự nhiên
 - 🖼️ **Tạo Hình Ảnh**: Tạo hình ảnh bằng các lệnh đơn giản như "vẽ [mô tả]"
 - 💻 **Hỗ Trợ Lập Trình**: Nhận trợ giúp cho các nhiệm vụ lập trình
-- 🔄 **Bộ Nhớ Liên Tục**: Luna ghi nhớ ngữ cảnh cuộc trò chuyện để tương tác tự nhiên hơn
+- 🔄 **Lữu trữ**: Luna ghi nhớ ngữ cảnh cuộc trò chuyện để tương tác tự nhiên hơn
 - ⚙️ **Quản Lý Máy Chủ**: Tự động triển khai lệnh khi tham gia máy chủ mới
 
 ## Cài Đặt
 
 1. Clone repository này
-2. Cài đặt dependencies với lệnh `npm install`
+2. Cài đặt các gói phụ thuộc với lệnh `npm install`
 3. Tạo file `.env` với các biến sau:
    ```
    DISCORD_TOKEN=discord_bot_token_của_bạn
