@@ -19,12 +19,8 @@ const client = new Client({
 // Bộ sưu tập lệnh
 client.commands = new Collection();
 
-// Tải các lệnh
-const commandCount = loadCommands(client);
-console.log(`Đang tải ${commandCount} lệnh vào bộ nhớ...`);
-
-// Sử dụng handler cho sự kiện ready
-startbot(client, () => commandCount);
+// Sử dụng handler cho sự kiện ready - mọi khởi tạo sẽ diễn ra ở đây
+startbot(client, () => loadCommands(client));
 
 // Chuẩn bị mảng commands JSON để deploy
 const commandsJson = [];
@@ -37,7 +33,7 @@ for (const [name, command] of client.commands) {
 // Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
 setupGuildHandlers(client, commandsJson);
 
-// Xử lý tin nhắn
+// Đăng ký sự kiện tin nhắn - sẽ được kích hoạt sau khi ready
 client.on(Events.MessageCreate, async message => {
   // Bỏ qua tin nhắn từ bot
   if (message.author.bot) return;
@@ -48,10 +44,15 @@ client.on(Events.MessageCreate, async message => {
   }
 });
 
-// Xử lý lệnh slash
+// Đăng ký sự kiện interaction - sẽ được kích hoạt sau khi ready
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
   await handleCommand(interaction, client);
+});
+
+// Xử lý lỗi và thoát
+process.on('unhandledRejection', (error) => {
+  console.error('Lỗi không được xử lý:', error);
 });
 
 // Đăng nhập vào Discord bằng token của ứng dụng

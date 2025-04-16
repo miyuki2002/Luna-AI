@@ -2,6 +2,7 @@ const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const mongoClient = require('../services/mongoClient.js');
+const initSystem = require('../services/initSystem.js');
 
 /**
  * Lưu thông tin guild vào MongoDB
@@ -9,7 +10,7 @@ const mongoClient = require('../services/mongoClient.js');
  */
 async function storeGuildInDB(guild) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Chuẩn bị dữ liệu guild để lưu trữ
     const guildData = {
@@ -46,7 +47,7 @@ async function storeGuildInDB(guild) {
  */
 async function removeGuildFromDB(guildId) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Xóa thông tin guild từ cơ sở dữ liệu
     await db.collection('guilds').deleteOne({ guildId: guildId });
@@ -62,7 +63,7 @@ async function removeGuildFromDB(guildId) {
  */
 async function getGuildFromDB(guildId) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Lấy thông tin guild từ cơ sở dữ liệu
     const guildData = await db.collection('guilds').findOne({ guildId: guildId });
@@ -81,7 +82,7 @@ async function getGuildFromDB(guildId) {
  */
 async function updateGuildSettings(guildId, settings) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Cập nhật cài đặt guild trong cơ sở dữ liệu
     await db.collection('guilds').updateOne(
@@ -178,7 +179,6 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
     
     // Triển khai lệnh đến guild cụ thể
     console.log(`\x1b[36m%s\x1b[0m`, `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
-    console.log(`\x1b[36m%s\x1b[0m`, `Sử dụng CLIENT_ID: ${clientId}`);
     
     const data = await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
@@ -225,34 +225,42 @@ function findDefaultChannel(guild) {
  * @param {Array} commands - Mảng các lệnh đã tải (tùy chọn)
  */
 function setupGuildHandlers(client, commands = null) {
-  // Sự kiện khi bot tham gia guild mới
-  client.on('guildCreate', guild => handleGuildJoin(guild, commands));
-  
-  // Sự kiện khi bot rời khỏi guild
-  client.on('guildDelete', guild => handleGuildLeave(guild));
-  
-  // Tải tất cả guild hiện tại vào MongoDB khi khởi động
-  client.once('ready', async () => {
+  const setupHandlers = async () => {
     try {
-      console.log('\x1b[36m%s\x1b[0m', 'Đang đồng bộ thông tin servers với MongoDB...');
+      // Đảm bảo MongoDB đã sẵn sàng
+      await mongoClient.getDbSafe();
       
-      // Lấy tất cả guild mà bot hiện đang tham gia
+      // Sự kiện khi bot tham gia guild mới
+      client.on('guildCreate', guild => handleGuildJoin(guild, commands));
+      
+      // Sự kiện khi bot rời khỏi guild
+      client.on('guildDelete', guild => handleGuildLeave(guild));
+      
+      // Đồng bộ tất cả guild hiện tại vào MongoDB
+      console.log('\x1b[36m%s\x1b[0m', 'Đang đồng bộ thông tin servers với MongoDB...');
       const guilds = client.guilds.cache;
       let syncCount = 0;
       
-      // Duyệt qua từng guild và lưu thông tin vào MongoDB
       for (const guild of guilds.values()) {
         await storeGuildInDB(guild);
         syncCount++;
       }
       
       console.log('\x1b[32m%s\x1b[0m', `Đã đồng bộ thành công ${syncCount}/${guilds.size} servers với MongoDB`);
+      
     } catch (error) {
-      console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi đồng bộ servers với MongoDB:', error);
+      console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi thiết lập xử lý sự kiện guild:', error);
     }
-  });
+  };
   
-  console.log('\x1b[36m%s\x1b[0m', 'Đã thiết lập xử lý sự kiện guild với MongoDB');
+  // Nếu hệ thống đã khởi tạo xong, thiết lập ngay lập tức; nếu không, đợi
+  if (initSystem.getStatus().initialized) {
+    setupHandlers();
+  } else {
+    initSystem.once('ready', setupHandlers);
+  }
+  
+  console.log('\x1b[36m%s\x1b[0m', 'Đã đăng ký handlers cho sự kiện guild');
 }
 
 // Export các hàm để sử dụng trong các file khác
