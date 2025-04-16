@@ -147,8 +147,14 @@ function handleGuildLeave(guild) {
 async function deployCommandsToGuild(guildId, existingCommands = null) {
   try {
     const token = process.env.DISCORD_TOKEN;
+    const clientId = process.env.CLIENT_ID;
+    
     if (!token) {
       throw new Error('DISCORD_TOKEN không được thiết lập trong biến môi trường');
+    }
+    
+    if (!clientId) {
+      throw new Error('CLIENT_ID không được thiết lập trong biến môi trường');
     }
     
     // Tạo REST client
@@ -172,9 +178,10 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
     
     // Triển khai lệnh đến guild cụ thể
     console.log(`\x1b[36m%s\x1b[0m`, `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
+    console.log(`\x1b[36m%s\x1b[0m`, `Sử dụng CLIENT_ID: ${clientId}`);
     
     const data = await rest.put(
-      Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId),
+      Routes.applicationGuildCommands(clientId, guildId),
       { body: commands }
     );
     
