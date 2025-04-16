@@ -22,6 +22,10 @@ async function startbot(client, loadCommands) {
       // Khởi tạo cài đặt cho StorageDB sau khi kết nối
       await storageDB.setupCollections();
       
+      
+      // Khởi tạo cấu trúc lịch sử cuộc trò chuyện
+      await storageDB.initializeConversationHistory();
+      
       // Đánh dấu MongoDB đã sẵn sàng
       initSystem.markReady('mongodb');
       
