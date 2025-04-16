@@ -1,12 +1,37 @@
-/.history
-/.vscode
-/.idea
-/.DS_Store
-/node_modules
-/.nuxt
-/.nuxtg
-/.output
-/.output/public
-/.output/server
+# Dependency directories
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
 
+# Environment variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files
+logs/
+*.log
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.history/
+
+# OS files
+.DS_Store
+Thumbs.db
