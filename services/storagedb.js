@@ -11,11 +11,30 @@ class StorageDB {
     // Tuổi thọ tối đa của cuộc trò chuyện (tính bằng mili giây) - 3 giờ
     this.maxConversationAge = 3 * 60 * 60 * 1000;
     
-    // Khởi tạo kết nối MongoDB
-    this.initDatabase();
+    // Bỏ việc khởi tạo kết nối MongoDB ở đây để tránh kết nối kép
+    // Việc khởi tạo sẽ được chuyển sang ready.js
     
     // Lên lịch dọn dẹp cuộc trò chuyện cũ mỗi giờ
     setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
+  }
+  
+  /**
+   * Thiết lập các collections và indexes MongoDB
+   */
+  async setupCollections() {
+    try {
+      const db = mongoClient.getDb();
+      
+      // Tạo các indexes cần thiết
+      await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
+      await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
+      await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
+      
+      console.log('Đã thiết lập collections và indexes MongoDB');
+    } catch (error) {
+      console.error('Lỗi khi thiết lập collections MongoDB:', error);
+      throw error;
+    }
   }
   
   /**

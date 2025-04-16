@@ -9,12 +9,30 @@ class MongoDBClient {
     
     this.client = new MongoClient(this.uri);
     this.db = null;
+    this.isConnecting = false;
   }
 
   async connect() {
     try {
+      // Tránh kết nối kép
+      if (this.db) {
+        console.log('Đã kết nối đến MongoDB rồi.');
+        return this.db;
+      }
+      
+      if (this.isConnecting) {
+        console.log('Đang trong quá trình kết nối đến MongoDB...');
+        // Đợi kết nối hoàn thành
+        while (!this.db) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return this.db;
+      }
+      
+      this.isConnecting = true;
       await this.client.connect();
       this.db = this.client.db();
+      this.isConnecting = false;
       console.log('Đã kết nối thành công đến MongoDB');
       
       // Tạo các indexes cần thiết
@@ -23,6 +41,7 @@ class MongoDBClient {
       
       return this.db;
     } catch (error) {
+      this.isConnecting = false;
       console.error('Lỗi khi kết nối đến MongoDB:', error);
       throw error;
     }
