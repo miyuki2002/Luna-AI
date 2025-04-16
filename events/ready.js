@@ -5,7 +5,7 @@ const initSystem = require('../services/initSystem.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
-    console.log('\x1b[36m%s\x1b[0m', `
+    console.log('\x1b[35m%s\x1b[0m', `
     ██╗     ██╗   ██╗███╗   ██╗ █████╗ 
     ██║     ██║   ██║████╗  ██║██╔══██╗
     ██║     ██║   ██║██╔██╗ ██║███████║
@@ -34,12 +34,21 @@ async function startbot(client, loadCommands) {
     }
 
     try {
+        // Khởi tạo cấu trúc lịch sử cuộc trò chuyện
+        await storageDB.initializeConversationHistory();
+        initSystem.markReady('greetingPatterns');
+    } catch (error) {
+        console.error('❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
+        initSystem.markReady('greetingPatterns'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
+    }
+
+    try {
       // Khởi tạo mẫu lời chào
       await grokClient.initializeGreetingPatterns();
       initSystem.markReady('greetingPatterns');
     } catch (error) {
       console.error('❌ Lỗi khi khởi tạo mẫu lời chào:', error);
-      initSystem.markReady('greetingPatterns'); // Mark as ready even with error
+      initSystem.markReady('greetingPatterns'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
     try {
@@ -49,7 +58,7 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('commands');
     } catch (error) {
       console.error('❌ Lỗi khi tải commands:', error);
-      initSystem.markReady('commands'); // Mark as ready even with error
+      initSystem.markReady('commands'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
     
     try {
@@ -58,7 +67,7 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('api');
     } catch (error) {
       console.error('❌ Lỗi khi kết nối đến X.AI API:', error);
-      initSystem.markReady('api'); // Mark as ready even with error
+      initSystem.markReady('api'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
     
     // Set bot presence
