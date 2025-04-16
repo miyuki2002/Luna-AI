@@ -6,10 +6,11 @@ module.exports = {
 		.setDescription('Kiểm tra độ trễ và tình trạng hoạt động của bot'),
 	
 	async execute(interaction) {
-		// Gửi phản hồi ban đầu để đo độ trễ
+		// Gửi phản hồi ban đầu để đo độ trễ - update deprecated option
 		const sent = await interaction.reply({ 
 			content: '📡 Đang kiểm tra kết nối...', 
-			fetchReply: true 
+			// fetchReply: true // Deprecated
+			withResponse: true // Modern approach
 		});
 
 		// Tính toán độ trễ

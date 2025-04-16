@@ -8,8 +8,8 @@ module.exports = {
 		.setDescription('Hiển thị thông tin chi tiết về Luna bot'),
 	
 	async execute(interaction) {
-		// Lấy thông tin về model từ grokCliente();
-		const modelName = grokClient.displayModelName();
+		// Lấy thông tin về model từ grokClient - fix method name
+		const modelName = grokClient.getModelName();
 		
 		// Tính thời gian hoạt động của bot
 		const uptime = process.uptime();
@@ -87,7 +87,11 @@ module.exports = {
 
 		const row = new ActionRowBuilder().addComponents(supportButton, inviteButton, docsButton);
 
-		// Phản hồi với embed và các nút
-		await interaction.reply({ embeds: [aboutEmbed], components: [row], ephemeral: false });
+		// Phản hồi với embed và các nút - update deprecated option
+		await interaction.reply({ 
+			embeds: [aboutEmbed], 
+			components: [row], 
+			flags: [] // Modern approach - empty array means not ephemeral
+		});
 	},
 };
