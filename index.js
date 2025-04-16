@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Events, Collection } = require('discord.js');
 const { handleMessage } = require('./handlers/messageHandler');
 const { handleCommand, loadCommands } = require('./handlers/commandHandler');
+const { handleReady } = require('./handlers/ready');
 const grokClient = require('./services/grokClient');
 
 // Tạo một Discord client mới
@@ -18,19 +19,8 @@ const client = new Client({
 // Bộ sưu tập lệnh
 client.commands = new Collection();
 
-// Khi client sẵn sàng, chạy code này
-client.once(Events.ClientReady, async () => {
-  console.log(`Đăng nhập với tên ${client.user.tag} (Luna)`);
-  console.log('Bot đang trực tuyến và sẵn sàng giúp đỡ!');
-  
-  // Tải các lệnh khi khởi động
-  const commandCount = loadCommands(client);
-  console.log(`Bot đã sẵn sàng với ${commandCount} lệnh!`);
-  
-  // Kiểm tra kết nối với X.AI API
-  console.log('Đang kiểm tra kết nối với X.AI API...');
-  const connected = await grokClient.testConnection();
-});
+// Sử dụng handler cho sự kiện ready
+handleReady(client, loadCommands);
 
 // Xử lý tin nhắn
 client.on(Events.MessageCreate, async message => {
