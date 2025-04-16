@@ -13,10 +13,14 @@ const loadCommands = (client) => {
     // Đặt một mục mới trong Collection với key là tên lệnh và value là module được xuất
     if ('data' in command && 'execute' in command) {
       client.commands.set(command.data.name, command);
+      console.log(`✅ Đã tải lệnh: ${command.data.name}`);
     } else {
       console.log(`[CẢNH BÁO] Lệnh tại ${filePath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
     }
   }
+  
+  console.log(`Đã tải tổng cộng ${client.commands.size} lệnh.`);
+  return client.commands.size;
 };
 
 // Xử lý việc thực thi lệnh
@@ -34,8 +38,9 @@ const handleCommand = async (interaction, client) => {
 
   try {
     await command.execute(interaction);
+    console.log(`Người dùng ${interaction.user.tag} đã sử dụng lệnh /${interaction.commandName}`);
   } catch (error) {
-    console.error(error);
+    console.error(`Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
     } else {
