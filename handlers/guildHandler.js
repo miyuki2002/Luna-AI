@@ -2,6 +2,7 @@ const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const mongoClient = require('../services/mongoClient.js');
+const initSystem = require('../services/initSystem.js');
 
 /**
  * Lưu thông tin guild vào MongoDB
@@ -178,7 +179,6 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
     
     // Triển khai lệnh đến guild cụ thể
     console.log(`\x1b[36m%s\x1b[0m`, `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
-    console.log(`\x1b[36m%s\x1b[0m`, `Sử dụng CLIENT_ID: ${clientId}`);
     
     const data = await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
@@ -225,57 +225,43 @@ function findDefaultChannel(guild) {
  * @param {Array} commands - Mảng các lệnh đã tải (tùy chọn)
  */
 function setupGuildHandlers(client, commands = null) {
-  // Sự kiện khi bot tham gia guild mới/initSystem.js');
-  client.on('guildCreate', guild => handleGuildJoin(guild, commands));
-  nction setupGuildHandlers(client, commands) {
-  // Sự kiện khi bot rời khỏi guildy initialized before setting up guild handlers
-  client.on('guildDelete', guild => handleGuildLeave(guild));
-    // Ensure MongoDB is ready to use
-  // Tải tất cả guild hiện tại vào MongoDB khi khởi động
-  client.once('ready', async () => {
-    try {t.on(Events.GuildCreate, async guild => {
+  const setupHandlers = async () => {
+    try {
+      // Đảm bảo MongoDB đã sẵn sàng
+      await mongoClient.getDbSafe();
+      
+      // Sự kiện khi bot tham gia guild mới
+      client.on('guildCreate', guild => handleGuildJoin(guild, commands));
+      
+      // Sự kiện khi bot rời khỏi guild
+      client.on('guildDelete', guild => handleGuildLeave(guild));
+      
+      // Đồng bộ tất cả guild hiện tại vào MongoDB
       console.log('\x1b[36m%s\x1b[0m', 'Đang đồng bộ thông tin servers với MongoDB...');
-        console.log(`Bot đã tham gia guild mới: ${guild.name}`);
-      // Lấy tất cả guild mà bot hiện đang tham gia
-      const guilds = client.guilds.cache;n
-      let syncCount = 0; mongoClient.getDbSafe();
-        
-      // Duyệt qua từng guild và lưu thông tin vào MongoDB
-      for (const guild of guilds.values()) {One(
+      const guilds = client.guilds.cache;
+      let syncCount = 0;
+      
+      for (const guild of guilds.values()) {
         await storeGuildInDB(guild);
         syncCount++;
-      }     $set: { 
-              guildId: guild.id, 
+      }
+      
       console.log('\x1b[32m%s\x1b[0m', `Đã đồng bộ thành công ${syncCount}/${guilds.size} servers với MongoDB`);
-    } catch (error) {count: guild.memberCount,
-      console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi đồng bộ servers với MongoDB:', error);
-    }         lastUpdated: new Date()
-  });       } 
-          },
-  console.log('\x1b[36m%s\x1b[0m', 'Đã thiết lập xử lý sự kiện guild với MongoDB');
-});
-        
-// Export các hàm để sử dụng trong các file khácild.name} vào cơ sở dữ liệu`);
-module.exports = {
-  handleGuildJoin,itional guild setup here...
-  handleGuildLeave,r) {
-  deployCommandsToGuild,ỗi khi xử lý guild mới:', error);
-  setupGuildHandlers,
-  getGuildFromDB,
-  updateGuildSettings,
-  storeGuildInDB guild-related event handlers here...
-};};
+      
+    } catch (error) {
+      console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi thiết lập xử lý sự kiện guild:', error);
+    }
+  };
   
-  // If system is ready, set up immediately; otherwise wait
+  // Nếu hệ thống đã khởi tạo xong, thiết lập ngay lập tức; nếu không, đợi
   if (initSystem.getStatus().initialized) {
     setupHandlers();
   } else {
     initSystem.once('ready', setupHandlers);
   }
+  
+  console.log('\x1b[36m%s\x1b[0m', 'Đã đăng ký handlers cho sự kiện guild');
 }
-
-module.exports = { setupGuildHandlers };
-
 
 // Export các hàm để sử dụng trong các file khác
 module.exports = {
