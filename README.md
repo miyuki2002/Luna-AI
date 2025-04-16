@@ -46,6 +46,8 @@ Luna là một bot Discord được hỗ trợ bởi API Grok của X.AI. Cô �
 | `/help` | Hiển thị các lệnh có sẵn |
 | `/ping` | Kiểm tra thời gian phản hồi của bot |
 | `/about` | Thông tin về Luna |
+| `/image` | Tạo hình ảnh bằng các lệnh đơn giản |
+| `/reset` | Đặt lại cuộc trò chuyện với bot |
 
 ## Đóng Góp
 
