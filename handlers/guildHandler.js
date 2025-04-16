@@ -9,7 +9,7 @@ const mongoClient = require('../services/mongoClient.js');
  */
 async function storeGuildInDB(guild) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Chuẩn bị dữ liệu guild để lưu trữ
     const guildData = {
@@ -46,7 +46,7 @@ async function storeGuildInDB(guild) {
  */
 async function removeGuildFromDB(guildId) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Xóa thông tin guild từ cơ sở dữ liệu
     await db.collection('guilds').deleteOne({ guildId: guildId });
@@ -62,7 +62,7 @@ async function removeGuildFromDB(guildId) {
  */
 async function getGuildFromDB(guildId) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Lấy thông tin guild từ cơ sở dữ liệu
     const guildData = await db.collection('guilds').findOne({ guildId: guildId });

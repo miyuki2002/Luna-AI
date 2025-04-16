@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const initSystem = require('./initSystem.js');
 
 class MongoDBClient {
   constructor() {
@@ -39,6 +40,12 @@ class MongoDBClient {
       await this.db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await this.db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       
+      // Wait for initialization to complete if needed by other modules
+      if (!initSystem.getStatus().services.mongodb) {
+        console.log('MongoDB đang đợi trong hàng đợi khởi tạo...');
+        await initSystem.waitForReady();
+      }
+      
       return this.db;
     } catch (error) {
       this.isConnecting = false;
@@ -61,6 +68,15 @@ class MongoDBClient {
       throw new Error('Chưa kết nối tới MongoDB. Hãy gọi connect() trước.');
     }
     return this.db;
+  }
+
+  // Phương thức mới để lấy DB một cách an toàn
+  async getDbSafe() {
+    // Đợi cho đến khi hệ thống đã sẵn sàng
+    if (!this.db || !initSystem.getStatus().services.mongodb) {
+      await initSystem.waitForReady();
+    }
+    return this.getDb();
   }
 }
 
