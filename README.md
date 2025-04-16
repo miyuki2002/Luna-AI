@@ -21,7 +21,7 @@ Luna là một bot Discord được hỗ trợ bởi API Grok của X.AI. Cô �
 ## Cài Đặt
 
 1. Clone repository này
-2. Cài đặt các gói phụ thuộc với lệnh `npm install`
+2. Cài đặt dependencies với lệnh `npm install`
 3. Tạo file `.env` với các biến sau:
    ```
    DISCORD_TOKEN=discord_bot_token_của_bạn
