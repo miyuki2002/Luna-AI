@@ -17,9 +17,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "axios": "^1.6.0",
-    "better-sqlite3": "^8.5.0",
     "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "mongodb": "^6.15.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
