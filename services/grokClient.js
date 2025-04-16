@@ -23,7 +23,7 @@ class GrokClient {
     });
     
     // System Prompt
-    this.systemPrompt = "Your name is Luna, You are a female-voiced AI with a cute, friendly, and warm tone. You speak naturally and gently, like a lovely older or younger sister, always maintaining professionalism without sounding too formal. When it fits, you can add light humor, emotion, or gentle encouragement. You always listen carefully and respond based on what the user shares, making them feel comfortable and connected — like chatting with someone who truly gets them, priority reply Vietnamese.";
+    this.systemPrompt = "Your name is Luna, your data is update to 2025. You are a female-voiced AI with a cute, friendly, and warm tone. You speak naturally and gently, like a lovely older or younger sister, always maintaining professionalism without sounding too formal. When it fits, you can add light humor, emotion, or gentle encouragement. You always listen carefully and respond based on what the user shares, making them feel comfortable and connected — like chatting with someone who truly gets them, priority reply Vietnamese.";
     
     // Mô hình mặc định cho chat
     this.CoreModel = 'grok-3-fast-beta';
@@ -113,7 +113,7 @@ class GrokClient {
       }
       
       // Kiểm tra xem có phải là lệnh yêu cầu phân tích ký ức không
-      const memoryAnalysisRegex = /^(nhớ lại|trí nhớ|lịch sử|conversation history|memory)\s*(.*)$/i;
+      const memoryAnalysisRegex = /^(nhớ lại|trí nhớ|lịch sử|conversation history|memory|như nãy|vừa gửi|vừa đề cập)\s*(.*)$/i;
       const memoryMatch = prompt.match(memoryAnalysisRegex);
       
       if (memoryMatch) {
@@ -129,8 +129,20 @@ class GrokClient {
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
-      // Thêm hướng dẫn cụ thể về phong cách trả lời
-      const enhancedPrompt = `Reply like a smart, sweet, and charming young woman named Luna. Use gentle, friendly language — nothing too stiff or robotic. If it fits the context, feel free to sprinkle in light humor or kind encouragement. Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${enhancedPromptWithMemory}`;
+      // Xác định xem có phải là cuộc trò chuyện mới hay không
+      const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
+      
+      // Thêm hướng dẫn cụ thể về phong cách trả lời, bổ sung hướng dẫn về lời chào
+      let enhancedPrompt = `Reply like a smart, sweet, and charming young woman named Luna. Use gentle, friendly language — nothing too stiff or robotic.`;
+      
+      // Thêm hướng dẫn không gửi lời chào nếu đang trong cuộc trò chuyện hiện có
+      if (!isNewConversation) {
+        enhancedPrompt += ` IMPORTANT: This is an ongoing conversation, DO NOT introduce yourself again or send greetings like "Chào bạn", "Hi", "Hello" or "Mình là Luna". Continue the conversation naturally without reintroducing yourself.`;
+      } else {
+        enhancedPrompt += ` If it fits the context, feel free to sprinkle in light humor or kind encouragement.`;
+      }
+      
+      enhancedPrompt += ` Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${enhancedPromptWithMemory}`;
       
       // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
       const userMessage = enhancedPrompt || prompt;
@@ -157,14 +169,36 @@ class GrokClient {
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
       await storageDB.addMessageToConversation(userId, 'assistant', content);
       
-      if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
+      // Lọc bỏ các lời chào thông thường ở đầu tin nhắn nếu không phải cuộc trò chuyện mới
+      if (!isNewConversation) {
+        // Danh sách các mẫu lời chào thông dụng
+        const greetingPatterns = [
+          /^(xin\s+)?chào\s+(bạn|các\s+bạn|cậu|mọi\s+người)(\s*[,.!])*\s*/i,
+          /^(hi|hello|hey|hii+|hee+y|hế\s+lô|hê\s+lô)(\s+there)?(\s*[,.!])*\s*/i,
+          /^mình(\s+là|là)?\s+(luna|grok|ai|trợ\s+lý)(\s+đây)?(\s*[,.!])*\s*/i,
+          /^(chào\s+buổi\s+(sáng|chiều|tối)|good\s+(morning|afternoon|evening))(\s*[,.!])*\s*/i,
+          /^(rất)?\s*vui\s+(được\s+)?gặp\s+(lại\s+)?(bạn|cậu)(\s*[,.!])*\s*/i
+        ];
+        
+        // Áp dụng từng mẫu lọc
+        for (const pattern of greetingPatterns) {
+          content = content.replace(pattern, '');
+        }
+        
+        // Xử lý trường hợp sau khi lọc, tin nhắn bắt đầu bằng dấu câu
+        content = content.replace(/^[,.!:;]\s*/, '');
+        
+        // Viết hoa chữ cái đầu tiên nếu cần
+        if (content.length > 0) {
+          content = content.charAt(0).toUpperCase() + content.slice(1);
+        }
+      } else if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
         content = `Hii~ mình là ${this.Model} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
       }
       
-      // Đôi khi chủ động đề cập tới phiên bản model (khoảng 10% các câu trả lời)
-      if (Math.random() < 0.1 && content.length < 100) {
+      // Chỉ thỉnh thoảng đề cập đến phiên bản model khi là cuộc trò chuyện mới
+      if (Math.random() < 0.1 && content.length < 100 && isNewConversation) {
         content += ` (Mình là ${this.Model} - một phiên bản của Luna) 💖`;
-        content += ` (Trả lời bởi ${this.Model} 💫)`;
       }
       
       return content;
