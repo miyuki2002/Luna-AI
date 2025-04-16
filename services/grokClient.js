@@ -26,26 +26,19 @@ class GrokClient {
     this.systemPrompt = "Your name is Luna, You are a female-voiced AI with a cute, friendly, and warm tone. You speak naturally and gently, like a lovely older or younger sister, always maintaining professionalism without sounding too formal. When it fits, you can add light humor, emotion, or gentle encouragement. You always listen carefully and respond based on what the user shares, making them feel comfortable and connected — like chatting with someone who truly gets them, priority reply Vietnamese.";
     
     // Mô hình mặc định cho chat
-    this.defaultModel = 'grok-3-fast-beta';
-    
-    // Thông tin metadata của model - chỉ để hiển thị
-    this.modelInfo = {
-      knowledgeCutoff: "Mid-2025",
-      apiVersion: "2025-04-15",
-      capabilities: ["chat", "code", "reasoning"]
-    };
+    this.CoreModel = 'grok-3-fast-beta';
     
     // Mô hình đặc biệt cho tạo hình ảnh
     this.imageModel = 'grok-2-image-1212';
     
     // Mô hình hiển thị cho người dùng
-    this.displayModelName = 'luna-v1';
+    this.Model = 'luna-v1';
     
     // Cấu hình StorageDB
     storageDB.setMaxConversationLength(10);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
     
-    console.log(`Model chat: ${this.defaultModel} & ${this.displayModelName}`);
+    console.log(`Model chat: ${this.CoreModel} & ${this.Model}`);
     console.log(`Model tạo hình ảnh: ${this.imageModel}`);
   }
 
@@ -72,7 +65,7 @@ class GrokClient {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
         'anthropic-version': '2025-04-15',
-        'User-Agent': `Luna/${this.displayModelName}`,
+        'User-Agent': `Luna/${this.Model}`,
         'Accept': 'application/json'
       }
     };
@@ -119,7 +112,7 @@ class GrokClient {
         return await this.generateImage(imagePrompt);
       }
       
-      console.log(`Đang gửi yêu cầu chat completion đến ${this.defaultModel}... (hiển thị cho người dùng: ${this.displayModelName})`);
+      console.log(`Đang gửi yêu cầu chat completion đến ${this.CoreModel}... (hiển thị cho người dùng: ${this.Model})`);
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -131,7 +124,7 @@ class GrokClient {
       const userMessage = enhancedPrompt || prompt;
       
       // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await storageDB.getConversationHistory(userId, this.systemPrompt, this.displayModelName);
+      const conversationHistory = await storageDB.getConversationHistory(userId, this.systemPrompt, this.Model);
       
       // Thêm tin nhắn người dùng vào lịch sử
       await storageDB.addMessageToConversation(userId, 'user', userMessage);
@@ -141,7 +134,7 @@ class GrokClient {
       
       // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
       const response = await axiosInstance.post('/v1/chat/completions', {
-        model: this.defaultModel,
+        model: this.CoreModel,
         max_tokens: 2048,
         messages: messages
       });
@@ -153,13 +146,13 @@ class GrokClient {
       await storageDB.addMessageToConversation(userId, 'assistant', content);
       
       if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
-        content = `Hii~ mình là ${this.displayModelName} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
+        content = `Hii~ mình là ${this.Model} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
       }
       
       // Đôi khi chủ động đề cập tới phiên bản model (khoảng 10% các câu trả lời)
       if (Math.random() < 0.1 && content.length < 100) {
-        content += ` (Mình là ${this.displayModelName} - một phiên bản của Luna) 💖`;
-        content += ` (Trả lời bởi ${this.displayModelName} 💫)`;
+        content += ` (Mình là ${this.Model} - một phiên bản của Luna) 💖`;
+        content += ` (Trả lời bởi ${this.Model} 💫)`;
       }
       
       return content;
@@ -177,13 +170,13 @@ class GrokClient {
    */
   async getCodeCompletion(prompt) {
     try {
-      const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.displayModelName}. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
+      const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.Model}. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
       const response = await axiosInstance.post('/v1/chat/completions', {
-        model: this.defaultModel,
+        model: this.CoreModel,
         max_tokens: 4096,
         messages: [
           { role: 'system', content: codingSystemPrompt },
@@ -297,7 +290,7 @@ class GrokClient {
     if (processedMessage.cleanContent.toLowerCase() === 'reset conversation' || 
         processedMessage.cleanContent.toLowerCase() === 'xóa lịch sử' ||
         processedMessage.cleanContent.toLowerCase() === 'quên hết đi') {
-      await storageDB.clearConversationHistory(message.author.id, this.systemPrompt, this.displayModelName);
+      await storageDB.clearConversationHistory(message.author.id, this.systemPrompt, this.Model);
       return "Đã xóa lịch sử cuộc trò chuyện của chúng ta. Bắt đầu cuộc trò chuyện mới nào! 😊";
     }
     
@@ -309,7 +302,7 @@ class GrokClient {
    * @returns {string} - Tên mô hình hiển thị
    */
   getModelName() {
-    return this.displayModelName;
+    return this.Model;
   }
 }
 

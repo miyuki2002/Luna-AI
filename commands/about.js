@@ -9,7 +9,7 @@ module.exports = {
 	
 	async execute(interaction) {
 		// Lấy thông tin về model từ grokClient - fix method name
-		const modelName = grokClient.displayModelName;
+		const modelName = grokClient.Model;
 		
 		// Tính thời gian hoạt động của bot
 		const uptime = process.uptime();
