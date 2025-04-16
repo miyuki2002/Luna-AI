@@ -13,7 +13,6 @@ const loadCommands = (client) => {
     // Đặt một mục mới trong Collection với key là tên lệnh và value là module được xuất
     if ('data' in command && 'execute' in command) {
       client.commands.set(command.data.name, command);
-      console.log(`✅ Đã tải lệnh: ${command.data.name}`);
     } else {
       console.log(`[CẢNH BÁO] Lệnh tại ${filePath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
     }
