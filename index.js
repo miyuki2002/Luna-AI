@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, Partials, Events, Collection } = require('dis
 const { handleMessage } = require('./handlers/messageHandler');
 const { handleCommand, loadCommands } = require('./handlers/commandHandler');
 const { handleReady } = require('./handlers/ready');
+const { setupGuildHandlers } = require('./handlers/guildHandler');
 const grokClient = require('./services/grokClient');
 
 // Tạo một Discord client mới
@@ -19,8 +20,14 @@ const client = new Client({
 // Bộ sưu tập lệnh
 client.commands = new Collection();
 
+// Tải các lệnh
+const commands = loadCommands(client);
+
 // Sử dụng handler cho sự kiện ready
-handleReady(client, loadCommands);
+handleReady(client, () => commands);
+
+// Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
+setupGuildHandlers(client, commands.map(cmd => cmd.data.toJSON()));
 
 // Xử lý tin nhắn
 client.on(Events.MessageCreate, async message => {

@@ -19,7 +19,6 @@ const loadCommands = (client) => {
     }
   }
   
-  console.log(`Đã tải tổng cộng ${client.commands.size} lệnh.`);
   return client.commands.size;
 };
 

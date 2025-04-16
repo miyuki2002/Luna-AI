@@ -19,7 +19,7 @@ function handleReady(client, loadCommands) {
     
     // Tải các lệnh khi khởi động
     const commandCount = loadCommands(client);
-    console.log('\x1b[32m%s\x1b[0m', `Bot loaded with ${commandCount} commands!`);
+    console.log('\x1b[32m%s\x1b[0m', `Đã tải tổng cộng ${commandCount} lệnh!`);
     
     // Kiểm tra kết nối với X.AI API
     const connected = await grokClient.testConnection();
