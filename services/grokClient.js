@@ -12,7 +12,6 @@ class GrokClient {
     
     // Lấy API key từ biến môi trường
     this.apiKey = process.env.XAI_API_KEY;
-    
     if (!this.apiKey) {
       throw new Error('XAI_API_KEY không được đặt trong biến môi trường');
     }
@@ -23,7 +22,7 @@ class GrokClient {
       baseURL: 'https://api.x.ai'
     });
     
-    // Lời nhắc hệ thống để xác định là Luna
+    // System Prompt
     this.systemPrompt = "Your name is Luna, You are a female-voiced AI with a cute, friendly, and warm tone. You speak naturally and gently, like a lovely older or younger sister, always maintaining professionalism without sounding too formal. When it fits, you can add light humor, emotion, or gentle encouragement. You always listen carefully and respond based on what the user shares, making them feel comfortable and connected — like chatting with someone who truly gets them, priority reply Vietnamese.";
     
     // Mô hình mặc định cho chat
@@ -54,11 +53,8 @@ class GrokClient {
     // Lên lịch dọn dẹp cuộc trò chuyện cũ mỗi giờ
     setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
     
-    console.log(`Đang sử dụng Anthropic SDK với X.AI API và mô hình thực: ${this.defaultModel}`);
-    console.log(`Mô hình hiển thị cho người dùng: ${this.displayModelName}`);
-    console.log(`Giới hạn kiến thức đến: ${this.modelInfo.knowledgeCutoff}`);
-    console.log(`Mô hình tạo hình ảnh: ${this.imageModel}`);
-    console.log('Đã khởi tạo MongoDB để lưu trữ lịch sử cuộc trò chuyện');
+    console.log(`Model chat: ${this.defaultModel} & ${this.displayModelName}`);
+    console.log(`Model tạo hình ảnh: ${this.imageModel}`);
   }
   
   /**
@@ -68,7 +64,7 @@ class GrokClient {
     try {
       // Kết nối tới MongoDB
       await mongoClient.connect();
-      console.log('Đã khởi tạo kết nối MongoDB thành công');
+      console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
     } catch (error) {
       console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
       throw error;
@@ -97,7 +93,7 @@ class GrokClient {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': '2025-04-15',
         'User-Agent': `Luna/${this.displayModelName}`,
         'Accept': 'application/json'
       }
@@ -166,7 +162,7 @@ class GrokClient {
         }
       }
       
-      console.log(`Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, số lượng tin nhắn: ${count + 1}`);
+      // console.log(`Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, số lượng tin nhắn: ${count + 1}`);
     } catch (error) {
       console.error('Lỗi khi thêm tin nhắn vào MongoDB:', error);
     }
@@ -435,7 +431,6 @@ class GrokClient {
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      
       const response = await axiosInstance.get('/v1/models');
       
       console.log('Kết nối thành công với X.AI API!');

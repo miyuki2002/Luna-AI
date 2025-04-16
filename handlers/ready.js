@@ -22,7 +22,6 @@ function handleReady(client, loadCommands) {
     console.log('\x1b[32m%s\x1b[0m', `Bot loaded with ${commandCount} commands!`);
     
     // Kiểm tra kết nối với X.AI API
-    console.log('Checking connection to X.AI API...');
     const connected = await grokClient.testConnection();
     
     // Set bot presence
