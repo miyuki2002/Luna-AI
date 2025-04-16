@@ -53,28 +53,7 @@ async function checkDns(hostname) {
   });
 }
 
-/**
- * Báo cáo trạng thái kết nối
- * @param {string} apiHost - Tên miền API
- * @returns {Promise<object>} - Thông tin về kết nối
- */
-async function checkApiStatus(apiHost) {
-  console.log(`Đang kiểm tra kết nối tới ${apiHost}...`);
-  
-  const dnsResult = await checkDns(apiHost);
-  const canConnect = await checkConnection(apiHost, 443);
-  
-  return {
-    host: apiHost,
-    dnsResolved: !!dnsResult,
-    ipAddresses: dnsResult || [],
-    canConnect: canConnect,
-    timestamp: new Date().toISOString()
-  };
-}
-
 module.exports = {
   checkConnection,
-  checkDns,
-  checkApiStatus
+  checkDns
 };
