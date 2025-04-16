@@ -40,11 +40,11 @@ class MongoDBClient {
       await this.db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await this.db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       
-      // Wait for initialization to complete if needed by other modules
-      if (!initSystem.getStatus().services.mongodb) {
-        console.log('MongoDB đang đợi trong hàng đợi khởi tạo...');
-        await initSystem.waitForReady();
-      }
+      // REMOVE THIS - THIS IS CAUSING THE CIRCULAR DEPENDENCY
+      // if (!initSystem.getStatus().services.mongodb) {
+      //   console.log('MongoDB đang đợi trong hàng đợi khởi tạo...');
+      //   await initSystem.waitForReady();
+      // }
       
       return this.db;
     } catch (error) {
@@ -72,11 +72,16 @@ class MongoDBClient {
 
   // Phương thức mới để lấy DB một cách an toàn
   async getDbSafe() {
-    // Đợi cho đến khi hệ thống đã sẵn sàng
-    if (!this.db || !initSystem.getStatus().services.mongodb) {
-      await initSystem.waitForReady();
+    // Nếu chưa kết nối, hãy kết nối
+    if (!this.db) {
+      try {
+        await this.connect();
+      } catch (error) {
+        console.error('Không thể kết nối đến MongoDB:', error);
+        throw new Error('Không thể kết nối đến MongoDB. Vui lòng kiểm tra kết nối và cấu hình.');
+      }
     }
-    return this.getDb();
+    return this.db;
   }
 }
 
