@@ -3,6 +3,8 @@ const axios = require('axios');
 const fs = require('fs');
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
+// Import the conversationManager module
+const conversationManager = require('../handlers/conversationManager.js');
 
 class GrokClient {
   constructor() {
@@ -163,6 +165,9 @@ class GrokClient {
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
+      // Lấy lịch sử cuộc trò chuyện hiện có
+      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+      
       // Xác định xem có phải là cuộc trò chuyện mới hay không
       const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
       
@@ -181,14 +186,11 @@ class GrokClient {
       // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
       const userMessage = enhancedPrompt || prompt;
       
-      // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await storageDB.getConversationHistory(userId, this.systemPrompt, this.Model);
-      
       // Thêm tin nhắn người dùng vào lịch sử
-      await storageDB.addMessageToConversation(userId, 'user', userMessage);
+      await conversationManager.addMessage(userId, 'user', userMessage);
       
       // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện
-      const messages = [...conversationHistory];
+      const messages = conversationManager.getHistory();
       
       // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
       const response = await axiosInstance.post('/v1/chat/completions', {
@@ -201,7 +203,7 @@ class GrokClient {
       let content = response.data.choices[0].message.content;
       
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
-      await storageDB.addMessageToConversation(userId, 'assistant', content);
+      await conversationManager.addMessage(userId, 'assistant', content);
       
       // Lọc bỏ các lời chào thông thường ở đầu tin nhắn nếu không phải cuộc trò chuyện mới
       if (!isNewConversation) {
@@ -620,13 +622,13 @@ class GrokClient {
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
       // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await storageDB.getConversationHistory(userId, this.systemPrompt, this.Model);
+      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
       
       // Thêm tin nhắn người dùng vào lịch sử
-      await storageDB.addMessageToConversation(userId, 'user', thinkingPrompt);
+      await conversationManager.addMessage(userId, 'user', thinkingPrompt);
       
       // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện
-      const messages = [...conversationHistory];
+      const messages = conversationManager.getHistory();
       
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.CoreModel,
@@ -637,7 +639,7 @@ class GrokClient {
       let content = response.data.choices[0].message.content;
       
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
-      await storageDB.addMessageToConversation(userId, 'assistant', content);
+      await conversationManager.addMessage(userId, 'assistant', content);
       
       // Định dạng phần suy nghĩ để dễ đọc hơn
       content = content.replace('[THINKING]', '💭 **Quá trình suy nghĩ:**\n');
