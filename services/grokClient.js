@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const messageHandler = require('../handlers/messageHandler.js');
-const mongoClient = require('./mongoClient.js');
+const storageDB = require('./storagedb.js');
 
 class GrokClient {
   constructor() {
@@ -41,34 +41,12 @@ class GrokClient {
     // Mô hình hiển thị cho người dùng
     this.displayModelName = 'luna-v1';
     
-    // Số lượng tin nhắn tối đa để giữ trong ngữ cảnh
-    this.maxConversationLength = 10;
-    
-    // Tuổi thọ tối đa của cuộc trò chuyện (tính bằng mili giây) - 3 giờ
-    this.maxConversationAge = 3 * 60 * 60 * 1000;
-    
-    // Khởi tạo kết nối MongoDB
-    this.initDatabase();
-    
-    // Lên lịch dọn dẹp cuộc trò chuyện cũ mỗi giờ
-    setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
+    // Cấu hình StorageDB
+    storageDB.setMaxConversationLength(10);
+    storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
     
     console.log(`Model chat: ${this.defaultModel} & ${this.displayModelName}`);
     console.log(`Model tạo hình ảnh: ${this.imageModel}`);
-  }
-  
-  /**
-   * Khởi tạo kết nối MongoDB
-   */
-  async initDatabase() {
-    try {
-      // Kết nối tới MongoDB
-      await mongoClient.connect();
-      console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
-    } catch (error) {
-      console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
-      throw error;
-    }
   }
 
   /**
@@ -107,170 +85,6 @@ class GrokClient {
     }
     
     return axios.create(options);
-  }
-
-  /**
-   * Thêm tin nhắn vào lịch sử cuộc trò chuyện trong MongoDB
-   * @param {string} userId - Định danh người dùng
-   * @param {string} role - Vai trò của tin nhắn ('user' hoặc 'assistant')
-   * @param {string} content - Nội dung tin nhắn
-   */
-  async addMessageToConversation(userId, role, content) {
-    try {
-      const db = mongoClient.getDb();
-      
-      // Lấy số lượng tin nhắn hiện tại của người dùng
-      const count = await db.collection('conversations').countDocuments({ userId });
-      
-      // Thêm tin nhắn mới
-      await db.collection('conversations').insertOne({
-        userId,
-        messageIndex: count,
-        role,
-        content,
-        timestamp: Date.now()
-      });
-      
-      // Cập nhật timestamp trong bảng meta
-      await db.collection('conversation_meta').updateOne(
-        { userId },
-        { $set: { lastUpdated: Date.now() } },
-        { upsert: true }
-      );
-      
-      // Nếu vượt quá giới hạn, xóa tin nhắn cũ nhất (trừ lời nhắc hệ thống ở index 0)
-      if (count >= this.maxConversationLength) {
-        // Lấy tin nhắn cũ nhất (ngoại trừ lời nhắc hệ thống)
-        const oldestMsg = await db.collection('conversations')
-          .findOne(
-            { userId, messageIndex: { $gt: 0 } },
-            { sort: { messageIndex: 1 } }
-          );
-        
-        if (oldestMsg) {
-          // Xóa tin nhắn cũ nhất
-          await db.collection('conversations').deleteOne({ 
-            userId, 
-            messageIndex: oldestMsg.messageIndex 
-          });
-          
-          // Cập nhật lại chỉ số của các tin nhắn
-          await db.collection('conversations').updateMany(
-            { userId, messageIndex: { $gt: oldestMsg.messageIndex } },
-            { $inc: { messageIndex: -1 } }
-          );
-        }
-      }
-      
-      // console.log(`Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, số lượng tin nhắn: ${count + 1}`);
-    } catch (error) {
-      console.error('Lỗi khi thêm tin nhắn vào MongoDB:', error);
-    }
-  }
-  
-  /**
-   * Lấy lịch sử cuộc trò chuyện của người dùng từ MongoDB
-   * @param {string} userId - Định danh người dùng
-   * @returns {Array} - Mảng các tin nhắn trò chuyện
-   */
-  async getConversationHistory(userId) {
-    try {
-      const db = mongoClient.getDb();
-      
-      // Kiểm tra xem người dùng đã có lịch sử chưa
-      const count = await db.collection('conversations').countDocuments({ userId });
-      
-      if (count === 0) {
-        // Khởi tạo với lời nhắc hệ thống nếu không có lịch sử
-        const systemMessage = { 
-          role: 'system', 
-          content: this.systemPrompt + ` You are running on ${this.displayModelName} model.` 
-        };
-        await this.addMessageToConversation(userId, systemMessage.role, systemMessage.content);
-        return [systemMessage];
-      } else {
-        // Cập nhật thời gian để cho biết cuộc trò chuyện này vẫn đang hoạt động
-        await db.collection('conversation_meta').updateOne(
-          { userId },
-          { $set: { lastUpdated: Date.now() } }
-        );
-        
-        // Lấy tất cả tin nhắn theo thứ tự
-        const messages = await db.collection('conversations')
-          .find({ userId })
-          .sort({ messageIndex: 1 })
-          .project({ _id: 0, role: 1, content: 1 })
-          .toArray();
-        
-        return messages;
-      }
-    } catch (error) {
-      console.error('Lỗi khi lấy lịch sử cuộc trò chuyện:', error);
-      // Trả về lời nhắc hệ thống mặc định nếu có lỗi
-      return [{ 
-        role: 'system', 
-        content: this.systemPrompt + ` You are running on ${this.displayModelName} model.` 
-      }];
-    }
-  }
-  
-  /**
-   * Xóa lịch sử cuộc trò chuyện của người dùng
-   * @param {string} userId - Định danh người dùng
-   */
-  async clearConversationHistory(userId) {
-    try {
-      const db = mongoClient.getDb();
-      
-      // Xóa tất cả tin nhắn của người dùng
-      await db.collection('conversations').deleteMany({ userId });
-      
-      // Khởi tạo lại với lời nhắc hệ thống
-      const systemMessage = { 
-        role: 'system', 
-        content: this.systemPrompt + ` You are running on ${this.displayModelName} model.` 
-      };
-      await this.addMessageToConversation(userId, systemMessage.role, systemMessage.content);
-      
-      // Cập nhật meta
-      await db.collection('conversation_meta').updateOne(
-        { userId },
-        { $set: { lastUpdated: Date.now() } },
-        { upsert: true }
-      );
-      
-      console.log(`Đã xóa cuộc trò chuyện của người dùng ${userId}`);
-    } catch (error) {
-      console.error('Lỗi khi xóa lịch sử cuộc trò chuyện:', error);
-    }
-  }
-  
-  /**
-   * Xóa các cuộc trò chuyện cũ để giải phóng bộ nhớ
-   */
-  async cleanupOldConversations() {
-    try {
-      const db = mongoClient.getDb();
-      const now = Date.now();
-      
-      // Tìm người dùng có cuộc trò chuyện cũ
-      const oldUsers = await db.collection('conversation_meta')
-        .find({ lastUpdated: { $lt: now - this.maxConversationAge } })
-        .project({ userId: 1, _id: 0 })
-        .toArray();
-      
-      if (oldUsers.length > 0) {
-        const userIds = oldUsers.map(user => user.userId);
-        
-        // Xóa tin nhắn và metadata của người dùng có cuộc trò chuyện cũ
-        await db.collection('conversations').deleteMany({ userId: { $in: userIds } });
-        await db.collection('conversation_meta').deleteMany({ userId: { $in: userIds } });
-        
-        console.log(`Đã dọn dẹp ${oldUsers.length} cuộc trò chuyện cũ`);
-      }
-    } catch (error) {
-      console.error('Lỗi khi dọn dẹp cuộc trò chuyện cũ:', error);
-    }
   }
 
   /**
@@ -317,10 +131,10 @@ class GrokClient {
       const userMessage = enhancedPrompt || prompt;
       
       // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await this.getConversationHistory(userId);
+      const conversationHistory = await storageDB.getConversationHistory(userId, this.systemPrompt, this.displayModelName);
       
       // Thêm tin nhắn người dùng vào lịch sử
-      await this.addMessageToConversation(userId, 'user', userMessage);
+      await storageDB.addMessageToConversation(userId, 'user', userMessage);
       
       // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện
       const messages = [...conversationHistory];
@@ -336,7 +150,7 @@ class GrokClient {
       let content = response.data.choices[0].message.content;
       
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
-      await this.addMessageToConversation(userId, 'assistant', content);
+      await storageDB.addMessageToConversation(userId, 'assistant', content);
       
       if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
         content = `Hii~ mình là ${this.displayModelName} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
@@ -486,7 +300,7 @@ class GrokClient {
     if (processedMessage.cleanContent.toLowerCase() === 'reset conversation' || 
         processedMessage.cleanContent.toLowerCase() === 'xóa lịch sử' ||
         processedMessage.cleanContent.toLowerCase() === 'quên hết đi') {
-      await this.clearConversationHistory(message.author.id);
+      await storageDB.clearConversationHistory(message.author.id, this.systemPrompt, this.displayModelName);
       return "Đã xóa lịch sử cuộc trò chuyện của chúng ta. Bắt đầu cuộc trò chuyện mới nào! 😊";
     }
     
