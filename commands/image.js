@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const grokClient = require('../services/grokClient');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,11 +16,19 @@ module.exports = {
     await interaction.deferReply();
     
     try {
-      // Tại đây bạn sẽ gọi dịch vụ tạo hình ảnh của bạn
-      // Hiện tại, chúng ta chỉ mô phỏng một phản hồi
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Mô phỏng thời gian xử lý
+      // Call the generateImage function from grokClient
+      const imageUrl = await grokClient.generateImage(prompt);
       
-      await interaction.editReply(`Đã tạo hình ảnh cho: "${prompt}"\n(Chức năng tạo hình ảnh sẽ được triển khai sau)`);
+      // Check if the response is an error message (returned as string) or a valid URL
+      if (imageUrl.startsWith('http')) {
+        await interaction.editReply({
+          content: `🖼️ Đã tạo hình ảnh cho prompt: "${prompt}"`,
+          files: [imageUrl]
+        });
+      } else {
+        // If not a URL, it's probably an error message
+        await interaction.editReply(`❌ ${imageUrl}`);
+      }
     } catch (error) {
       console.error('Lỗi khi tạo hình ảnh:', error);
       await interaction.editReply('Xin lỗi, đã xảy ra lỗi khi tạo hình ảnh của bạn.');

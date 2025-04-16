@@ -346,6 +346,60 @@ class StorageDB {
       console.error('Lỗi khi khởi tạo mẫu lời chào mặc định:', error);
     }
   }
+
+  /**
+   * Khởi tạo các cài đặt và cấu trúc cho lịch sử cuộc trò chuyện
+   * @returns {Promise<void>}
+   */
+  async initializeConversationHistory() {
+    try {
+      const db = mongoClient.getDb();
+      
+      // Kiểm tra và tạo indexes cho collection conversations nếu chưa có
+      const existingIndexes = await db.collection('conversations').listIndexes().toArray();
+      const hasTimeIndex = existingIndexes.some(index => index.name === 'timestamp_1');
+      
+      if (!hasTimeIndex) {
+        // Tạo index theo timestamp để tối ưu hóa truy vấn theo thời gian
+        await db.collection('conversations').createIndex({ timestamp: 1 });
+        console.log('Đã tạo index timestamp cho collection conversations');
+      }
+      
+      // Kiểm tra xem có cần cập nhật cấu trúc dữ liệu lịch sử cuộc trò chuyện không
+      const conversationMeta = await db.collection('conversation_meta').findOne({
+        metaVersion: { $exists: true }
+      });
+      
+      if (!conversationMeta) {
+        // Khởi tạo document meta với phiên bản hiện tại
+        await db.collection('conversation_meta').insertOne({
+          metaVersion: 1,
+          lastCleanup: Date.now(),
+          config: {
+            maxConversationLength: this.maxConversationLength,
+            maxConversationAge: this.maxConversationAge
+          }
+        });
+        console.log('Đã khởi tạo cấu hình lịch sử cuộc trò chuyện');
+      } else {
+        // Cập nhật cấu hình nếu cần
+        await db.collection('conversation_meta').updateOne(
+          { metaVersion: { $exists: true } },
+          { $set: { 
+            'config.maxConversationLength': this.maxConversationLength,
+            'config.maxConversationAge': this.maxConversationAge,
+          }}
+        );
+      }
+      
+      // Thực hiện dọn dẹp ban đầu cho dữ liệu cũ
+      await this.cleanupOldConversations();
+      
+      console.log('Hệ thống lịch sử cuộc trò chuyện đã sẵn sàng');
+    } catch (error) {
+      console.error('Lỗi khi khởi tạo lịch sử cuộc trò chuyện:', error);
+    }
+  }
 }
 
 // Xuất một thể hiện duy nhất của StorageDB
