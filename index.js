@@ -1,6 +1,7 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Events, Collection } = require('discord.js');
 const { handleMessage } = require('./handlers/messageHandler');
+const { handleCommand } = require('./handlers/commandHandler');
 const grokClient = require('./services/grokClient');
 
 // Tạo một Discord client mới
@@ -13,6 +14,9 @@ const client = new Client({
   ],
   partials: [Partials.Channel]
 });
+
+// Bộ sưu tập lệnh
+client.commands = new Collection();
 
 // Khi client sẵn sàng, chạy code này
 client.once(Events.ClientReady, async () => {
@@ -33,6 +37,12 @@ client.on(Events.MessageCreate, async message => {
   if (message.mentions.has(client.user)) {
     await handleMessage(message);
   }
+});
+
+// Xử lý lệnh slash
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+  await handleCommand(interaction, client);
 });
 
 // Đăng nhập vào Discord bằng token của ứng dụng
