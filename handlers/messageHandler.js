@@ -82,8 +82,24 @@ async function handleImageGeneration(message, prompt) {
   await message.channel.sendTyping();
   
   try {
-    // Sử dụng phương thức mới để xử lý hình ảnh cho Discord
-    await grokClient.handleDiscordImageGeneration(message, prompt);
+    // Lấy URL hình ảnh từ generateImage của grokClient
+    const imageUrl = await grokClient.generateImage(prompt);
+    
+    // Nếu nhận được thông báo lỗi thay vì URL, trả về thông báo đó
+    if (imageUrl.startsWith('Xin lỗi')) {
+      await message.reply(imageUrl);
+      return;
+    }
+    
+    // Tạo embed và gửi trả lời
+    const embed = new EmbedBuilder()
+      .setTitle('Hình Ảnh Được Tạo')
+      .setDescription(`Mô tả: ${prompt}`)
+      .setImage(imageUrl)
+      .setColor('#0099ff')
+      .setTimestamp();
+      
+    await message.reply({ embeds: [embed] });
   } catch (error) {
     console.error('Lỗi khi tạo hình ảnh:', error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');

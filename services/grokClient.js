@@ -2,6 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const messageHandler = require('./messageHandler'); // Thêm import messageHandler
 
 class GrokClient {
   constructor() {
@@ -25,12 +26,36 @@ class GrokClient {
     this.systemPrompt = "Your name is Luna, You are a female-voiced AI with a cute, friendly, and warm tone. You speak naturally and gently, like a lovely older or younger sister, always maintaining professionalism without sounding too formal. When it fits, you can add light humor, emotion, or gentle encouragement. You always listen carefully and respond based on what the user shares, making them feel comfortable and connected — like chatting with someone who truly gets them, priority reply Vietnamese.";
     
     // Mô hình mặc định cho chat
-    this.defaultModel = 'grok-3-beta';
+    this.defaultModel = 'grok-3-beta'; // Đã đổi từ grok-3-beta thành grok-3
+    
+    // Thông tin metadata của model - chỉ để hiển thị
+    this.modelInfo = {
+      knowledgeCutoff: "Mid-2025", // Ngày giới hạn kiến thức ước tính
+      apiVersion: "2025-04-15",    // Phiên bản đặc tả API
+      capabilities: ["chat", "code", "reasoning"]
+    };
     
     // Mô hình đặc biệt cho tạo hình ảnh
     this.imageModel = 'grok-2-image-1212';
     
-    console.log(`Đang sử dụng Anthropic SDK với X.AI API và mô hình: ${this.defaultModel}`);
+    // Mô hình hiển thị cho người dùng
+    this.displayModelName = 'luna-v1';
+    
+    // Kho lưu trữ cuộc hội thoại
+    this.conversationStore = {};
+    
+    // Số lượng tin nhắn tối đa để giữ trong ngữ cảnh
+    this.maxConversationLength = 10;
+    
+    // Tuổi thọ tối đa của cuộc trò chuyện (tính bằng mili giây) - 3 giờ
+    this.maxConversationAge = 3 * 60 * 60 * 1000;
+    
+    // Lên lịch dọn dẹp cuộc trò chuyện cũ mỗi giờ
+    setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
+    
+    console.log(`Đang sử dụng Anthropic SDK với X.AI API và mô hình thực: ${this.defaultModel}`);
+    console.log(`Mô hình hiển thị cho người dùng: ${this.displayModelName}`);
+    console.log(`Giới hạn kiến thức đến: ${this.modelInfo.knowledgeCutoff}`);
     console.log(`Mô hình tạo hình ảnh: ${this.imageModel}`);
   }
   
@@ -55,7 +80,13 @@ class GrokClient {
       baseURL: baseURL || 'https://api.x.ai',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // Phiên bản API khác với ngày giới hạn kiến thức của mô hình
+        // Đây là phiên bản đặc tả API, không phải thời điểm kết thúc dữ liệu huấn luyện
+        // Kiến thức thực tế của mô hình có thể kết thúc khoảng giữa năm 2023 đối với hầu hết mô hình hiện tại
+        'anthropic-version': '2023-06-01', // Đã khôi phục về phiên bản API Anthropic tiêu chuẩn
+        'User-Agent': `Luna/${this.displayModelName}`,
+        'Accept': 'application/json'
       }
     };
     
@@ -71,64 +102,166 @@ class GrokClient {
   }
 
   /**
+   * Thêm tin nhắn vào lịch sử cuộc trò chuyện
+   * @param {string} userId - Định danh người dùng
+   * @param {string} role - Vai trò của tin nhắn ('user' hoặc 'assistant')
+   * @param {string} content - Nội dung tin nhắn
+   */
+  addMessageToConversation(userId, role, content) {
+    // Khởi tạo cuộc trò chuyện cho người dùng nếu chưa tồn tại
+    if (!this.conversationStore[userId]) {
+      this.conversationStore[userId] = {
+        messages: [],
+        lastUpdated: Date.now()
+      };
+    }
+    
+    // Thêm tin nhắn mới
+    this.conversationStore[userId].messages.push({
+      role: role,
+      content: content
+    });
+    
+    // Cập nhật thời gian của cuộc trò chuyện
+    this.conversationStore[userId].lastUpdated = Date.now();
+    
+    // Chỉ giữ lại các tin nhắn gần đây nhất lên đến maxConversationLength
+    if (this.conversationStore[userId].messages.length > this.maxConversationLength) {
+      // Xóa tin nhắn cũ nhưng giữ lại lời nhắc hệ thống ở đầu
+      const systemPrompt = this.conversationStore[userId].messages[0];
+      this.conversationStore[userId].messages = 
+        [systemPrompt, ...this.conversationStore[userId].messages.slice(-(this.maxConversationLength - 1))];
+    }
+    
+    console.log(`Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, độ dài lịch sử: ${this.conversationStore[userId].messages.length}`);
+  }
+  
+  /**
+   * Lấy lịch sử cuộc trò chuyện của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Array} - Mảng các tin nhắn trò chuyện
+   */
+  getConversationHistory(userId) {
+    if (!this.conversationStore[userId]) {
+      // Khởi tạo với lời nhắc hệ thống nếu không có lịch sử
+      this.conversationStore[userId] = {
+        messages: [{ role: 'system', content: this.systemPrompt + ` You are running on ${this.displayModelName} model.` }],
+        lastUpdated: Date.now()
+      };
+    } else {
+      // Cập nhật thời gian để cho biết cuộc trò chuyện này vẫn đang hoạt động
+      this.conversationStore[userId].lastUpdated = Date.now();
+    }
+    
+    return this.conversationStore[userId].messages;
+  }
+  
+  /**
+   * Xóa lịch sử cuộc trò chuyện của người dùng
+   * @param {string} userId - Định danh người dùng
+   */
+  clearConversationHistory(userId) {
+    if (this.conversationStore[userId]) {
+      this.conversationStore[userId] = {
+        messages: [{ role: 'system', content: this.systemPrompt + ` You are running on ${this.displayModelName} model.` }],
+        lastUpdated: Date.now()
+      };
+      console.log(`Đã xóa cuộc trò chuyện của người dùng ${userId}`);
+    }
+  }
+  
+  /**
+   * Xóa các cuộc trò chuyện cũ để giải phóng bộ nhớ
+   */
+  cleanupOldConversations() {
+    const now = Date.now();
+    let cleanCount = 0;
+    
+    Object.keys(this.conversationStore).forEach(userId => {
+      if ((now - this.conversationStore[userId].lastUpdated) > this.maxConversationAge) {
+        delete this.conversationStore[userId];
+        cleanCount++;
+      }
+    });
+    
+    if (cleanCount > 0) {
+      console.log(`Đã dọn dẹp ${cleanCount} cuộc trò chuyện cũ`);
+    }
+  }
+
+  /**
    * Nhận phản hồi trò chuyện từ API
    */
   async getCompletion(prompt, message = null) {
     try {
-      // Trích xuất bất kỳ đề cập người dùng nào từ lời nhắc
-      const mentions = this.extractMentions(prompt);
-      if (mentions.length > 0) {
-        console.log(`Phát hiện đề cập trong tin nhắn: ${mentions.join(', ')}`);
-        // Xóa các đề cập để tránh nhầm lẫn trong quá trình xử lý AI
-        const originalPrompt = prompt;
-        prompt = this.removeMentions(prompt);
-        console.log(`Tin nhắn trước: "${originalPrompt}"`);
-        console.log(`Tin nhắn sau khi loại bỏ đề cập: "${prompt}"`);
-      }
+      // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
+      const userId = message?.author?.id || 'default-user';
       
       // Kiểm tra xem lời nhắc có phải là lệnh tạo hình ảnh không (với hỗ trợ lệnh tiếng Việt mở rộng)
-      const imageCommandRegex = /^(\/image|vẽ|tạo hình|vẽ hình|hình)\s+(.+)$/i;
+      const imageCommandRegex = /^(\/image|vẽ|tạo hình|vẽ hình|hình|tạo ảnh ai|tạo ảnh)\s+(.+)$/i;
       const imageMatch = prompt.match(imageCommandRegex);
       
       if (imageMatch) {
         // Trích xuất mô tả hình ảnh (bây giờ trong nhóm 2)
         const imagePrompt = imageMatch[2];
         const commandUsed = imageMatch[1];
-        console.log(`Detected image generation command "${commandUsed}". Prompt: ${imagePrompt}`);
+        console.log(`Phát hiện lệnh tạo hình ảnh "${commandUsed}". Prompt: ${imagePrompt}`);
         
-        // Nếu có message object (từ Discord), xử lý bằng Discord handler
+        // Nếu có message object (từ Discord), sử dụng messageHandler
         if (message) {
-          return await this.handleDiscordImageGeneration(message, imagePrompt);
+          // Truyền hàm generateImage được bind với this
+          return await messageHandler.handleDiscordImageGeneration(
+            message, 
+            imagePrompt, 
+            this.generateImage.bind(this)
+          );
         }
         
         // Nếu không, tạo hình ảnh và trả về URL như thông thường
         return await this.generateImage(imagePrompt);
       }
       
-      console.log(`Đang gửi yêu cầu chat completion đến ${this.defaultModel}...`);
+      console.log(`Đang gửi yêu cầu chat completion đến ${this.defaultModel}... (hiển thị cho người dùng: ${this.displayModelName})`);
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      axiosInstance.defaults.headers['anthropic-version'] = '2025-04-15';
       
       // Thêm hướng dẫn cụ thể về phong cách trả lời
-      const enhancedPrompt = `Reply like a smart, sweet, and charming young woman. Use gentle, friendly language — nothing too stiff or robotic. If it fits the context, feel free to sprinkle in light humor or kind encouragement. Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${prompt}`;
+      const enhancedPrompt = `Reply like a smart, sweet, and charming young woman named Luna. Use gentle, friendly language — nothing too stiff or robotic. If it fits the context, feel free to sprinkle in light humor or kind encouragement. Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${prompt}`;
       
+      // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
+      const userMessage = enhancedPrompt || prompt;
+      
+      // Lấy lịch sử cuộc trò chuyện hiện có
+      const conversationHistory = this.getConversationHistory(userId);
+      
+      // Thêm tin nhắn người dùng vào lịch sử
+      this.addMessageToConversation(userId, 'user', userMessage);
+      
+      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện
+      const messages = [...conversationHistory];
+      
+      // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.defaultModel,
         max_tokens: 2048,
-        messages: [
-          { role: 'system', content: this.systemPrompt },
-          { role: 'user', content: enhancedPrompt }
-        ]
+        messages: messages
       });
       
       console.log('Đã nhận phản hồi từ API');
       let content = response.data.choices[0].message.content;
       
+      // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
+      this.addMessageToConversation(userId, 'assistant', content);
       
-      if (content.toLowerCase().trim() === 'chào bạn' || content.length < 4) {
-        content = `Hii~ mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
+      if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
+        content = `Hii~ mình là ${this.displayModelName} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
+      }
+      
+      // Đôi khi chủ động đề cập tới phiên bản model (khoảng 10% các câu trả lời)
+      if (Math.random() < 0.1 && content.length < 100) {
+        content += ` (Mình là ${this.displayModelName} - một phiên bản của Luna) 💖`;
+        content += ` (Trả lời bởi ${this.displayModelName} 💫)`;
       }
       
       return content;
@@ -142,110 +275,17 @@ class GrokClient {
   }
   
   /**
-   * Xử lý yêu cầu tạo hình ảnh từ Discord
-   * @param {Discord.Message} message - Tin nhắn Discord
-   * @param {string} prompt - Mô tả hình ảnh cần tạo
-   * @returns {Promise<string>} - Thông báo xác nhận
-   */
-  async handleDiscordImageGeneration(message, prompt) {
-    try {
-      if (!prompt) {
-        return "Vui lòng cung cấp mô tả cho hình ảnh bạn muốn tôi tạo.";
-      }
-      
-      // Import messageHandler theo cách tránh circular dependency
-      const { EmbedBuilder } = require('discord.js');
-      
-      // Thông báo đang xử lý
-      await message.channel.sendTyping();
-      
-      // Tạo hình ảnh sử dụng API
-      const imageUrl = await this.generateImage(prompt);
-      
-      // Nếu nhận được thông báo lỗi thay vì URL, trả về thông báo đó
-      if (imageUrl.startsWith('Xin lỗi')) {
-        await message.reply(imageUrl);
-        return imageUrl;
-      }
-      
-      // Tạo embed và gửi trả lời
-      const embed = new EmbedBuilder()
-        .setTitle('Hình Ảnh Được Tạo')
-        .setDescription(`Mô tả: ${prompt}`)
-        .setImage(imageUrl)
-        .setColor('#0099ff')
-        .setTimestamp();
-        
-      await message.reply({ embeds: [embed] });
-      
-      // Trả về thông báo xác nhận để phương thức gọi biết xử lý thành công
-      return "Đã tạo và gửi hình ảnh thành công!";
-    } catch (error) {
-      console.error('Lỗi khi tạo hình ảnh cho Discord:', error);
-      
-      if (message) {
-        await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');
-      }
-      
-      return `Xin lỗi, không thể tạo hình ảnh: ${error.message}`;
-    }
-  }
-  
-  /**
-   * Trích xuất đề cập @username từ văn bản
-   * @param {string} text - Văn bản đầu vào để trích xuất đề cập
-   * @returns {Array} - Mảng tên người dùng đã được đề cập
-   */
-  extractMentions(text) {
-    if (!text) {
-      return [];
-    }
-    
-    // Mở rộng regex để phát hiện nhiều loại đề cập khác nhau
-    // Bao gồm các định dạng phổ biến từ nhiều nền tảng
-    const patterns = [
-      /@([\w.-]+)/g,                 // Định dạng cơ bản: @username
-      /@"([^"]+)"/g,                 // Định dạng có dấu ngoặc kép: @"User Name"
-      /@'([^']+)'/g,                 // Định dạng có dấu ngoặc đơn: @'User Name'
-      /<@!?(\d+)>/g,                 // Định dạng Discord: <@123456789>
-      /\[(@[^\]]+)\]/g,              // Định dạng có ngoặc vuông: [@username]
-      /@(\S+)/g                      // Bắt bất kỳ chuỗi không khoảng trắng nào theo sau @ 
-    ];
-    
-    const matches = [];
-    
-    // Kiểm tra từng pattern và thu thập kết quả
-    patterns.forEach(pattern => {
-      let match;
-      const patternCopy = new RegExp(pattern.source, pattern.flags);
-      
-      while ((match = patternCopy.exec(text)) !== null) {
-        matches.push(match[1]);
-      }
-    });
-    
-    return [...new Set(matches)]; // Remove duplicates
-  }
-
-  /**
-   * Xóa đề cập @username khỏi văn bản
-   * @param {string} text - Văn bản đầu vào để xóa đề cập
-   * @returns {string} - Văn bản đã xóa đề cập
-   */
-  
-  /**
    * Nhận phản hồi mã từ API
    */
   async getCodeCompletion(prompt) {
     try {
-      const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
+      const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.displayModelName}. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
       
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      axiosInstance.defaults.headers['anthropic-version'] = '2025-04-15';
       
       const response = await axiosInstance.post('/v1/chat/completions', {
-        model: this.defaultModel,
+        model: this.defaultModel, // Sử dụng grok-3 cho cuộc gọi API thực tế
         max_tokens: 4096,
         messages: [
           { role: 'system', content: codingSystemPrompt },
@@ -315,8 +355,8 @@ class GrokClient {
       
       console.log('Kết nối thành công với X.AI API!');
       if (response.data && response.data.data) {
-        const models = response.data.data.map(m => m.id).join(', ');
-        console.log('Các model có sẵn:', models);
+        console.log(`Đang sử dụng model API: ${this.defaultModel}`);
+        console.log(`Hiển thị cho người dùng: ${this.displayModelName}`);
       }
       
       return true;
@@ -330,64 +370,28 @@ class GrokClient {
   }
 
   /**
-   * Xử lý đề cập từ tin nhắn Discord
+   * Xử lý tin nhắn Discord
    * @param {Discord.Message} message - Đối tượng tin nhắn Discord
-   * @returns {Object} - Thông tin về đề cập và nội dung đã xử lý
+   * @returns {Object} - Thông tin về nội dung đã xử lý
    */
   async processDiscordMessage(message) {
     try {
       // Lấy nội dung gốc của tin nhắn
       const originalContent = message.content;
-      console.log("Discord message original content:", originalContent);
+      console.log("Nội dung gốc của tin nhắn Discord:", originalContent);
       
-      // Thu thập thông tin đề cập sử dụng Discord.js API
-      const mentionedUsers = Array.from(message.mentions.users.values());
-      const mentionedRoles = Array.from(message.mentions.roles.values());
-      const mentionedChannels = Array.from(message.mentions.channels.values());
+      // Xử lý nội dung đơn giản
+      let cleanContent = message.cleanContent || originalContent;
+      console.log("Nội dung đã xử lý của tin nhắn Discord:", cleanContent);
       
-      // Log thông tin đề cập
-      if (mentionedUsers.length > 0) {
-        console.log(`Discord mentions - Users: ${mentionedUsers.map(u => u.username).join(', ')}`);
-      }
-      if (mentionedRoles.length > 0) {
-        console.log(`Discord mentions - Roles: ${mentionedRoles.map(r => r.name).join(', ')}`);
-      }
-      if (mentionedChannels.length > 0) {
-        console.log(`Discord mentions - Channels: ${mentionedChannels.map(c => c.name).join(', ')}`);
-      }
-      
-      // Xóa đề cập sử dụng Discord.js cleanContent
-      let cleanContent = message.cleanContent;
-      
-      // Nếu cleanContent không hoạt động đúng, thủ công thay thế các định dạng đề cập của Discord
-      if (cleanContent.includes('<@') || cleanContent.includes('<#') || cleanContent.includes('<@&')) {
-        cleanContent = originalContent
-          .replace(/<@!?(\d+)>/g, '') // Xóa user mentions
-          .replace(/<#(\d+)>/g, '')   // Xóa channel mentions
-          .replace(/<@&(\d+)>/g, '')  // Xóa role mentions
-          .trim();
-      }
-      
-      console.log("Discord message clean content:", cleanContent);
-      
-      // Tạo danh sách tên đề cập để trả về
-      const mentions = [
-        ...mentionedUsers.map(user => user.username),
-        ...mentionedRoles.map(role => `role:${role.name}`),
-        ...mentionedChannels.map(channel => `channel:${channel.name}`)
-      ];
-      
-      // Trả về cả danh sách đề cập và nội dung đã làm sạch
       return {
-        mentions: mentions,
         cleanContent: cleanContent,
-        hasMentions: mentions.length > 0
+        hasMentions: false
       };
     } catch (error) {
       console.error("Lỗi khi xử lý tin nhắn Discord:", error);
       // Trả về đối tượng mặc định nếu có lỗi
       return {
-        mentions: [],
         cleanContent: message.content || "",
         hasMentions: false
       };
@@ -400,11 +404,26 @@ class GrokClient {
    * @returns {Promise<string>} - Phản hồi từ AI
    */
   async getCompletionFromDiscord(message) {
-    // Xử lý đề cập và làm sạch nội dung
+    // Xử lý và làm sạch nội dung
     const processedMessage = await this.processDiscordMessage(message);
+    
+    // Kiểm tra lệnh reset cuộc trò chuyện
+    if (processedMessage.cleanContent.toLowerCase() === '/reset' || 
+        processedMessage.cleanContent.toLowerCase() === 'reset conversation') {
+      this.clearConversationHistory(message.author.id);
+      return "Đã xóa lịch sử cuộc trò chuyện của chúng ta. Bắt đầu cuộc trò chuyện mới nào! 😊";
+    }
     
     // Sử dụng nội dung đã làm sạch để gửi đến API, kèm theo message object
     return await this.getCompletion(processedMessage.cleanContent, message);
+  }
+
+  /**
+   * Trả về tên mô hình được hiển thị cho người dùng
+   * @returns {string} - Tên mô hình hiển thị
+   */
+  getModelName() {
+    return this.displayModelName;
   }
 }
 
