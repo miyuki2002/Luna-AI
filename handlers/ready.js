@@ -20,7 +20,7 @@ function handleReady(client, loadCommands) {
     
     // Set bot presence
     client.user.setPresence({ 
-      activities: [{ name: 'Helping users | @Luna', type: 4 }],
+      activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'
     });
   });
