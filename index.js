@@ -2,9 +2,8 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Events, Collection } = require('discord.js');
 const { handleMessage } = require('./handlers/messageHandler');
 const { handleCommand, loadCommands } = require('./handlers/commandHandler');
-const { handleReady } = require('./handlers/ready');
+const { startbot } = require('./events/ready');
 const { setupGuildHandlers } = require('./handlers/guildHandler');
-const grokClient = require('./services/grokClient');
 
 // Tạo một Discord client mới
 const client = new Client({
@@ -25,7 +24,7 @@ const commandCount = loadCommands(client);
 console.log(`Đang tải ${commandCount} lệnh vào bộ nhớ...`);
 
 // Sử dụng handler cho sự kiện ready
-handleReady(client, () => commandCount);
+startbot(client, () => commandCount);
 
 // Chuẩn bị mảng commands JSON để deploy
 const commandsJson = [];
