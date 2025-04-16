@@ -81,7 +81,7 @@ async function getGuildFromDB(guildId) {
  */
 async function updateGuildSettings(guildId, settings) {
   try {
-    const db = mongoClient.getDb();
+    const db = await mongoClient.getDbSafe();
     
     // Cập nhật cài đặt guild trong cơ sở dữ liệu
     await db.collection('guilds').updateOne(
@@ -225,35 +225,57 @@ function findDefaultChannel(guild) {
  * @param {Array} commands - Mảng các lệnh đã tải (tùy chọn)
  */
 function setupGuildHandlers(client, commands = null) {
-  // Sự kiện khi bot tham gia guild mới
+  // Sự kiện khi bot tham gia guild mới/initSystem.js');
   client.on('guildCreate', guild => handleGuildJoin(guild, commands));
-  
-  // Sự kiện khi bot rời khỏi guild
+  nction setupGuildHandlers(client, commands) {
+  // Sự kiện khi bot rời khỏi guildy initialized before setting up guild handlers
   client.on('guildDelete', guild => handleGuildLeave(guild));
-  
+    // Ensure MongoDB is ready to use
   // Tải tất cả guild hiện tại vào MongoDB khi khởi động
   client.once('ready', async () => {
-    try {
+    try {t.on(Events.GuildCreate, async guild => {
       console.log('\x1b[36m%s\x1b[0m', 'Đang đồng bộ thông tin servers với MongoDB...');
-      
+        console.log(`Bot đã tham gia guild mới: ${guild.name}`);
       // Lấy tất cả guild mà bot hiện đang tham gia
-      const guilds = client.guilds.cache;
-      let syncCount = 0;
-      
+      const guilds = client.guilds.cache;n
+      let syncCount = 0; mongoClient.getDbSafe();
+        
       // Duyệt qua từng guild và lưu thông tin vào MongoDB
-      for (const guild of guilds.values()) {
+      for (const guild of guilds.values()) {One(
         await storeGuildInDB(guild);
         syncCount++;
-      }
-      
+      }     $set: { 
+              guildId: guild.id, 
       console.log('\x1b[32m%s\x1b[0m', `Đã đồng bộ thành công ${syncCount}/${guilds.size} servers với MongoDB`);
-    } catch (error) {
+    } catch (error) {count: guild.memberCount,
       console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi đồng bộ servers với MongoDB:', error);
-    }
-  });
-  
+    }         lastUpdated: new Date()
+  });       } 
+          },
   console.log('\x1b[36m%s\x1b[0m', 'Đã thiết lập xử lý sự kiện guild với MongoDB');
+});
+        
+// Export các hàm để sử dụng trong các file khácild.name} vào cơ sở dữ liệu`);
+module.exports = {
+  handleGuildJoin,itional guild setup here...
+  handleGuildLeave,r) {
+  deployCommandsToGuild,ỗi khi xử lý guild mới:', error);
+  setupGuildHandlers,
+  getGuildFromDB,
+  updateGuildSettings,
+  storeGuildInDB guild-related event handlers here...
+};};
+  
+  // If system is ready, set up immediately; otherwise wait
+  if (initSystem.getStatus().initialized) {
+    setupHandlers();
+  } else {
+    initSystem.once('ready', setupHandlers);
+  }
 }
+
+module.exports = { setupGuildHandlers };
+
 
 // Export các hàm để sử dụng trong các file khác
 module.exports = {
