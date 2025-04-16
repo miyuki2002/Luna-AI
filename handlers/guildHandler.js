@@ -1,6 +1,101 @@
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const mongoClient = require('../services/mongoClient.js');
+
+/**
+ * Lưu thông tin guild vào MongoDB
+ * @param {Discord.Guild} guild - Guild cần lưu thông tin
+ */
+async function storeGuildInDB(guild) {
+  try {
+    const db = mongoClient.getDb();
+    
+    // Chuẩn bị dữ liệu guild để lưu trữ
+    const guildData = {
+      guildId: guild.id,
+      name: guild.name,
+      memberCount: guild.memberCount,
+      ownerID: guild.ownerId,
+      icon: guild.iconURL(),
+      joinedAt: new Date(),
+      prefix: '!', // Prefix mặc định nếu sử dụng
+      settings: {
+        welcomeChannel: null,
+        moderationEnabled: true,
+        autoRoles: []
+      }
+    };
+    
+    // Upsert guild vào cơ sở dữ liệu (thêm mới hoặc cập nhật nếu đã tồn tại)
+    await db.collection('guilds').updateOne(
+      { guildId: guild.id }, 
+      { $set: guildData },
+      { upsert: true }
+    );
+    
+    console.log(`\x1b[32m%s\x1b[0m`, `Đã lưu thông tin server ${guild.name} vào MongoDB`);
+  } catch (error) {
+    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi lưu thông tin guild vào MongoDB:`, error);
+  }
+}
+
+/**
+ * Xóa thông tin guild khỏi MongoDB
+ * @param {string} guildId - ID của guild cần xóa
+ */
+async function removeGuildFromDB(guildId) {
+  try {
+    const db = mongoClient.getDb();
+    
+    // Xóa thông tin guild từ cơ sở dữ liệu
+    await db.collection('guilds').deleteOne({ guildId: guildId });
+    console.log(`\x1b[33m%s\x1b[0m`, `Đã xóa thông tin server ID: ${guildId} khỏi MongoDB`);
+  } catch (error) {
+    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi xóa guild từ MongoDB:`, error);
+  }
+}
+
+/**
+ * Lấy thông tin guild từ MongoDB
+ * @param {string} guildId - ID của guild cần lấy thông tin
+ */
+async function getGuildFromDB(guildId) {
+  try {
+    const db = mongoClient.getDb();
+    
+    // Lấy thông tin guild từ cơ sở dữ liệu
+    const guildData = await db.collection('guilds').findOne({ guildId: guildId });
+    
+    return guildData;
+  } catch (error) {
+    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi lấy thông tin guild từ MongoDB:`, error);
+    return null;
+  }
+}
+
+/**
+ * Cập nhật cài đặt guild trong MongoDB
+ * @param {string} guildId - ID của guild cần cập nhật
+ * @param {Object} settings - Đối tượng chứa cài đặt cần cập nhật
+ */
+async function updateGuildSettings(guildId, settings) {
+  try {
+    const db = mongoClient.getDb();
+    
+    // Cập nhật cài đặt guild trong cơ sở dữ liệu
+    await db.collection('guilds').updateOne(
+      { guildId: guildId },
+      { $set: { settings: settings } }
+    );
+    
+    console.log(`\x1b[32m%s\x1b[0m`, `Đã cập nhật cài đặt cho server ID: ${guildId}`);
+    return true;
+  } catch (error) {
+    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi cập nhật cài đặt guild:`, error);
+    return false;
+  }
+}
 
 /**
  * Xử lý sự kiện khi bot tham gia một guild mới
@@ -11,6 +106,9 @@ async function handleGuildJoin(guild, commands) {
   console.log(`\x1b[33m%s\x1b[0m`, `Server hiện có ${guild.memberCount} thành viên`);
   
   try {
+    // Lưu thông tin guild vào MongoDB
+    await storeGuildInDB(guild);
+    
     // Triển khai slash commands cho guild mới
     await deployCommandsToGuild(guild.id, commands);
     console.log(`\x1b[32m%s\x1b[0m`, `Đã triển khai các lệnh slash cho server: ${guild.name}`);
@@ -37,9 +135,8 @@ async function handleGuildJoin(guild, commands) {
 function handleGuildLeave(guild) {
   console.log(`\x1b[33m%s\x1b[0m`, `Bot đã rời khỏi server: ${guild.name} (id: ${guild.id})`);
   
-  // Thực hiện các hoạt động dọn dẹp nếu cần thiết
-  // Ví dụ: xóa dữ liệu liên quan đến guild này từ cơ sở dữ liệu
-  console.log(`\x1b[36m%s\x1b[0m`, `Đã dọn dẹp dữ liệu cho server: ${guild.name}`);
+  // Xóa thông tin guild khỏi MongoDB
+  removeGuildFromDB(guild.id);
 }
 
 /**
@@ -127,12 +224,37 @@ function setupGuildHandlers(client, commands = null) {
   // Sự kiện khi bot rời khỏi guild
   client.on('guildDelete', guild => handleGuildLeave(guild));
   
-  console.log('\x1b[36m%s\x1b[0m', 'Đã thiết lập xử lý sự kiện guild');
+  // Tải tất cả guild hiện tại vào MongoDB khi khởi động
+  client.once('ready', async () => {
+    try {
+      console.log('\x1b[36m%s\x1b[0m', 'Đang đồng bộ thông tin servers với MongoDB...');
+      
+      // Lấy tất cả guild mà bot hiện đang tham gia
+      const guilds = client.guilds.cache;
+      let syncCount = 0;
+      
+      // Duyệt qua từng guild và lưu thông tin vào MongoDB
+      for (const guild of guilds.values()) {
+        await storeGuildInDB(guild);
+        syncCount++;
+      }
+      
+      console.log('\x1b[32m%s\x1b[0m', `Đã đồng bộ thành công ${syncCount}/${guilds.size} servers với MongoDB`);
+    } catch (error) {
+      console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi đồng bộ servers với MongoDB:', error);
+    }
+  });
+  
+  console.log('\x1b[36m%s\x1b[0m', 'Đã thiết lập xử lý sự kiện guild với MongoDB');
 }
 
+// Export các hàm để sử dụng trong các file khác
 module.exports = {
   handleGuildJoin,
   handleGuildLeave,
   deployCommandsToGuild,
-  setupGuildHandlers
+  setupGuildHandlers,
+  getGuildFromDB,
+  updateGuildSettings,
+  storeGuildInDB
 };
