@@ -18,13 +18,13 @@ async function startbot(client, loadCommands) {
       // Kết nối MongoDB khi bot sẵn sàng
       console.log(`🔄 Đang kết nối đến MongoDB...`);
       await mongoClient.connect();
-      
+
       // Khởi tạo cài đặt cho StorageDB sau khi kết nối
       await storageDB.setupCollections();
-      
+
       // Đánh dấu MongoDB đã sẵn sàng
       initSystem.markReady('mongodb');
-      
+
       console.log(`✅ Đã kết nối thành công đến MongoDB!`);
     } catch (error) {
       console.error('❌ Lỗi khi khởi tạo kết nối MongoDB:', error);
@@ -34,12 +34,12 @@ async function startbot(client, loadCommands) {
     }
 
     try {
-        // Khởi tạo cấu trúc lịch sử cuộc trò chuyện
-        await storageDB.initializeConversationHistory();
-        initSystem.markReady('greetingPatterns');
+      // Khởi tạo cấu trúc lịch sử cuộc trò chuyện
+      await storageDB.initializeConversationHistory();
+      initSystem.markReady('greetingPatterns');
     } catch (error) {
-        console.error('❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
-        initSystem.markReady('greetingPatterns'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
+      console.error('❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
+      initSystem.markReady('greetingPatterns'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
     try {
@@ -60,7 +60,7 @@ async function startbot(client, loadCommands) {
       console.error('❌ Lỗi khi tải commands:', error);
       initSystem.markReady('commands'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
-    
+
     try {
       // Kiểm tra kết nối với X.AI API
       const connected = await NeuralNetworks.testConnection();
@@ -69,15 +69,15 @@ async function startbot(client, loadCommands) {
       console.error('❌ Lỗi khi kết nối đến X.AI API:', error);
       initSystem.markReady('api'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
-    
+
     // Set bot presence
-    client.user.setPresence({ 
+    client.user.setPresence({
       activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'
     });
 
     console.log(`✅ Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
-    
+
     // Sau khi tất cả đã sẵn sàng, initSystem sẽ tự động phát sự kiện 'ready'
     // từ đó các module khác sẽ bắt đầu hoạt động
   });
