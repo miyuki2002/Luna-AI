@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { AttachmentBuilder } = require('discord.js');
-const Profile = require('../../models/Profile');
+const Profile = require('../../services/Profile');
 const text = require('../../util/string');
 const { createCanvas, loadImage } = require('canvas');
 

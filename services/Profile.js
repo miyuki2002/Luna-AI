@@ -1,4 +1,5 @@
 const { MongoClient, ObjectId } = require('mongodb');
+const mongoClient = require('./mongoClient.js');
 
 // Define the profile schema structure for reference
 const profileStructure = {
