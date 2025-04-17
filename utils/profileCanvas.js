@@ -10,14 +10,28 @@ class ProfileCanvas {
     // Đăng ký fonts nếu có
     this.initializeFonts();
     
-    // Các màu mặc định
+    // Các màu và gradient mặc định
     this.colors = {
-      pink: '#FFB6C1',
-      darkPink: '#FF69B4',
-      white: '#FFFFFF',
-      black: '#000000',
-      gray: '#808080',
-      purple: '#9370DB'
+      primary: {
+        light: '#7F5AF0', // Tím sáng
+        dark: '#4B23A8'   // Tím đậm
+      },
+      secondary: {
+        light: '#00D1FF', // Xanh sáng
+        dark: '#0089A8'   // Xanh đậm
+      },
+      background: {
+        light: '#16161A', // Đen nhạt
+        dark: '#0D0D0F'   // Đen đậm
+      },
+      text: {
+        primary: '#FFFFFE', // Trắng
+        secondary: '#94A1B2', // Xám nhạt
+        accent: '#7F5AF0'    // Tím
+      },
+      accent: '#FF8906', // Cam
+      success: '#2CB67D', // Xanh lá
+      error: '#E53170'    // Đỏ hồng
     };
     
     // Cache các hình ảnh thường dùng
@@ -35,9 +49,10 @@ class ProfileCanvas {
       try {
         await fs.access(fontsPath);
         
-        // Đăng ký fonts tùy chỉnh nếu có
-        registerFont(path.join(fontsPath, 'Roboto-Regular.ttf'), { family: 'Roboto' });
-        registerFont(path.join(fontsPath, 'Roboto-Bold.ttf'), { family: 'Roboto', weight: 'bold' });
+        // Đăng ký fonts hiện đại
+        registerFont(path.join(fontsPath, 'Montserrat-Regular.ttf'), { family: 'Montserrat' });
+        registerFont(path.join(fontsPath, 'Montserrat-Bold.ttf'), { family: 'Montserrat', weight: 'bold' });
+        registerFont(path.join(fontsPath, 'Montserrat-Medium.ttf'), { family: 'Montserrat', weight: '500' });
         
         console.log('Đã đăng ký fonts thành công');
       } catch (err) {
@@ -69,24 +84,86 @@ class ProfileCanvas {
   }
   
   /**
-   * Tạo profile card cho người dùng
+   * Tạo hiệu ứng bo góc cho hình chữ nhật
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {number} x - Tọa độ x
+   * @param {number} y - Tọa độ y
+   * @param {number} width - Chiều rộng
+   * @param {number} height - Chiều cao
+   * @param {number} radius - Bán kính bo góc
+   */
+  roundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+  
+  /**
+   * Tạo hiệu ứng đổ bóng
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {Function} drawFunc - Hàm vẽ
+   */
+  withShadow(ctx, drawFunc) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 5;
+    drawFunc();
+    ctx.restore();
+  }
+  
+  /**
+   * Tạo gradient màu sắc
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {number} x - Tọa độ x bắt đầu
+   * @param {number} y - Tọa độ y bắt đầu
+   * @param {number} width - Chiều rộng
+   * @param {number} height - Chiều cao
+   * @param {string} color1 - Mã màu 1
+   * @param {string} color2 - Mã màu 2
+   * @returns {CanvasGradient} - Đối tượng gradient
+   */
+  createGradient(ctx, x, y, width, height, color1, color2) {
+    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    return gradient;
+  }
+  
+  /**
+   * Tạo profile card cho người dùng với thiết kế hiện đại
    * @param {Object} profileData - Dữ liệu profile của người dùng
    * @returns {Promise<Buffer>} - Buffer hình ảnh profile card
    */
   async createProfileCard(profileData) {
     try {
-      // Tạo canvas với kích thước 800x400px
-      const canvas = createCanvas(800, 400);
+      // Tạo canvas với kích thước 900x420px (tỷ lệ hiện đại hơn)
+      const canvas = createCanvas(900, 420);
       const ctx = canvas.getContext('2d');
       
-      // Vẽ nền
-      await this.drawBackground(ctx, profileData.customization);
+      // Thiết lập font mặc định
+      ctx.font = '16px "Montserrat", sans-serif';
       
-      // Vẽ khung bên trái (thông tin người dùng)
-      await this.drawLeftPanel(ctx, profileData);
+      // Vẽ nền chính với hiệu ứng gradient
+      const bgGradient = this.createGradient(
+        ctx, 0, 0, 900, 420,
+        this.colors.background.dark,
+        this.colors.background.light
+      );
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, 900, 420);
       
-      // Vẽ khung bên phải (thông tin chi tiết)
-      await this.drawRightPanel(ctx, profileData);
+      // Vẽ các thành phần chính
+      await this.drawMainProfileCard(ctx, profileData);
       
       // Trả về buffer hình ảnh
       return canvas.toBuffer('image/png');
@@ -97,245 +174,417 @@ class ProfileCanvas {
   }
   
   /**
-   * Vẽ nền cho profile card
+   * Vẽ profile card chính
    * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} customization - Tùy chỉnh profile của người dùng
+   * @param {Object} profileData - Dữ liệu profile của người dùng
    */
-  async drawBackground(ctx, customization) {
+  async drawMainProfileCard(ctx, profileData) {
+    // Lấy dữ liệu tùy chỉnh của người dùng hoặc sử dụng giá trị mặc định
+    const customColor = profileData.customization?.color;
+    const primaryColor = customColor || this.colors.primary.light;
+    
+    // PHẦN 1: BANNER HEADER (30% chiều cao)
+    await this.drawHeaderSection(ctx, profileData, primaryColor);
+    
+    // PHẦN 2: THÔNG TIN NGƯỜI DÙNG (bên trái)
+    await this.drawUserInfoSection(ctx, profileData, primaryColor);
+    
+    // PHẦN 3: THÔNG TIN PROFILE (bên phải)
+    await this.drawProfileInfoSection(ctx, profileData, primaryColor);
+    
+    // PHẦN 4: THANH XP
+    await this.drawXPBar(ctx, profileData, primaryColor);
+  }
+  
+  /**
+   * Vẽ phần header
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {Object} profileData - Dữ liệu profile của người dùng
+   * @param {string} primaryColor - Màu chủ đạo
+   */
+  async drawHeaderSection(ctx, profileData, primaryColor) {
+    // Vẽ banner header
     try {
-      // Vẽ hình nền mặc định màu hồng
-      ctx.fillStyle = customization.color || this.colors.pink;
-      ctx.fillRect(0, 0, 800, 400);
-      
-      // Nếu có pattern, vẽ pattern
-      if (customization.pattern) {
+      // Nếu người dùng có banner tùy chỉnh
+      let bannerImage;
+      if (profileData.customization?.banner) {
         try {
-          const patternPath = path.join(ASSETS_PATH, 'patterns', `${customization.pattern}.png`);
-          const patternImage = await this.loadImageWithCache(patternPath);
-          
-          // Tạo pattern và vẽ lên nền
-          const pattern = ctx.createPattern(patternImage, 'repeat');
-          ctx.fillStyle = pattern;
-          ctx.fillRect(0, 0, 800, 400);
+          bannerImage = await loadImage(profileData.customization.banner);
         } catch (err) {
-          console.warn('Không tìm thấy pattern:', err);
-        }
-      } else {
-        // Pattern mặc định với thỏ và sao
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.font = '24px "Roboto"';
-        
-        // Vẽ hoa văn đơn giản (sao và emoji thỏ)
-        const stars = ['★', '☆', '✩', '✧'];
-        const bunny = '🐰';
-        for (let i = 0; i < 20; i++) {
-          const x = Math.random() * 350;
-          const y = Math.random() * 400;
-          const symbol = i % 5 === 0 ? bunny : stars[i % stars.length];
-          ctx.fillText(symbol, x, y);
+          console.warn('Không thể tải banner tùy chỉnh:', err);
         }
       }
       
-      // Vẽ đường phân cách giữa hai panel
-      ctx.fillStyle = this.colors.white;
-      ctx.fillRect(320, 0, 5, 400);
+      // Nếu không có banner tùy chỉnh, sử dụng gradient
+      if (!bannerImage) {
+        // Tạo gradient từ màu chính
+        const gradient = this.createGradient(
+          ctx, 0, 0, 900, 120,
+          primaryColor,
+          this.adjustColor(primaryColor, -30) // Tối hơn 30%
+        );
+        
+        // Vẽ banner gradient với bo góc
+        this.withShadow(ctx, () => {
+          this.roundRect(ctx, 20, 20, 860, 120, 15);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        });
+        
+        // Thêm hiệu ứng overlay
+        ctx.globalAlpha = 0.1;
+        for (let i = 0; i < 5; i++) {
+          const size = 80 + Math.random() * 60;
+          const x = Math.random() * 800;
+          const y = Math.random() * 80 + 20;
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        // Vẽ banner tùy chỉnh
+        this.withShadow(ctx, () => {
+          this.roundRect(ctx, 20, 20, 860, 120, 15);
+          ctx.save();
+          ctx.clip();
+          ctx.drawImage(bannerImage, 20, 20, 860, 120);
+          
+          // Overlay để làm cho banner tối hơn
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(20, 20, 860, 120);
+          ctx.restore();
+        });
+      }
       
-      // Vẽ khung tiêu đề "TIP" ở góc trên bên phải
-      ctx.fillStyle = this.colors.pink;
-      ctx.fillRect(575, 0, 225, 75);
+      // Vẽ huy hiệu server rank nếu top 3
+      if (profileData.rank?.server <= 3) {
+        const rankBadgeSize = 60;
+        const rankLabel = ['', '🥇 #1', '🥈 #2', '🥉 #3'][profileData.rank.server];
+        
+        // Vẽ huy hiệu rank
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.arc(830, 60, rankBadgeSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Vẽ chữ rank
+        ctx.font = 'bold 24px "Montserrat"';
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(rankLabel, 830, 60);
+      }
       
-      ctx.fillStyle = this.colors.white;
-      ctx.font = 'bold 35px "Roboto"';
-      ctx.textAlign = 'center';
-      ctx.fillText('TIP', 650, 45);
+      // Vẽ tiêu đề profile
+      ctx.font = 'bold 28px "Montserrat"';
+      ctx.fillStyle = this.colors.text.primary;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('USER PROFILE', 40, 60);
       
-      ctx.font = 'bold 40px "Roboto"';
-      ctx.fillText('1', 760, 45);
+      // Vẽ tên server
+      ctx.font = '16px "Montserrat"';
+      ctx.fillStyle = this.colors.text.secondary;
+      ctx.fillText(profileData.serverName || 'Discord Server', 40, 90);
       
     } catch (error) {
-      console.error('Lỗi khi vẽ nền:', error);
-      throw error;
+      console.error('Lỗi khi vẽ header:', error);
     }
   }
   
   /**
-   * Vẽ panel bên trái (thông tin người dùng)
+   * Vẽ phần thông tin người dùng
    * @param {CanvasRenderingContext2D} ctx - Context của canvas
    * @param {Object} profileData - Dữ liệu profile của người dùng
+   * @param {string} primaryColor - Màu chủ đạo
    */
-  async drawLeftPanel(ctx, profileData) {
+  async drawUserInfoSection(ctx, profileData, primaryColor) {
     try {
-      // Vẽ khung hình đại diện
-      ctx.beginPath();
-      ctx.arc(160, 150, 80, 0, Math.PI * 2);
-      ctx.fillStyle = this.colors.white;
-      ctx.fill();
-      ctx.closePath();
+      // Vẽ card thông tin người dùng
+      this.withShadow(ctx, () => {
+        this.roundRect(ctx, 20, 100, 300, 280, 15);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+      });
       
-      // Vẽ hình đại diện người dùng
+      // Tải avatar
+      let avatarImage;
       try {
-        // Thử tải avatar của user (đây chỉ là ví dụ, bạn cần thay thế đường dẫn)
-        const avatarPath = path.join(ASSETS_PATH, 'avatars', `${profileData.userId}.png`);
-        const avatar = await this.loadImageWithCache(avatarPath);
-        
-        // Vẽ avatar trong khung tròn
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(160, 150, 75, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(avatar, 85, 75, 150, 150);
-        ctx.restore();
+        avatarImage = await loadImage(profileData.avatarURL || path.join(ASSETS_PATH, 'luna-avatar.png'));
       } catch (err) {
-        // Nếu không có avatar, vẽ chữ cái đầu tiên của tên
-        ctx.font = 'bold 60px "Roboto"';
-        ctx.fillStyle = this.colors.pink;
-        ctx.textAlign = 'center';
-        ctx.fillText(
-          (profileData.username || 'U').charAt(0).toUpperCase(), 
-          160, 
-          170
-        );
+        console.warn('Không thể tải avatar:', err);
       }
       
-      // Vẽ vòng nguyệt quế nếu có
-      if (profileData.customization.wreath) {
+      // Vẽ vòng tròn avatar
+      this.withShadow(ctx, () => {
+        // Vẽ khung avatar
+        ctx.beginPath();
+        ctx.arc(170, 180, 60, 0, Math.PI * 2);
+        ctx.fillStyle = this.createGradient(ctx, 110, 120, 120, 120, primaryColor, this.adjustColor(primaryColor, 20));
+        ctx.fill();
+        
+        if (avatarImage) {
+          // Vẽ avatar
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(170, 180, 55, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(avatarImage, 115, 125, 110, 110);
+          ctx.restore();
+        }
+      });
+      
+      // Vẽ wreath (vòng nguyệt quế) nếu có
+      if (profileData.customization?.wreath) {
         try {
-          const wreathPath = path.join(ASSETS_PATH, 'wreaths', `${profileData.customization.wreath}.png`);
-          const wreath = await this.loadImageWithCache(wreathPath);
-          ctx.drawImage(wreath, 70, 60, 180, 180);
+          const wreathImage = await this.loadImageWithCache(
+            path.join(ASSETS_PATH, 'wreaths', `${profileData.customization.wreath}.png`)
+          );
+          ctx.drawImage(wreathImage, 100, 110, 140, 140);
         } catch (err) {
-          console.warn('Không tìm thấy wreath:', err);
+          console.warn('Không thể tải wreath:', err);
         }
       }
       
       // Vẽ tên người dùng
-      ctx.font = 'bold 32px "Roboto"';
-      ctx.fillStyle = this.colors.white;
+      ctx.font = 'bold 24px "Montserrat"';
       ctx.textAlign = 'center';
-      ctx.fillText(profileData.username || 'User', 160, 270);
+      ctx.fillStyle = this.colors.text.primary;
+      ctx.fillText(
+        profileData.username || 'User',
+        170,
+        260,
+        280
+      );
       
-      // Vẽ tag discriminator
-      ctx.font = '18px "Roboto"';
-      ctx.fillText(`#${profileData.discriminator || '0000'}`, 160, 295);
+      // Vẽ discriminator nếu có
+      if (profileData.discriminator && profileData.discriminator !== '0') {
+        ctx.font = '16px "Montserrat"';
+        ctx.fillStyle = this.colors.text.secondary;
+        ctx.fillText(`#${profileData.discriminator}`, 170, 285);
+      }
       
-      // Vẽ các huy hiệu thành tựu
-      this.drawBadges(ctx, profileData);
+      // Vẽ các badge (huy hiệu)
+      await this.drawBadges(ctx, profileData);
       
-      // Vẽ thông tin cấp độ
-      this.drawLevelInfo(ctx, profileData);
+      // Vẽ level và xếp hạng
+      this.drawCompactLevelInfo(ctx, profileData, primaryColor);
+      
     } catch (error) {
-      console.error('Lỗi khi vẽ panel bên trái:', error);
-      throw error;
+      console.error('Lỗi khi vẽ thông tin người dùng:', error);
     }
   }
   
   /**
-   * Vẽ panel bên phải (thông tin chi tiết)
+   * Vẽ phần thông tin profile
    * @param {CanvasRenderingContext2D} ctx - Context của canvas
    * @param {Object} profileData - Dữ liệu profile của người dùng
+   * @param {string} primaryColor - Màu chủ đạo
    */
-  async drawRightPanel(ctx, profileData) {
+  async drawProfileInfoSection(ctx, profileData, primaryColor) {
     try {
-      const startX = 340;
-      let currentY = 120;
+      // Vẽ card thông tin profile
+      this.withShadow(ctx, () => {
+        this.roundRect(ctx, 340, 160, 540, 220, 15);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+      });
       
       // Vẽ tiêu đề BIO
-      ctx.font = 'bold 24px "Roboto"';
-      ctx.fillStyle = this.colors.white;
+      ctx.font = 'bold 20px "Montserrat"';
       ctx.textAlign = 'left';
-      ctx.fillText('BIO', startX, currentY);
+      ctx.fillStyle = primaryColor;
+      ctx.fillText('BIO', 360, 190);
       
-      // Vẽ khung bio
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(startX, currentY + 10, 440, 60);
+      // Vẽ bio card
+      this.withShadow(ctx, () => {
+        this.roundRect(ctx, 360, 200, 500, 60, 10);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+      });
       
       // Vẽ nội dung bio
-      ctx.font = '18px "Roboto"';
-      ctx.fillStyle = this.colors.white;
+      ctx.font = '16px "Montserrat"';
+      ctx.fillStyle = this.colors.text.primary;
       const bio = profileData.bio || 'No bio written.';
       
       // Cắt bio nếu quá dài
-      if (bio.length > 60) {
-        ctx.fillText(bio.substring(0, 57) + '...', startX + 10, currentY + 45);
+      if (bio.length > 70) {
+        ctx.fillText(bio.substring(0, 67) + '...', 370, 235, 480);
       } else {
-        ctx.fillText(bio, startX + 10, currentY + 45);
+        ctx.fillText(bio, 370, 235, 480);
       }
       
-      // Cập nhật vị trí Y
-      currentY += 100;
-      
+      // Vẽ phần trên bên phải: Birthday + Network
       // Vẽ tiêu đề BIRTHDAY
-      ctx.font = 'bold 24px "Roboto"';
-      ctx.fillText('BIRTHDAY', startX, currentY);
+      ctx.font = 'bold 20px "Montserrat"';
+      ctx.fillStyle = primaryColor;
+      ctx.fillText('BIRTHDAY', 360, 290);
       
-      // Vẽ khung birthday
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(startX, currentY + 10, 210, 40);
+      // Vẽ birthday card
+      this.withShadow(ctx, () => {
+        this.roundRect(ctx, 360, 300, 240, 50, 10);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+      });
       
       // Vẽ nội dung birthday
-      ctx.font = '18px "Roboto"';
-      ctx.fillStyle = this.colors.white;
+      ctx.font = '16px "Montserrat"';
+      ctx.fillStyle = this.colors.text.primary;
       ctx.fillText(
-        profileData.birthday || 'Not specified', 
-        startX + 10, 
-        currentY + 35
+        profileData.birthday || 'Not specified',
+        370,
+        330,
+        220
       );
       
-      // Cập nhật vị trí Y
-      currentY += 80;
+      // Vẽ tiêu đề NETWORK
+      ctx.font = 'bold 20px "Montserrat"';
+      ctx.fillStyle = primaryColor;
+      ctx.fillText('NETWORK', 620, 290);
       
-      // Vẽ tiêu đề BALANCE
-      ctx.font = 'bold 24px "Roboto"';
-      ctx.fillText('BALANCE', startX, currentY);
+      // Vẽ network card
+      this.withShadow(ctx, () => {
+        this.roundRect(ctx, 620, 300, 240, 50, 10);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+      });
       
-      // Vẽ khung wallet
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(startX, currentY + 10, 210, 40);
+      // Vẽ các biểu tượng mạng xã hội
+      const networkIcons = ['🌐', '💬', '🕹️', '📱'];
+      const spacing = 50;
       
-      // Vẽ icon wallet
-      ctx.font = '18px "Roboto"';
-      ctx.fillStyle = this.colors.white;
-      ctx.fillText('💰:', startX + 10, currentY + 35);
+      for (let i = 0; i < networkIcons.length; i++) {
+        ctx.font = '20px "Montserrat"';
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.fillText(networkIcons[i], 650 + i * spacing, 330);
+      }
       
-      // Vẽ số tiền wallet
-      ctx.textAlign = 'right';
-      ctx.fillText(
-        profileData.economy.wallet.toLocaleString(), 
-        startX + 200, 
-        currentY + 35
-      );
-      
-      // Vẽ khung bank
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(startX + 230, currentY + 10, 210, 40);
-      
-      // Vẽ icon bank
-      ctx.textAlign = 'left';
-      ctx.fillText('🏦:', startX + 240, currentY + 35);
-      
-      // Vẽ số tiền bank
-      ctx.textAlign = 'right';
-      ctx.fillText(
-        profileData.economy.bank.toLocaleString(), 
-        startX + 430, 
-        currentY + 35
-      );
-      
-      // Vẽ biểu tượng ở góc phải dưới
-      if (profileData.customization.emblem) {
+      // Vẽ emblem nếu có
+      if (profileData.customization?.emblem) {
         try {
-          const emblemPath = path.join(ASSETS_PATH, 'emblems', `${profileData.customization.emblem}.png`);
-          const emblem = await this.loadImageWithCache(emblemPath);
-          ctx.drawImage(emblem, 660, 290, 100, 100);
+          const emblemImage = await this.loadImageWithCache(
+            path.join(ASSETS_PATH, 'emblems', `${profileData.customization.emblem}.png`)
+          );
+          ctx.drawImage(emblemImage, 800, 180, 60, 60);
         } catch (err) {
-          console.warn('Không tìm thấy emblem:', err);
+          console.warn('Không thể tải emblem:', err);
         }
       }
+      
     } catch (error) {
-      console.error('Lỗi khi vẽ panel bên phải:', error);
-      throw error;
+      console.error('Lỗi khi vẽ thông tin profile:', error);
     }
+  }
+  
+  /**
+   * Vẽ thanh XP
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {Object} profileData - Dữ liệu profile của người dùng
+   * @param {string} primaryColor - Màu chủ đạo
+   */
+  async drawXPBar(ctx, profileData, primaryColor) {
+    try {
+      // Tính toán XP
+      const level = profileData.level || 1;
+      const currXp = profileData.currentXP || 0;
+      const maxXp = (50 * Math.pow(level, 2)) + (250 * level);
+      const prevLevelXp = (50 * Math.pow(level - 1, 2)) + (250 * (level - 1));
+      const levelRange = maxXp - prevLevelXp;
+      const levelProgress = currXp - prevLevelXp;
+      const percentComplete = Math.min(1, Math.max(0, levelProgress / levelRange));
+      
+      // Vẽ thanh XP
+      const barWidth = 860;
+      const barHeight = 15;
+      const startX = 20;
+      const startY = 390;
+      
+      // Vẽ nền thanh XP
+      this.withShadow(ctx, () => {
+        this.roundRect(ctx, startX, startY, barWidth, barHeight, barHeight / 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fill();
+      });
+      
+      // Vẽ phần đã hoàn thành
+      if (percentComplete > 0) {
+        const progressBarWidth = barWidth * percentComplete;
+        this.roundRect(ctx, startX, startY, progressBarWidth, barHeight, barHeight / 2);
+        
+        // Tạo gradient cho thanh XP
+        const gradient = this.createGradient(
+          ctx, startX, startY, progressBarWidth, barHeight,
+          primaryColor,
+          this.adjustColor(primaryColor, 30) // Sáng hơn 30%
+        );
+        
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+      
+      // Vẽ thông tin XP (text)
+      ctx.font = 'bold 14px "Montserrat"';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = this.colors.text.primary;
+      ctx.fillText(`Level ${level}`, startX, startY - 10);
+      
+      ctx.textAlign = 'right';
+      ctx.fillText(
+        `${levelProgress}/${levelRange} XP (${Math.round(percentComplete * 100)}%)`,
+        startX + barWidth,
+        startY - 10
+      );
+      
+    } catch (error) {
+      console.error('Lỗi khi vẽ thanh XP:', error);
+    }
+  }
+  
+  /**
+   * Vẽ thông tin level, rank dạng nhỏ gọn
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {Object} profileData - Dữ liệu profile của người dùng
+   * @param {string} primaryColor - Màu chủ đạo
+   */
+  drawCompactLevelInfo(ctx, profileData, primaryColor) {
+    // Xếp hạng server
+    const serverRank = profileData.rank?.server || '?';
+    const globalRank = profileData.rank?.global || '?';
+    
+    // Vẽ level
+    this.withShadow(ctx, () => {
+      this.roundRect(ctx, 40, 330, 80, 30, 15);
+      ctx.fillStyle = this.createGradient(ctx, 40, 330, 80, 30, primaryColor, this.adjustColor(primaryColor, 30));
+      ctx.fill();
+    });
+    
+    ctx.font = 'bold 16px "Montserrat"';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = this.colors.text.primary;
+    ctx.fillText(`LVL ${profileData.level || 1}`, 80, 350);
+    
+    // Vẽ server rank
+    this.withShadow(ctx, () => {
+      this.roundRect(ctx, 130, 330, 80, 30, 15);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fill();
+    });
+    
+    ctx.fillStyle = this.colors.text.primary;
+    ctx.fillText(`#${serverRank}`, 170, 350);
+    
+    // Vẽ global rank
+    this.withShadow(ctx, () => {
+      this.roundRect(ctx, 220, 330, 80, 30, 15);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fill();
+    });
+    
+    ctx.fillStyle = this.colors.text.primary;
+    ctx.fillText(`G#${globalRank}`, 260, 350);
   }
   
   /**
@@ -343,98 +592,110 @@ class ProfileCanvas {
    * @param {CanvasRenderingContext2D} ctx - Context của canvas
    * @param {Object} profileData - Dữ liệu profile của người dùng
    */
-  drawBadges(ctx, profileData) {
-    const badges = [
-      { x: 60, y: 350 },
-      { x: 120, y: 350 },
-      { x: 180, y: 350 },
-      { x: 240, y: 350 }
-    ];
-    
-    // Vẽ nền cho các huy hiệu
-    badges.forEach(badge => {
-      ctx.beginPath();
-      ctx.arc(badge.x, badge.y, 25, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fill();
-      ctx.closePath();
-    });
-    
-    // Ở đây sẽ vẽ các huy hiệu thật sự nếu người dùng có
-    // Ví dụ:
-    // if (profileData.badges && profileData.badges.length > 0) {
-    //   profileData.badges.forEach((badge, index) => {
-    //     if (index < badges.length) {
-    //       // Vẽ badge
-    //     }
-    //   });
-    // }
+  async drawBadges(ctx, profileData) {
+    try {
+      // Lấy badges từ dữ liệu nếu có
+      const badges = profileData.badges || [];
+      
+      // Vị trí và kích thước badge
+      const badgeSize = 30;
+      const startX = 80;
+      const startY = 300;
+      const spacing = 40;
+      
+      // Số lượng badges tối đa hiển thị
+      const maxBadges = 5;
+      
+      // Nếu có badges, vẽ từng badge
+      for (let i = 0; i < Math.min(badges.length, maxBadges); i++) {
+        const badge = badges[i];
+        const x = startX + i * spacing;
+        
+        // Vẽ nền badge
+        this.withShadow(ctx, () => {
+          ctx.beginPath();
+          ctx.arc(x, startY, badgeSize / 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.fill();
+        });
+        
+        // Vẽ icon badge nếu có
+        try {
+          if (badge.icon) {
+            const badgeIcon = await this.loadImageWithCache(badge.icon);
+            ctx.drawImage(badgeIcon, x - badgeSize / 2, startY - badgeSize / 2, badgeSize, badgeSize);
+          } else {
+            // Nếu không có icon, vẽ emoji đại diện
+            ctx.font = '16px "Montserrat"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = this.colors.text.primary;
+            ctx.fillText(badge.emoji || '🏆', x, startY);
+          }
+        } catch (err) {
+          console.warn('Không thể tải badge icon:', err);
+          // Vẽ badge fallback
+          ctx.font = '16px "Montserrat"';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = this.colors.text.primary;
+          ctx.fillText('🏆', x, startY);
+        }
+      }
+      
+      // Nếu có nhiều badges hơn số tối đa
+      if (badges.length > maxBadges) {
+        const x = startX + maxBadges * spacing;
+        
+        // Vẽ nền badge
+        this.withShadow(ctx, () => {
+          ctx.beginPath();
+          ctx.arc(x, startY, badgeSize / 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.fill();
+        });
+        
+        // Vẽ số lượng badges còn lại
+        ctx.font = 'bold 14px "Montserrat"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.fillText(`+${badges.length - maxBadges}`, x, startY);
+      }
+      
+    } catch (error) {
+      console.error('Lỗi khi vẽ badges:', error);
+    }
   }
   
   /**
-   * Vẽ thông tin cấp độ
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
+   * Điều chỉnh màu sắc (tối/sáng hơn)
+   * @param {string} color - Mã màu hex
+   * @param {number} percent - Phần trăm điều chỉnh (-100 đến 100)
+   * @returns {string} - Mã màu mới
    */
-  drawLevelInfo(ctx, profileData) {
-    // Vẽ vòng tròn cấp độ
-    ctx.beginPath();
-    ctx.arc(60, 450, 40, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fill();
-    ctx.closePath();
-    
-    // Vẽ chữ LVL
-    ctx.font = 'bold 16px "Roboto"';
-    ctx.fillStyle = this.colors.pink;
-    ctx.textAlign = 'center';
-    ctx.fillText('LVL', 60, 440);
-    
-    // Vẽ số cấp độ
-    ctx.font = 'bold 24px "Roboto"';
-    ctx.fillText(profileData.level.toString(), 60, 470);
-    
-    // Vẽ xếp hạng máy chủ
-    ctx.beginPath();
-    ctx.arc(160, 450, 40, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fill();
-    ctx.closePath();
-    
-    // Vẽ thứ hạng
-    let serverRank = profileData.rank?.server || 'N/A';
-    if (Number.isInteger(serverRank)) {
-      if (serverRank === 1) serverRank = '1st';
-      else if (serverRank === 2) serverRank = '2nd';
-      else if (serverRank === 3) serverRank = '3rd';
-      else serverRank = `${serverRank}th`;
-    }
-    
-    ctx.font = 'bold 16px "Roboto"';
-    ctx.fillText(serverRank, 160, 450);
-    ctx.font = '12px "Roboto"';
-    ctx.fillText('SERVER', 160, 470);
-    
-    // Vẽ xếp hạng toàn cầu
-    ctx.beginPath();
-    ctx.arc(260, 450, 40, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fill();
-    ctx.closePath();
-    
-    // Vẽ thứ hạng toàn cầu
-    let globalRank = profileData.rank?.global || 'N/A';
-    if (Number.isInteger(globalRank)) {
-      if (globalRank === 1) globalRank = '1st';
-      else if (globalRank === 2) globalRank = '2nd';
-      else if (globalRank === 3) globalRank = '3rd';
-      else globalRank = `${globalRank}th`;
-    }
-    
-    ctx.font = 'bold 16px "Roboto"';
-    ctx.fillText(globalRank, 260, 450);
-    ctx.font = '12px "Roboto"';
-    ctx.fillText('GLOBAL', 260, 470);
+  adjustColor(color, percent) {
+    let R = parseInt(color.substring(1, 3), 16);
+    let G = parseInt(color.substring(3, 5), 16);
+    let B = parseInt(color.substring(5, 7), 16);
+
+    R = Math.round(R * (100 + percent) / 100);
+    G = Math.round(G * (100 + percent) / 100);
+    B = Math.round(B * (100 + percent) / 100);
+
+    R = (R < 255) ? R : 255;
+    G = (G < 255) ? G : 255;
+    B = (B < 255) ? B : 255;
+
+    R = (R > 0) ? R : 0;
+    G = (G > 0) ? G : 0;
+    B = (B > 0) ? B : 0;
+
+    const RR = ((R.toString(16).length === 1) ? '0' + R.toString(16) : R.toString(16));
+    const GG = ((G.toString(16).length === 1) ? '0' + G.toString(16) : G.toString(16));
+    const BB = ((B.toString(16).length === 1) ? '0' + B.toString(16) : B.toString(16));
+
+    return '#' + RR + GG + BB;
   }
 }
 
