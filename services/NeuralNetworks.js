@@ -810,26 +810,6 @@ class NeuralNetworks {
   async getCompletionFromDiscord(message) {
     const processedMessage = await this.processDiscordMessage(message);
 
-    // Thêm lệnh để quản lý mẫu lời chào (chỉ cho quản trị viên)
-    if (message.member && message.member.permissions.has('ADMINISTRATOR')) {
-      if (processedMessage.cleanContent.startsWith('!addgreeting ')) {
-        const pattern = processedMessage.cleanContent.substring(13).trim();
-        if (pattern) {
-          const added = await storageDB.addGreetingPattern(pattern, 'i', 'Mẫu được thêm thủ công');
-          await this.refreshGreetingPatterns();
-          return added ?
-            `✅ Đã thêm mẫu lời chào: \`${pattern}\`` :
-            `❌ Mẫu lời chào đã tồn tại hoặc không hợp lệ`;
-        }
-        return "❓ Hãy cung cấp mẫu regex hợp lệ";
-      }
-
-      if (processedMessage.cleanContent === '!greetingpatterns') {
-        await this.refreshGreetingPatterns();
-        return `📋 Hiện có ${this.greetingPatterns.length} mẫu lời chào trong cơ sở dữ liệu`;
-      }
-    }
-
     if (processedMessage.cleanContent.toLowerCase() === 'reset conversation' ||
       processedMessage.cleanContent.toLowerCase() === 'xóa lịch sử' ||
       processedMessage.cleanContent.toLowerCase() === 'quên hết đi') {

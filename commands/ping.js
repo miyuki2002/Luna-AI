@@ -9,7 +9,6 @@ module.exports = {
 		// Gửi phản hồi ban đầu để đo độ trễ - update deprecated option
 		const sent = await interaction.reply({ 
 			content: '📡 Đang kiểm tra kết nối...', 
-			// fetchReply: true // Deprecated
 			withResponse: true // Modern approach
 		});
 
@@ -32,8 +31,7 @@ module.exports = {
 			content: `### Thông tin độ trễ của Luna Bot\n` +
 					`🏓 Pong!\n` +
 					`⏱️ Độ trễ: **${pingLatency}ms** (${connectionStatus})\n` +
-					`📶 API: **${apiLatency}ms**\n` +
-					`💓 Bot đang hoạt động và sẵn sàng phục vụ!`
+					`📶 API: **${apiLatency}ms**\n`
 		});
 	},
 };
