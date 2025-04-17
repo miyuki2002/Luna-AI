@@ -18,7 +18,18 @@ const profileStructure = {
       wreath: null,
       color: null,
       birthday: null,
-      inventory: []
+      inventory: [],
+      // Thêm các trường mới
+      social: {
+        twitter: null,
+        youtube: null,
+        twitch: null,
+        website: null
+      },
+      custom_status: null,
+      badges: [],
+      frame: null,
+      effect: null
     },
     economy: {
       bank: null,
@@ -29,6 +40,11 @@ const profileStructure = {
         timestamp: 0
       },
       shard: null
+    },
+    reputation: {
+      points: 0,
+      givenBy: [],
+      lastGiven: 0
     },
     tips: {
       given: 0,

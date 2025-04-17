@@ -58,10 +58,30 @@ module.exports = {
       const defpattern = await loadImage(doc.data.profile.pattern || 'https://i.imgur.com/nx5qJUb.png');
       const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 512 }));
 
-      // add the wallpaper
+      // Vẽ nền màu cho toàn bộ canvas
+      ctx.fillStyle = '#36393f'; // Discord background color
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Vẽ pattern nếu có
+      ctx.globalAlpha = 0.3;
+      ctx.drawImage(defpattern, 0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 1;
+
+      // Vẽ hình nền profile
       ctx.drawImage(def, 300, 65, 475, 250);
 
-      // ...existing code...
+      // Vẽ bảng xếp hạng thông tin bên trái
+      ctx.beginPath();
+      ctx.moveTo(25, 65);
+      ctx.lineTo(275, 65);
+      ctx.lineTo(275, 315);
+      ctx.lineTo(25, 315);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 10;
+      ctx.shadowOffsetY = 10;
+      ctx.fill();
       
       // add the bio card
       ctx.beginPath();
@@ -76,7 +96,28 @@ module.exports = {
       ctx.shadowOffsetY = -40;
       ctx.fill();
 
-      // ...existing code...
+      // Vẽ tên người dùng
+      ctx.beginPath();
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.textAlign = 'center';
+      ctx.fillText(member.user.username, 150, 350, 240);
+
+      // Hiển thị tag Discord
+      ctx.beginPath();
+      ctx.font = '16px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText(`#${member.user.discriminator || 'none'}`, 150, 375, 240);
+      
+      // Hiển thị rank
+      ctx.beginPath();
+      ctx.font = 'bold 36px sans-serif';
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.fillText(`#${server_rank}`, 150, 425, 100);
+      ctx.font = '20px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText('RANK', 150, 450, 100);
 
       // add bio outline
       ctx.beginPath();
@@ -97,9 +138,8 @@ module.exports = {
       ctx.beginPath();
       ctx.font = 'bold 20px sans-serif';
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.textAlign = 'left';
       ctx.fillText('BIO', 330, 345, 50);
-
-      // ...existing code...
 
       // add bio text to bio card
       ctx.beginPath();
@@ -108,14 +148,79 @@ module.exports = {
       ctx.textAlign = 'center';
       ctx.fillText(doc.data.profile.bio, 555, 368, 490);
 
-      // Add all components (birthday, balance, emblem, etc.)
-      // ...existing code...
+      // Hiển thị thông tin kinh tế (nếu có)
+      if (doc.data.economy) {
+        // Tiêu đề phần kinh tế
+        ctx.beginPath();
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.textAlign = 'left';
+        ctx.fillText('ECONOMY', 330, 430, 100);
+        
+        // Hiển thị số dư tài khoản
+        ctx.beginPath();
+        ctx.font = '15px sans-serif';
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillText(`💰 Wallet: ${doc.data.economy.wallet || 0}`, 350, 455, 200);
+        ctx.fillText(`🏦 Bank: ${doc.data.economy.bank || 0}`, 550, 455, 200);
+      }
+      
+      // Hiển thị ngày sinh (nếu có)
+      if (doc.data.profile.birthday) {
+        ctx.beginPath();
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.textAlign = 'left';
+        ctx.fillText('BIRTHDAY', 330, 490, 100);
+        
+        ctx.beginPath();
+        ctx.font = '15px sans-serif';
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillText(`🎂 ${doc.data.profile.birthday}`, 350, 515, 200);
+      }
+      
+      // Hiển thị XP progress bar
+      ctx.beginPath();
+      ctx.moveTo(330, 540);
+      ctx.lineTo(canvas.width - 40, 540);
+      ctx.lineTo(canvas.width - 40, 570);
+      ctx.lineTo(330, 570);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fill();
+      
+      // XP progress fill
+      ctx.beginPath();
+      ctx.moveTo(330, 540);
+      ctx.lineTo(330 + ((canvas.width - 40 - 330) * percentDiff), 540);
+      ctx.lineTo(330 + ((canvas.width - 40 - 330) * percentDiff), 570);
+      ctx.lineTo(330, 570);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      
+      // XP và level text
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      
+      // Hiển thị level
+      ctx.fillText(`Level ${server_data.level}`, canvas.width - 200, 560, 100);
+      
+      // Hiển thị XP
+      ctx.fillText(`${currxp}/${range} XP`, 430, 560, 150);
+      
+      // Hiển thị emblem (nếu có)
+      if (emblem) {
+        ctx.beginPath();
+        ctx.drawImage(emblem, 700, 420, 80, 80);
+      }
       
       // add avatar
       ctx.beginPath();
       ctx.arc(150, 225, 75, 0, Math.PI * 2);
       ctx.lineWidth = 6;
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.strokeStyle = color;
       ctx.stroke();
       ctx.closePath();
       ctx.save();
@@ -131,7 +236,7 @@ module.exports = {
 
       if (hat) {
         ctx.beginPath();
-        ctx.drawImage(hat, 0, 0, 300, 300);
+        ctx.drawImage(hat, 60, 85, 180, 180);
       }
 
       const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'profile.png' });
