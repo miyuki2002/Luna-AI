@@ -1,6 +1,7 @@
 const { Collection } = require('discord.js');
 const ProfileDB = require('../services/profiledb');
 const GuildProfileDB = require('../services/guildprofiledb');
+const { checkAchievements } = require('./achievements');
 
 /**
  * Xử lý điểm kinh nghiệm cho người dùng dựa trên hoạt động nhắn tin của họ
@@ -60,18 +61,9 @@ async function experience(message, command_executed, execute) {
     const min = 10;
     const points = Math.floor(Math.random() * (max - min)) + min;
 
-    // Lấy bộ sưu tập hồ sơ từ MongoDB
-    const profileCollection = await ProfileDB.getProfileCollection();
-    
-    // Tìm hồ sơ người dùng hoặc tạo mới nếu không tồn tại
-    let doc = await profileCollection.findOne({ _id: message.author.id });
-    
-    if (!doc) {
-      // Tạo hồ sơ mới cho người dùng này
-      const defaultProfile = ProfileDB.createDefaultProfile(message.author.id);
-      await profileCollection.insertOne(defaultProfile);
-      doc = defaultProfile;
-    }
+    // Sử dụng hàm getProfile thay vì truy vấn trực tiếp từ collection
+    // để tận dụng cơ chế cache và giảm thông báo
+    let doc = await ProfileDB.getProfile(message.author.id);
 
     /*=======================TÍNH TOÁN XP============================*/
     // Đảm bảo data.xp tồn tại
@@ -84,8 +76,11 @@ async function experience(message, command_executed, execute) {
     let serverData;
     const previousLevel = serverIndex !== -1 ? doc.data.xp[serverIndex].level : 0;
     
+    // Biến để kiểm tra xem đây có phải là lần đầu nhận XP trong server này không
+    const isFirstXP = serverIndex === -1;
+    
     // Thêm dữ liệu máy chủ vào hồ sơ nếu chưa tồn tại
-    if (serverIndex === -1) {
+    if (isFirstXP) {
       serverData = {
         id: message.guild.id,
         xp: 0,
@@ -125,6 +120,9 @@ async function experience(message, command_executed, execute) {
       doc.data.xp[serverIndex] = serverData;
     }
 
+    // Lấy collection để cập nhật
+    const profileCollection = await ProfileDB.getProfileCollection();
+    
     // Cập nhật tài liệu trong MongoDB
     await profileCollection.updateOne(
       { _id: message.author.id },
@@ -136,15 +134,29 @@ async function experience(message, command_executed, execute) {
     setTimeout(() => {
       message.client.xpCooldowns.delete(message.author.id);
     }, 60000); // 60 giây cooldown
-
-    return { 
+    
+    // Chuẩn bị kết quả
+    const xpResult = { 
       xpAdded: true, 
       reason: null, 
       points, 
       level: serverData.level,
       previousLevel,
-      totalXp: serverData.xp 
+      totalXp: serverData.xp,
+      isFirstXP: isFirstXP
     };
+    
+    // Kiểm tra thành tựu nếu được cấp XP
+    if (xpResult.xpAdded) {
+      // Sử dụng timeout để không làm trễ việc trả về kết quả
+      setTimeout(() => {
+        checkAchievements(message, xpResult).catch(err => {
+          console.error('Lỗi khi kiểm tra thành tựu:', err);
+        });
+      }, 100);
+    }
+
+    return xpResult;
     
   } catch (error) {
     console.error('Lỗi XP:', error);

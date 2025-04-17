@@ -1,8 +1,11 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
 
-// Log khi module được tải
+// Log khi module được tải (chỉ in một lần)
 console.log('🔄 GuildProfileDB module đã được tải vào hệ thống');
+
+// Cache đã tạo profile để tránh tạo lại nhiều lần
+const profileCache = new Set();
 
 /**
  * Cấu trúc mặc định cho hồ sơ guild
@@ -45,7 +48,7 @@ const guildProfileStructure = {
 const getGuildProfileCollection = async () => {
   try {
     const db = mongoClient.getDb();
-    console.log('📋 Đang truy cập collection guild_profiles');
+    // Bỏ thông báo debug để tránh spam console
     return db.collection('guild_profiles');
   } catch (error) {
     console.error('❌ Lỗi khi truy cập collection guild_profiles:', error);
@@ -59,7 +62,12 @@ const getGuildProfileCollection = async () => {
  * @returns {Object} Guild profile object
  */
 const createDefaultGuildProfile = (guildId) => {
-  console.log(`🆕 Tạo profile mới cho guild: ${guildId}`);
+  // Chỉ in thông báo khi thực sự tạo mới, không phải khi hàm được gọi
+  if (!profileCache.has(guildId)) {
+    console.log(`🆕 Tạo profile mới cho guild: ${guildId}`);
+    profileCache.add(guildId);
+  }
+  
   return {
     _id: guildId,
     ...guildProfileStructure
@@ -96,6 +104,9 @@ const getGuildProfile = async (guildId) => {
     if (!profile) {
       profile = createDefaultGuildProfile(guildId);
       await collection.insertOne(profile);
+    } else {
+      // Nếu đã tìm thấy, thêm vào cache để tránh in thông báo tạo mới sau này
+      profileCache.add(guildId);
     }
     
     return profile;

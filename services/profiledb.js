@@ -1,8 +1,11 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
 
-// Log khi module được tải
+// Log khi module được tải (chỉ in một lần)
 console.log('🔄 ProfileDB module đã được tải vào hệ thống');
+
+// Cache để theo dõi những user đã được tạo profile
+const userProfileCache = new Set();
 
 // Define the profile schema structure for reference
 const profileStructure = {
@@ -60,25 +63,45 @@ const profileStructure = {
 };
 
 // Function to get the profile collection
-const getProfileCollection = async (client) => {
+const getProfileCollection = async () => {
   const db = mongoClient.getDb();
-  // Log khi function này được gọi
-  console.log('📋 Đang truy cập collection user_profiles');
+  // Bỏ thông báo debug để tránh spam console
   return db.collection('user_profiles');
 };
 
 // Helper function to create a new profile with default values
 const createDefaultProfile = (userId) => {
-  // Log khi có profile mới được tạo
-  console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
+  // Chỉ in thông báo khi thực sự tạo mới, không phải khi hàm được gọi
+  if (!userProfileCache.has(userId)) {
+    console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
+    userProfileCache.add(userId);
+  }
+  
   return {
     _id: userId,
     ...profileStructure
   };
 };
 
+// Helper function to get profile or create if not exists
+const getProfile = async (userId) => {
+  const collection = await getProfileCollection();
+  let profile = await collection.findOne({ _id: userId });
+  
+  if (!profile) {
+    profile = createDefaultProfile(userId);
+    await collection.insertOne(profile);
+  } else {
+    // Nếu đã tìm thấy, thêm vào cache để tránh in thông báo tạo mới sau này
+    userProfileCache.add(userId);
+  }
+  
+  return profile;
+};
+
 module.exports = {
   profileStructure,
   getProfileCollection,
-  createDefaultProfile
+  createDefaultProfile,
+  getProfile
 };

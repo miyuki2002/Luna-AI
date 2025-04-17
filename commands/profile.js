@@ -25,37 +25,57 @@ module.exports = {
     }
     
     try {
-      const profileCollection = await ProfileDB.getProfileCollection();
-      const doc = await profileCollection.findOne({ _id: member.id });
+      // Sử dụng hàm getProfile từ ProfileDB thay vì truy vấn trực tiếp
+      const doc = await ProfileDB.getProfile(member.id);
       
-      if (!doc || !doc.data.xp.some(x => x.id === interaction.guild.id)) {
-        return interaction.editReply(`❌ **${member.user.tag}** has not started earning XP in this server yet!`);
+      // Kiểm tra cẩn thận cấu trúc dữ liệu để tránh lỗi
+      if (!doc || !doc.data || !doc.data.xp || !Array.isArray(doc.data.xp)) {
+        return interaction.editReply(`❌ **${member.user.username}** has no XP data yet!`);
       }
       
-      const allProfiles = await profileCollection.find({ 'data.xp.id': interaction.guild.id }).toArray();
+      // Tìm dữ liệu XP cho server hiện tại
+      const serverData = doc.data.xp.find(x => x.id === interaction.guild.id);
+      
+      // Nếu không tìm thấy dữ liệu XP cho server này
+      if (!serverData) {
+        return interaction.editReply(`❌ **${member.user.username}** has not started earning XP in this server yet!`);
+      }
+      
+      // Lấy collection để truy vấn dữ liệu xếp hạng
+      const profileCollection = await ProfileDB.getProfileCollection();
+      
+      // Lấy tất cả profile có XP trong server này để tính xếp hạng
+      const allProfiles = await profileCollection.find({
+        "data.xp": { $elemMatch: { id: interaction.guild.id } }
+      }).toArray();
+      
+      // Sắp xếp và tìm thứ hạng
       const server_rank = allProfiles
-        .sort((A, B) => 
-          B.data.xp.find(x => x.id === interaction.guild.id).xp - 
-          A.data.xp.find(x => x.id === interaction.guild.id).xp)
+        .sort((A, B) => {
+          const aData = A.data.xp.find(x => x.id === interaction.guild.id);
+          const bData = B.data.xp.find(x => x.id === interaction.guild.id);
+          return (bData?.xp || 0) - (aData?.xp || 0);
+        })
         .findIndex(x => x._id === doc._id) + 1;
       
-      const server_data = doc.data.xp.find(x => x.id === interaction.guild.id);
-      const cap = (50 * Math.pow(server_data.level, 2)) + (250 * server_data.level);
-      const lowerLim = (50 * Math.pow(server_data.level - 1, 2)) + (250 * (server_data.level - 1));
+      // Tính toán giá trị XP và cấp độ
+      const cap = (50 * Math.pow(serverData.level, 2)) + (250 * serverData.level);
+      const lowerLim = (50 * Math.pow(serverData.level - 1, 2)) + (250 * (serverData.level - 1));
       const range = cap - lowerLim;
-      const currxp = server_data.xp - lowerLim;
+      const currxp = serverData.xp - lowerLim;
       const percentDiff = currxp / range;
       
+      // Phần còn lại của code vẽ canvas giữ nguyên
       const canvas = createCanvas(800, 600);
       const ctx = canvas.getContext('2d');
-      const color = doc.data.profile.color || 'rgb(255,182,193)';
+      const color = doc.data.profile?.color || 'rgb(255,182,193)';
 
       // Load images
-      const hat = doc.data.profile.hat ? await loadImage(doc.data.profile.hat) : null;
-      const emblem = doc.data.profile.emblem ? await loadImage(doc.data.profile.emblem) : null;
-      const wreath = doc.data.profile.wreath ? await loadImage(doc.data.profile.wreath) : null;
-      const def = await loadImage(doc.data.profile.background || 'https://i.imgur.com/57eRI6H.jpg');
-      const defpattern = await loadImage(doc.data.profile.pattern || 'https://i.imgur.com/nx5qJUb.png');
+      const hat = doc.data.profile?.hat ? await loadImage(doc.data.profile.hat) : null;
+      const emblem = doc.data.profile?.emblem ? await loadImage(doc.data.profile.emblem) : null;
+      const wreath = doc.data.profile?.wreath ? await loadImage(doc.data.profile.wreath) : null;
+      const def = await loadImage(doc.data.profile?.background || 'https://i.imgur.com/57eRI6H.jpg');
+      const defpattern = await loadImage(doc.data.profile?.pattern || 'https://i.imgur.com/nx5qJUb.png');
       const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 512 }));
 
       // Vẽ nền màu cho toàn bộ canvas
@@ -103,7 +123,7 @@ module.exports = {
       ctx.textAlign = 'center';
       ctx.fillText(member.user.username, 150, 350, 240);
 
-      // Hiển thị tag Discord
+      // Hiển thị tag Discord nếu có
       ctx.beginPath();
       ctx.font = '16px sans-serif';
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -141,12 +161,12 @@ module.exports = {
       ctx.textAlign = 'left';
       ctx.fillText('BIO', 330, 345, 50);
 
-      // add bio text to bio card
+      // add bio text to bio card - đảm bảo an toàn khi truy cập doc.data.profile.bio
       ctx.beginPath();
       ctx.font = '15px sans-serif';
       ctx.fillStyle = 'rgba(0,0,0,0.8)';
       ctx.textAlign = 'center';
-      ctx.fillText(doc.data.profile.bio, 555, 368, 490);
+      ctx.fillText(doc.data.profile?.bio || "No bio written.", 555, 368, 490);
 
       // Hiển thị thông tin kinh tế (nếu có)
       if (doc.data.economy) {
@@ -166,7 +186,7 @@ module.exports = {
       }
       
       // Hiển thị ngày sinh (nếu có)
-      if (doc.data.profile.birthday) {
+      if (doc.data.profile?.birthday) {
         ctx.beginPath();
         ctx.font = 'bold 20px sans-serif';
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -205,7 +225,7 @@ module.exports = {
       ctx.textAlign = 'center';
       
       // Hiển thị level
-      ctx.fillText(`Level ${server_data.level}`, canvas.width - 200, 560, 100);
+      ctx.fillText(`Level ${serverData.level}`, canvas.width - 200, 560, 100);
       
       // Hiển thị XP
       ctx.fillText(`${currxp}/${range} XP`, 430, 560, 150);
