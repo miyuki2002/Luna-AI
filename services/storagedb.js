@@ -30,9 +30,7 @@ class StorageDB {
       await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
-      
-      // Có thể tạo index trên các trường khác nếu cần
-      await db.collection('user_profiles').createIndex({ userId: 1 }, { unique: true });
+
       
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
@@ -515,6 +513,25 @@ class StorageDB {
         await db.createCollection('user_profiles');
         console.log('Đã tạo collection user_profiles');
       }
+      
+      // Xóa index cũ nếu tồn tại để tránh xung đột
+      try {
+        // Kiểm tra xem index userId_1 có tồn tại không
+        const indexes = await db.collection('user_profiles').listIndexes().toArray();
+        const hasUserIdIndex = indexes.some(index => index.name === 'userId_1');
+        
+        if (hasUserIdIndex) {
+          // Nếu tồn tại, xóa index này
+          await db.collection('user_profiles').dropIndex('userId_1');
+          console.log('Đã xóa index userId_1 cũ từ collection user_profiles');
+        }
+      } catch (indexError) {
+        console.warn('Cảnh báo khi xóa index cũ:', indexError.message);
+        // Tiếp tục ngay cả khi có lỗi xóa index
+      }
+      
+      // Tạo index mới cho _id (MongoDB đã tự động tạo)
+      // và các index khác nếu cần
       
       console.log('Hệ thống profile người dùng đã sẵn sàng');
     } catch (error) {

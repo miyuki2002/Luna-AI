@@ -16,8 +16,10 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-// Bộ sưu tập lệnh
+// Khởi tạo các bộ sưu tập cơ bản
 client.commands = new Collection();
+client.features = ['EXPERIENCE_POINTS']; // Kích hoạt tính năng XP
+client.logs = []; // Mảng để lưu các log
 
 // Sử dụng handler cho sự kiện ready - mọi khởi tạo sẽ diễn ra ở đây
 startbot(client, () => loadCommands(client));

@@ -1,11 +1,15 @@
 const { EmbedBuilder } = require('discord.js');
 const NeuralNetworks = require('../services/NeuralNetworks');
+const experience = require('../utils/xp');
 
 /**
  * Xử lý tin nhắn Discord đề cập đến bot
  */
 async function handleMessage(message) {
   try {
+    // Biến để kiểm tra xem lệnh có được thực thi hay không
+    let commandExecuted = false;
+    
     // Lấy nội dung mà không có phần đề cập
     const content = message.content
       .replace(/<@!?\d+>/g, '')
@@ -20,6 +24,7 @@ async function handleMessage(message) {
     // Kiểm tra cấu trúc lệnh trong nội dung
     if (content.startsWith('/image')) {
       await handleImageGeneration(message, content.replace('/image', '').trim());
+      commandExecuted = true;
       return;
     }
 
@@ -28,14 +33,63 @@ async function handleMessage(message) {
       content.toLowerCase().includes('function') ||
       content.toLowerCase().includes('write a')) {
       await handleCodeRequest(message, content);
+      commandExecuted = true;
       return;
     }
 
     // Mặc định là phản hồi trò chuyện
     await handleChatRequest(message, content);
+    
+    // Xử lý XP sau khi xử lý tin nhắn
+    processXp(message, commandExecuted, true);
   } catch (error) {
     console.error('Lỗi khi xử lý tin nhắn:', error);
     await message.reply('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn.');
+    
+    // Xử lý XP với thông tin rằng có lỗi xảy ra
+    processXp(message, false, false);
+  }
+}
+
+/**
+ * Xử lý hệ thống XP cho người dùng
+ * @param {Object} message - Đối tượng tin nhắn từ Discord.js
+ * @param {Boolean} commandExecuted - Có lệnh nào được thực thi không
+ * @param {Boolean} execute - Có nên tiếp tục thực thi không
+ */
+async function processXp(message, commandExecuted, execute) {
+  try {
+    const response = await experience(message, commandExecuted, execute);
+    
+    // Log errors not caused by expected reasons
+    if (!response.xpAdded && ![
+      'DISABLED',             // XP bị tắt, cần EXPERIENCE_POINTS trong client#features
+      'COMMAND_EXECUTED',     // Lệnh đã được thực thi thành công
+      'COMMAND_TERMINATED',   // Lệnh đã được tìm nhưng đã bị chấm dứt
+      'DM_CHANNEL',           // Tin nhắn được gửi trong DM
+      'GUILD_SETTINGS_NOT_FOUND', // Không tìm thấy cài đặt của guild
+      'DISABLED_ON_GUILD',    // XP bị tắt trên server này
+      'DISABLED_ON_CHANNEL',  // Tin nhắn được gửi trong kênh bị chặn XP
+      'RECENTLY_TALKED'       // Người gửi vừa nói gần đây
+    ].includes(response.reason)) {
+      // Ghi log lỗi nếu có
+      if (message.client.logs) {
+        message.client.logs.push(`Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
+      } else {
+        console.error(`Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
+      }
+    }
+    
+    // Nếu người dùng lên cấp, có thể hiển thị thông báo
+    if (response.xpAdded && response.level && response.previousLevel && response.level > response.previousLevel) {
+      // Tùy chọn: Thông báo người dùng đã lên cấp
+      console.log(`${message.author.tag} đã lên cấp ${response.level} trong server ${message.guild.name}`);
+      
+      // Tùy chọn: Gửi thông báo lên cấp trong kênh
+      // await message.channel.send(`🎉 Chúc mừng ${message.author}! Bạn đã đạt cấp độ ${response.level}!`);
+    }
+  } catch (error) {
+    console.error('Lỗi khi xử lý XP:', error);
   }
 }
 
@@ -261,4 +315,7 @@ function splitMessageRespectWords(text, maxLength = 2000) {
   return chunks;
 }
 
-module.exports = { handleMessage };
+module.exports = { 
+  handleMessage,
+  processXp  // Xuất hàm processXp
+};
