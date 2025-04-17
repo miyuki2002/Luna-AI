@@ -24,7 +24,7 @@ class InitSystem extends EventEmitter {
     // Kiểm tra xem tất cả services đã sẵn sàng chưa
     if (Object.values(this.services).every(status => status)) {
       this.initialized = true;
-      console.log('🚀Tất cả services đã sẵn sàng, hệ thống đang khởi động...');
+      console.log('🚀 Tất cả services đã sẵn sàng, hệ thống đang khởi động...');
       this.emit('ready');
     }
   }
