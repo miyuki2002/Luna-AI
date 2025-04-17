@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const grokClient = require('../services/grokClient');
+const grokClient = require('../services/NeuralNetworks');
 
 /**
  * Xử lý tin nhắn Discord đề cập đến bot

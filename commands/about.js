@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const grokClient = require('../services/grokClient');
+const grokClient = require('../services/NeuralNetworks');
 const os = require('os');
 
 module.exports = {
