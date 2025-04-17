@@ -1,4 +1,5 @@
 const mongoClient = require('./mongoClient.js');
+const Profile = require('./profiledb.js');
 
 /**
  * Class để xử lý tất cả các hoạt động lưu trữ liên quan đến cuộc trò chuyện
@@ -30,6 +31,10 @@ class StorageDB {
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
       
+      // Sửa: Không cần tạo unique index trên trường _id vì MongoDB đã tự tạo sẵn
+      // Có thể tạo index trên các trường khác nếu cần
+      await db.collection('user_profiles').createIndex({ userId: 1 }, { unique: true });
+      
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
       console.error('Lỗi khi thiết lập collections MongoDB:', error);
@@ -45,6 +50,11 @@ class StorageDB {
       // Kết nối tới MongoDB
       await mongoClient.connect();
       console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
+      
+      // Khởi tạo các hệ thống
+      await this.initializeConversationHistory();
+      await this.initializeGreetingPatterns();
+      await this.initializeProfiles();
     } catch (error) {
       console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
       throw error;
@@ -398,6 +408,193 @@ class StorageDB {
       console.log('Hệ thống lịch sử cuộc trò chuyện đã sẵn sàng');
     } catch (error) {
       console.error('Lỗi khi khởi tạo lịch sử cuộc trò chuyện:', error);
+    }
+  }
+
+  /**
+   * Lấy thông tin profile của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Promise<Object>} - Thông tin profile của người dùng
+   */
+  async getUserProfile(userId) {
+    try {
+      const db = mongoClient.getDb();
+      const profiles = db.collection('user_profiles');
+      
+      // Tìm profile của người dùng
+      let profile = await profiles.findOne({ _id: userId });
+      
+      // Nếu người dùng không có profile, tạo mới
+      if (!profile) {
+        profile = Profile.createDefaultProfile(userId);
+        await profiles.insertOne(profile);
+        console.log(`Đã tạo profile mới cho người dùng ${userId}`);
+      }
+      
+      return profile;
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật thông tin profile của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @param {Object} updateData - Dữ liệu cần cập nhật
+   * @returns {Promise<boolean>} - Kết quả cập nhật
+   */
+  async updateUserProfile(userId, updateData) {
+    try {
+      const db = mongoClient.getDb();
+      const profiles = db.collection('user_profiles');
+      
+      // Cập nhật dữ liệu
+      const result = await profiles.updateOne(
+        { _id: userId },
+        { $set: updateData },
+        { upsert: true }
+      );
+      
+      return result.acknowledged;
+    } catch (error) {
+      console.error('Lỗi khi cập nhật profile:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Tăng hoặc giảm số lượng tài nguyên trong ví của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @param {string} resourceType - Loại tài nguyên (bank, wallet, shard)
+   * @param {number} amount - Số lượng cần thay đổi
+   * @returns {Promise<Object>} - Dữ liệu economy sau khi cập nhật
+   */
+  async updateUserEconomy(userId, resourceType, amount) {
+    try {
+      const db = mongoClient.getDb();
+      const profiles = db.collection('user_profiles');
+      
+      // Xác định đường dẫn của trường cần cập nhật
+      const fieldPath = `data.economy.${resourceType}`;
+      
+      // Tạo đối tượng cập nhật
+      const updateObj = { $inc: {} };
+      updateObj.$inc[fieldPath] = amount;
+      
+      // Cập nhật dữ liệu
+      await profiles.updateOne(
+        { _id: userId },
+        updateObj,
+        { upsert: true }
+      );
+      
+      // Lấy dữ liệu economy mới sau khi cập nhật
+      const updatedProfile = await profiles.findOne(
+        { _id: userId },
+        { projection: { 'data.economy': 1 } }
+      );
+      
+      return updatedProfile?.data?.economy || null;
+    } catch (error) {
+      console.error('Lỗi khi cập nhật economy của người dùng:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Khởi tạo các cài đặt và cấu trúc cho hệ thống profile
+   * @returns {Promise<void>}
+   */
+  async initializeProfiles() {
+    try {
+      const db = mongoClient.getDb();
+      
+      // Kiểm tra và tạo collection nếu chưa có
+      const collections = await db.listCollections({ name: 'user_profiles' }).toArray();
+      if (collections.length === 0) {
+        await db.createCollection('user_profiles');
+        console.log('Đã tạo collection user_profiles');
+      }
+      
+      console.log('Hệ thống profile người dùng đã sẵn sàng');
+    } catch (error) {
+      console.error('Lỗi khi khởi tạo hệ thống profile:', error);
+    }
+  }
+
+  /**
+   * Lấy thông tin profile card của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Promise<Object>} - Dữ liệu cho profile card
+   */
+  async getProfileCardData(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      
+      // Lấy thêm thông tin xếp hạng từ database (nếu có)
+      const db = mongoClient.getDb();
+      
+      // Lấy tất cả người dùng theo global_xp để tính xếp hạng
+      const allProfiles = await db.collection('user_profiles')
+        .find({}, { projection: { _id: 1, 'data.global_xp': 1 } })
+        .sort({ 'data.global_xp': -1 })
+        .toArray();
+      
+      // Tính toán xếp hạng toàn cầu
+      const globalRank = allProfiles.findIndex(p => p._id === userId) + 1;
+      
+      // Trả về dữ liệu cần thiết cho profile card
+      return {
+        userId: profile._id,
+        username: profile.data?.profile?.username || userId,
+        discriminator: profile.data?.profile?.discriminator || "",
+        level: profile.data?.global_level || 1,
+        xp: profile.data?.global_xp || 0,
+        bio: profile.data?.profile?.bio || "No bio written.",
+        birthday: profile.data?.profile?.birthday || null,
+        economy: {
+          wallet: profile.data?.economy?.wallet || 0,
+          bank: profile.data?.economy?.bank || 0,
+          shard: profile.data?.economy?.shard || 0
+        },
+        customization: {
+          background: profile.data?.profile?.background || null,
+          pattern: profile.data?.profile?.pattern || null,
+          emblem: profile.data?.profile?.emblem || null,
+          hat: profile.data?.profile?.hat || null,
+          wreath: profile.data?.profile?.wreath || null,
+          color: profile.data?.profile?.color || null
+        },
+        rank: {
+          server: 1, // Placeholder - implement server-specific ranking if needed
+          global: globalRank
+        }
+      };
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu profile card:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo profile card cho người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Promise<Buffer>} - Buffer hình ảnh profile card
+   */
+  async generateProfileCard(userId) {
+    try {
+      // Lấy dữ liệu profile
+      const profileData = await this.getProfileCardData(userId);
+      
+      // Sử dụng module profileCanvas để tạo hình ảnh
+      const profileCanvas = require('../utils/profileCanvas');
+      const cardBuffer = await profileCanvas.createProfileCard(profileData);
+      
+      return cardBuffer;
+    } catch (error) {
+      console.error('Lỗi khi tạo profile card:', error);
+      throw error;
     }
   }
 }
