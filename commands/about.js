@@ -63,7 +63,7 @@ module.exports = {
 				},
 				{
 					name: '🔗 Liên kết & Tài nguyên',
-					value: '[GitHub](https://gitlab.com/s4ory/luna) | [Báo cáo lỗi](https://gitlab.com/s4ory/luna/-/issues) | [Website](https://luna.dev)'
+					value: '[GitLab](https://gitlab.com/s4ory/luna) | [Báo cáo lỗi](https://gitlab.com/s4ory/luna/-/issues) | [Website](https://lunabot.art)'
 				}
 			)
 			.setFooter({ text: 'Luna Bot v1.0.0' })
@@ -82,7 +82,7 @@ module.exports = {
 			
 		const docsButton = new ButtonBuilder()
 			.setLabel('Tài liệu')
-			.setURL('https://luna.dev/docs')
+			.setURL('https://lunabot.art/docs')
 			.setStyle(ButtonStyle.Link);
 
 		const row = new ActionRowBuilder().addComponents(supportButton, inviteButton, docsButton);
