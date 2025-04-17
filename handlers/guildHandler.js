@@ -20,7 +20,6 @@ async function storeGuildInDB(guild) {
       ownerID: guild.ownerId,
       icon: guild.iconURL(),
       joinedAt: new Date(),
-      prefix: '!', // Prefix mặc định nếu sử dụng
       settings: {
         welcomeChannel: null,
         moderationEnabled: true,
