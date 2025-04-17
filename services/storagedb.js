@@ -521,6 +521,81 @@ class StorageDB {
       console.error('Lỗi khi khởi tạo hệ thống profile:', error);
     }
   }
+
+  /**
+   * Lấy thông tin profile card của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Promise<Object>} - Dữ liệu cho profile card
+   */
+  async getProfileCardData(userId) {
+    try {
+      const profile = await this.getUserProfile(userId);
+      
+      // Lấy thêm thông tin xếp hạng từ database (nếu có)
+      const db = mongoClient.getDb();
+      
+      // Lấy tất cả người dùng theo global_xp để tính xếp hạng
+      const allProfiles = await db.collection('user_profiles')
+        .find({}, { projection: { _id: 1, 'data.global_xp': 1 } })
+        .sort({ 'data.global_xp': -1 })
+        .toArray();
+      
+      // Tính toán xếp hạng toàn cầu
+      const globalRank = allProfiles.findIndex(p => p._id === userId) + 1;
+      
+      // Trả về dữ liệu cần thiết cho profile card
+      return {
+        userId: profile._id,
+        username: profile.data?.profile?.username || userId,
+        discriminator: profile.data?.profile?.discriminator || "",
+        level: profile.data?.global_level || 1,
+        xp: profile.data?.global_xp || 0,
+        bio: profile.data?.profile?.bio || "No bio written.",
+        birthday: profile.data?.profile?.birthday || null,
+        economy: {
+          wallet: profile.data?.economy?.wallet || 0,
+          bank: profile.data?.economy?.bank || 0,
+          shard: profile.data?.economy?.shard || 0
+        },
+        customization: {
+          background: profile.data?.profile?.background || null,
+          pattern: profile.data?.profile?.pattern || null,
+          emblem: profile.data?.profile?.emblem || null,
+          hat: profile.data?.profile?.hat || null,
+          wreath: profile.data?.profile?.wreath || null,
+          color: profile.data?.profile?.color || null
+        },
+        rank: {
+          server: 1, // Placeholder - implement server-specific ranking if needed
+          global: globalRank
+        }
+      };
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu profile card:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo profile card cho người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Promise<Buffer>} - Buffer hình ảnh profile card
+   */
+  async generateProfileCard(userId) {
+    try {
+      // Lấy dữ liệu profile
+      const profileData = await this.getProfileCardData(userId);
+      
+      // Sử dụng module profileCanvas để tạo hình ảnh
+      const profileCanvas = require('../utils/profileCanvas');
+      const cardBuffer = await profileCanvas.createProfileCard(profileData);
+      
+      return cardBuffer;
+    } catch (error) {
+      console.error('Lỗi khi tạo profile card:', error);
+      throw error;
+    }
+  }
 }
 
 // Xuất một thể hiện duy nhất của StorageDB
