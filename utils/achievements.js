@@ -451,17 +451,8 @@ async function sendFirstXPAchievement(message, xpData) {
     // Tạo file attachment từ buffer
     const attachment = new AttachmentBuilder(achievementImage, { name: 'achievement.png' });
     
-    // Tạo embed message
-    const embed = new EmbedBuilder()
-      .setColor('#7F5AF0')
-      .setTitle('🏆 Thành tựu mới mở khóa!')
-      .setDescription(`Chúc mừng ${message.author}! Bạn vừa nhận được XP đầu tiên trong **${message.guild.name}**!`)
-      .setImage('attachment://achievement.png')
-      .setFooter({ text: 'Tiếp tục gửi tin nhắn để nhận thêm XP và lên cấp!' })
-      .setTimestamp();
-    
-    // Gửi tin nhắn thành tựu
-    await message.channel.send({ embeds: [embed], files: [attachment] });
+    // Gửi tin nhắn thành tựu chỉ với hình ảnh
+    await message.channel.send({ files: [attachment] });
     console.log(`Đã gửi thành tựu "First XP" cho ${message.author.tag} trong ${message.guild.name}`);
     
   } catch (error) {
@@ -513,17 +504,8 @@ async function sendLevelUpAchievement(message, xpData) {
     // Tạo file attachment từ buffer
     const attachment = new AttachmentBuilder(achievementImage, { name: 'level-up.png' });
     
-    // Tạo embed message
-    const embed = new EmbedBuilder()
-      .setColor('#7F5AF0')
-      .setTitle('⭐ Level Up!')
-      .setDescription(`Chúc mừng ${message.author}! Bạn vừa đạt cấp độ ${xpData.level} trong **${message.guild.name}**!`)
-      .setImage('attachment://level-up.png')
-      .setFooter({ text: 'Tiếp tục tương tác để nhận thêm XP và lên cấp!' })
-      .setTimestamp();
-    
-    // Gửi tin nhắn thành tựu
-    await message.channel.send({ embeds: [embed], files: [attachment] });
+    // Gửi tin nhắn thành tựu chỉ với hình ảnh
+    await message.channel.send({ files: [attachment] });
     console.log(`Đã gửi thông báo lên cấp cho ${message.author.tag} trong ${message.guild.name}`);
     
   } catch (error) {
