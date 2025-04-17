@@ -1,7 +1,7 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
 
-const db = mongoClient.getDb();
+
 
 // Define the profile schema structure for reference
 const profileStructure = {
@@ -44,6 +44,7 @@ const profileStructure = {
 
 // Function to get the profile collection
 const getProfileCollection = async (client) => {
+  const db = mongoClient.getDb();
   return db.collection('user_profiles');
 };
 

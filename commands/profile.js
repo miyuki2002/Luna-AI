@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { AttachmentBuilder } = require('discord.js');
 const Profile = require('../services/profiledb');
-const text = require('../util/string');
+const text = require('../utils/string');
 const { createCanvas, loadImage } = require('canvas');
 
 module.exports = {
