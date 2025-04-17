@@ -9,9 +9,9 @@ const FONTS_PATH = path.join(ASSETS_PATH, 'fonts');
 
 // Đăng ký fonts
 try {
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Regular.ttf'), { family: 'Montserrat' });
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Bold.ttf'), { family: 'Montserrat', weight: 'bold' });
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Italic.ttf'), { family: 'Montserrat', style: 'italic' });
+  registerFont(path.join(FONTS_PATH, 'Montserrat-Regular.otf'), { family: 'Montserrat' });
+  registerFont(path.join(FONTS_PATH, 'Montserrat-Bold.otf'), { family: 'Montserrat', weight: 'bold' });
+  registerFont(path.join(FONTS_PATH, 'Montserrat-Italic.otf'), { family: 'Montserrat', style: 'italic' });
   console.log('Đã đăng ký font Montserrat thành công');
 } catch (err) {
   console.error('Không thể đăng ký font Montserrat:', err.message);
