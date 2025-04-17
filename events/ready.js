@@ -2,12 +2,12 @@ const NeuralNetworks = require('../services/NeuralNetworks');
 const mongoClient = require('../services/mongoClient.js');
 const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');
+const ProfileDB = require('../services/profiledb.js'); // Thêm import ProfileDB
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
     console.log('\x1b[35m%s\x1b[0m', `
     ██╗     ██╗   ██╗███╗   ██╗ █████╗ 
-    ██║     ██║   ██║████╗  ██║██╔══██╗
     ██║     ██║   ██║██╔██╗ ██║███████║
     ██║     ██║   ██║██║╚██╗██║██╔══██║
     ███████╗╚██████╔╝██║ ╚████║██║  ██║
@@ -36,10 +36,34 @@ async function startbot(client, loadCommands) {
     try {
       // Khởi tạo cấu trúc lịch sử cuộc trò chuyện
       await storageDB.initializeConversationHistory();
-      initSystem.markReady('greetingPatterns');
+      console.log('✅ Đã khởi tạo cấu trúc lịch sử cuộc trò chuyện');
+      initSystem.markReady('conversationHistory');
     } catch (error) {
       console.error('❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
-      initSystem.markReady('greetingPatterns'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
+      initSystem.markReady('conversationHistory'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
+    }
+
+    try {
+      // Khởi tạo profile system
+      console.log('🔄 Đang khởi tạo hệ thống profile...');
+      await storageDB.initializeProfiles();
+      
+      // Kiểm tra truy cập đến profile collection
+      const profileCollection = await ProfileDB.getProfileCollection();
+      console.log('✅ Đã thiết lập collection user_profiles và cấu trúc dữ liệu');
+      
+      // Tạo thêm index cho các trường thường xuyên truy vấn
+      const db = mongoClient.getDb();
+      // Tạo index cho trường global_xp để tăng tốc độ truy vấn bảng xếp hạng
+      await db.collection('user_profiles').createIndex({ 'data.global_xp': -1 });
+      // Tạo index cho trường xp.id để tìm kiếm nhanh theo guild
+      await db.collection('user_profiles').createIndex({ 'data.xp.id': 1 });
+      console.log('✅ Đã khởi tạo các index cho collection user_profiles');
+      
+      initSystem.markReady('profiles');
+    } catch (error) {
+      console.error('❌ Lỗi khi khởi tạo hệ thống profile:', error);
+      initSystem.markReady('profiles'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
     try {

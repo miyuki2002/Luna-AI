@@ -1,7 +1,8 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
 
-
+// Log khi module được tải
+console.log('🔄 ProfileDB module đã được tải vào hệ thống');
 
 // Define the profile schema structure for reference
 const profileStructure = {
@@ -61,11 +62,15 @@ const profileStructure = {
 // Function to get the profile collection
 const getProfileCollection = async (client) => {
   const db = mongoClient.getDb();
+  // Log khi function này được gọi
+  console.log('📋 Đang truy cập collection user_profiles');
   return db.collection('user_profiles');
 };
 
 // Helper function to create a new profile with default values
 const createDefaultProfile = (userId) => {
+  // Log khi có profile mới được tạo
+  console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
   return {
     _id: userId,
     ...profileStructure

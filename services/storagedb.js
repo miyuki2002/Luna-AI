@@ -30,9 +30,7 @@ class StorageDB {
       await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
-      
-      // Có thể tạo index trên các trường khác nếu cần
-      await db.collection('user_profiles').createIndex({ userId: 1 }, { unique: true });
+
       
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
