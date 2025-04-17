@@ -1,4 +1,5 @@
 const mongoClient = require('./mongoClient.js');
+const Profile = require('./profiledb.js');
 
 /**
  * Class để xử lý tất cả các hoạt động lưu trữ liên quan đến cuộc trò chuyện
@@ -30,6 +31,9 @@ class StorageDB {
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
       
+      // Thiết lập collection profiles
+      await db.collection('user_profiles').createIndex({ _id: 1 }, { unique: true });
+      
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
       console.error('Lỗi khi thiết lập collections MongoDB:', error);
@@ -45,6 +49,11 @@ class StorageDB {
       // Kết nối tới MongoDB
       await mongoClient.connect();
       console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
+      
+      // Khởi tạo các hệ thống
+      await this.initializeConversationHistory();
+      await this.initializeGreetingPatterns();
+      await this.initializeProfiles();
     } catch (error) {
       console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
       throw error;
@@ -398,6 +407,118 @@ class StorageDB {
       console.log('Hệ thống lịch sử cuộc trò chuyện đã sẵn sàng');
     } catch (error) {
       console.error('Lỗi khi khởi tạo lịch sử cuộc trò chuyện:', error);
+    }
+  }
+
+  /**
+   * Lấy thông tin profile của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @returns {Promise<Object>} - Thông tin profile của người dùng
+   */
+  async getUserProfile(userId) {
+    try {
+      const db = mongoClient.getDb();
+      const profiles = db.collection('user_profiles');
+      
+      // Tìm profile của người dùng
+      let profile = await profiles.findOne({ _id: userId });
+      
+      // Nếu người dùng không có profile, tạo mới
+      if (!profile) {
+        profile = Profile.createDefaultProfile(userId);
+        await profiles.insertOne(profile);
+        console.log(`Đã tạo profile mới cho người dùng ${userId}`);
+      }
+      
+      return profile;
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật thông tin profile của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @param {Object} updateData - Dữ liệu cần cập nhật
+   * @returns {Promise<boolean>} - Kết quả cập nhật
+   */
+  async updateUserProfile(userId, updateData) {
+    try {
+      const db = mongoClient.getDb();
+      const profiles = db.collection('user_profiles');
+      
+      // Cập nhật dữ liệu
+      const result = await profiles.updateOne(
+        { _id: userId },
+        { $set: updateData },
+        { upsert: true }
+      );
+      
+      return result.acknowledged;
+    } catch (error) {
+      console.error('Lỗi khi cập nhật profile:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Tăng hoặc giảm số lượng tài nguyên trong ví của người dùng
+   * @param {string} userId - Định danh người dùng
+   * @param {string} resourceType - Loại tài nguyên (bank, wallet, shard)
+   * @param {number} amount - Số lượng cần thay đổi
+   * @returns {Promise<Object>} - Dữ liệu economy sau khi cập nhật
+   */
+  async updateUserEconomy(userId, resourceType, amount) {
+    try {
+      const db = mongoClient.getDb();
+      const profiles = db.collection('user_profiles');
+      
+      // Xác định đường dẫn của trường cần cập nhật
+      const fieldPath = `data.economy.${resourceType}`;
+      
+      // Tạo đối tượng cập nhật
+      const updateObj = { $inc: {} };
+      updateObj.$inc[fieldPath] = amount;
+      
+      // Cập nhật dữ liệu
+      await profiles.updateOne(
+        { _id: userId },
+        updateObj,
+        { upsert: true }
+      );
+      
+      // Lấy dữ liệu economy mới sau khi cập nhật
+      const updatedProfile = await profiles.findOne(
+        { _id: userId },
+        { projection: { 'data.economy': 1 } }
+      );
+      
+      return updatedProfile?.data?.economy || null;
+    } catch (error) {
+      console.error('Lỗi khi cập nhật economy của người dùng:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Khởi tạo các cài đặt và cấu trúc cho hệ thống profile
+   * @returns {Promise<void>}
+   */
+  async initializeProfiles() {
+    try {
+      const db = mongoClient.getDb();
+      
+      // Kiểm tra và tạo collection nếu chưa có
+      const collections = await db.listCollections({ name: 'user_profiles' }).toArray();
+      if (collections.length === 0) {
+        await db.createCollection('user_profiles');
+        console.log('Đã tạo collection user_profiles');
+      }
+      
+      console.log('Hệ thống profile người dùng đã sẵn sàng');
+    } catch (error) {
+      console.error('Lỗi khi khởi tạo hệ thống profile:', error);
     }
   }
 }
