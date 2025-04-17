@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { AttachmentBuilder } = require('discord.js');
-const Profile = require('../services/profiledb');
+const ProfileDB = require('../services/profiledb');
+const mongoClient = require('../services/mongoClient');
 const text = require('../utils/string');
 const { createCanvas, loadImage } = require('canvas');
 
@@ -24,17 +25,19 @@ module.exports = {
     }
     
     try {
-      const doc = await Profile.findOne({ _id: member.id });
+      const profileCollection = await ProfileDB.getProfileCollection();
+      const doc = await profileCollection.findOne({ _id: member.id });
       
       if (!doc || !doc.data.xp.some(x => x.id === interaction.guild.id)) {
         return interaction.editReply(`❌ **${member.user.tag}** has not started earning XP in this server yet!`);
       }
       
-      const server_rank = await Profile.find({ 'data.xp.id': interaction.guild.id })
-        .then(docs => Promise.resolve(docs.sort((A, B) => 
+      const allProfiles = await profileCollection.find({ 'data.xp.id': interaction.guild.id }).toArray();
+      const server_rank = allProfiles
+        .sort((A, B) => 
           B.data.xp.find(x => x.id === interaction.guild.id).xp - 
-          A.data.xp.find(x => x.id === interaction.guild.id).xp)))
-        .then(sorted => sorted.findIndex(x => x._id === doc._id) + 1);
+          A.data.xp.find(x => x.id === interaction.guild.id).xp)
+        .findIndex(x => x._id === doc._id) + 1;
       
       const server_data = doc.data.xp.find(x => x.id === interaction.guild.id);
       const cap = (50 * Math.pow(server_data.level, 2)) + (250 * server_data.level);
