@@ -6,7 +6,7 @@ const storageDB = require('./storagedb.js');
 // Import the conversationManager module
 const conversationManager = require('../handlers/conversationManager.js');
 
-class GrokClient {
+class NeuralNetworks {
   constructor() {
     // Kiểm tra cài đặt TLS không an toàn và cảnh báo
     this.checkTLSSecurity();
@@ -849,4 +849,4 @@ class GrokClient {
   }
 }
 
-module.exports = new GrokClient();
+module.exports = new NeuralNetworks();
