@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const grokClient = require('../services/grokClient');
+const NeuralNetworks = require('../services/NeuralNetworks');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,8 +16,8 @@ module.exports = {
     await interaction.deferReply();
     
     try {
-      // Call the generateImage function from grokClient
-      const imageUrl = await grokClient.generateImage(prompt);
+      // Call the generateImage function from NeuralNetworks
+      const imageUrl = await NeuralNetworks.generateImage(prompt);
       
       // Check if the response is an error message (returned as string) or a valid URL
       if (imageUrl.startsWith('http')) {

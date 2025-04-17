@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const grokClient = require('../services/NeuralNetworks');
+const NeuralNetworks = require('../services/NeuralNetworks');
 
 /**
  * Xử lý tin nhắn Discord đề cập đến bot
@@ -47,7 +47,7 @@ async function handleChatRequest(message, content) {
   await message.channel.sendTyping();
   
   try {
-    const response = await grokClient.getCompletion(content);
+    const response = await NeuralNetworks.getCompletion(content);
     
     // Chia phản hồi nếu nó quá dài cho Discord
     if (response.length > 2000) {
@@ -82,8 +82,8 @@ async function handleImageGeneration(message, prompt) {
   await message.channel.sendTyping();
   
   try {
-    // Lấy URL hình ảnh từ generateImage của grokClient
-    const imageUrl = await grokClient.generateImage(prompt);
+    // Lấy URL hình ảnh từ generateImage của NeuralNetworks
+    const imageUrl = await NeuralNetworks.generateImage(prompt);
     
     // Nếu nhận được thông báo lỗi thay vì URL, trả về thông báo đó
     if (imageUrl.startsWith('Xin lỗi')) {
@@ -113,7 +113,7 @@ async function handleCodeRequest(message, prompt) {
   await message.channel.sendTyping();
   
   try {
-    const codeResponse = await grokClient.getCodeCompletion(prompt);
+    const codeResponse = await NeuralNetworks.getCodeCompletion(prompt);
     
     // Trích xuất khối mã hoặc định dạng dưới dạng mã
     let formattedResponse = codeResponse;

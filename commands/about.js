@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const grokClient = require('../services/NeuralNetworks');
+const NeuralNetworks = require('../services/NeuralNetworks');
 const os = require('os');
 
 module.exports = {
@@ -8,8 +8,8 @@ module.exports = {
 		.setDescription('Hiển thị thông tin chi tiết về Luna bot'),
 	
 	async execute(interaction) {
-		// Lấy thông tin về model từ grokClient - fix method name
-		const modelName = grokClient.Model;
+		// Lấy thông tin về model từ NeuralNetworks - fix method name
+		const modelName = NeuralNetworks.Model;
 		
 		// Tính thời gian hoạt động của bot
 		const uptime = process.uptime();

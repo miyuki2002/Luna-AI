@@ -1,4 +1,4 @@
-const grokClient = require('../services/grokClient');
+const NeuralNetworks = require('../services/NeuralNetworks');
 const mongoClient = require('../services/mongoClient.js');
 const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');
@@ -44,7 +44,7 @@ async function startbot(client, loadCommands) {
 
     try {
       // Khởi tạo mẫu lời chào
-      await grokClient.initializeGreetingPatterns();
+      await NeuralNetworks.initializeGreetingPatterns();
       initSystem.markReady('greetingPatterns');
     } catch (error) {
       console.error('❌ Lỗi khi khởi tạo mẫu lời chào:', error);
@@ -63,7 +63,7 @@ async function startbot(client, loadCommands) {
     
     try {
       // Kiểm tra kết nối với X.AI API
-      const connected = await grokClient.testConnection();
+      const connected = await NeuralNetworks.testConnection();
       initSystem.markReady('api');
     } catch (error) {
       console.error('❌ Lỗi khi kết nối đến X.AI API:', error);
