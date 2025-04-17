@@ -7,7 +7,7 @@ module.exports = {
     .setDescription('Đặt lại cuộc trò chuyện với bot'),
 
   async execute(interaction) {
-    await storageDB.clearConversationHistory(message.author.id, this.systemPrompt, this.Model);
+    await storageDB.clearConversationHistory(interaction.author.id, this.systemPrompt, this.Model);
     interaction.reply({ content: 'Cuộc trò chuyện đã được đặt lại!', ephemeral: true });
   },
 };
