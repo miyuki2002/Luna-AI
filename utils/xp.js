@@ -1,5 +1,6 @@
 const { Collection } = require('discord.js');
 const ProfileDB = require('../services/profiledb');
+const GuildProfileDB = require('../services/guildprofiledb');
 
 /**
  * Xử lý điểm kinh nghiệm cho người dùng dựa trên hoạt động nhắn tin của họ
@@ -29,37 +30,31 @@ async function experience(message, command_executed, execute) {
     return Promise.resolve({ xpAdded: false, reason: 'DM_CHANNEL' });
   }
 
-  // Định nghĩa màn hình theo dõi xp và lấy cài đặt guild
-  let xp = message.client.collections?.getFrom('xp', message.guild.id);
-  let gs = message.client.guildProfiles?.get(message.guild.id);
-
-  // Tạo một màn hình theo dõi xp nếu không tồn tại
-  if (!xp && message.client.collections) {
-    const collections = message.client.collections.setTo('xp', message.guild.id, new Collection());
-    xp = collections.get(message.guild.id);
-  }
-
-  // Kiểm tra xem hồ sơ guild có tồn tại không
-  if (!gs) {
-    return Promise.resolve({ xpAdded: false, reason: 'GUILD_SETTINGS_NOT_FOUND' });
-  }
-
-  // Kiểm tra xem xp có bị vô hiệu hóa trên máy chủ không
-  if (!gs.xp?.isActive) {
-    return Promise.resolve({ xpAdded: false, reason: 'DISABLED_ON_GUILD' });
-  }
-
-  // Kiểm tra xem xp có bị vô hiệu hóa trên kênh không
-  if (gs.xp?.exceptions?.includes(message.channel.id)) {
-    return Promise.resolve({ xpAdded: false, reason: 'DISABLED_ON_CHANNEL' });
-  }
-
-  // Kiểm tra xem người dùng có vừa mới nói chuyện không (thời gian chờ)
-  if (xp?.has(message.author.id)) {
-    return Promise.resolve({ xpAdded: false, reason: 'RECENTLY_TALKED' });
-  }
-
   try {
+    // Lấy cooldowns từ client hoặc tạo mới nếu chưa có
+    if (!message.client.xpCooldowns) {
+      message.client.xpCooldowns = new Collection();
+    }
+    
+    // Kiểm tra xem người dùng đã nói chuyện gần đây chưa (đang trong cooldown)
+    const userCooldown = message.client.xpCooldowns.get(message.author.id);
+    if (userCooldown) {
+      return Promise.resolve({ xpAdded: false, reason: 'RECENTLY_TALKED' });
+    }
+
+    // Lấy cấu hình guild từ database
+    const guildProfile = await GuildProfileDB.getGuildProfile(message.guild.id);
+    
+    // Kiểm tra xem XP có được bật trong guild không
+    if (!guildProfile.xp?.isActive) {
+      return Promise.resolve({ xpAdded: false, reason: 'DISABLED_ON_GUILD' });
+    }
+    
+    // Kiểm tra xem kênh có bị loại trừ không
+    if (guildProfile.xp?.exceptions?.includes(message.channel.id)) {
+      return Promise.resolve({ xpAdded: false, reason: 'DISABLED_ON_CHANNEL' });
+    }
+    
     // Định nghĩa lượng xp tối đa và tối thiểu
     const max = 25;
     const min = 10;
@@ -73,56 +68,21 @@ async function experience(message, command_executed, execute) {
     
     if (!doc) {
       // Tạo hồ sơ mới cho người dùng này
-      const defaultProfile = {
-        _id: message.author.id,
-        data: {
-          global_xp: 0,
-          global_level: 1,
-          profile: {
-            bio: 'Chưa có tiểu sử.',
-            background: null,
-            pattern: null,
-            emblem: null,
-            hat: null,
-            wreath: null,
-            color: null,
-            birthday: null,
-            inventory: []
-          },
-          economy: {
-            bank: 0,
-            wallet: 0,
-            streak: {
-              alltime: 0,
-              current: 0,
-              timestamp: 0
-            },
-            shard: 0
-          },
-          tips: {
-            given: 0,
-            received: 0,
-            timestamp: 0
-          },
-          xp: [],
-          vote: {
-            notification: true
-          }
-        }
-      };
-      
+      const defaultProfile = ProfileDB.createDefaultProfile(message.author.id);
       await profileCollection.insertOne(defaultProfile);
       doc = defaultProfile;
     }
 
     /*=======================TÍNH TOÁN XP============================*/
-    // Lấy dữ liệu máy chủ
-    let serverData;
+    // Đảm bảo data.xp tồn tại
     if (!doc.data.xp) {
       doc.data.xp = [];
     }
     
+    // Lấy dữ liệu máy chủ
     const serverIndex = doc.data.xp.findIndex(x => x.id === message.guild.id);
+    let serverData;
+    const previousLevel = serverIndex !== -1 ? doc.data.xp[serverIndex].level : 0;
     
     // Thêm dữ liệu máy chủ vào hồ sơ nếu chưa tồn tại
     if (serverIndex === -1) {
@@ -171,17 +131,18 @@ async function experience(message, command_executed, execute) {
       { $set: { data: doc.data } }
     );
 
-    // Thiết lập thời gian chờ
-    if (xp) {
-      xp.set(message.author.id, {});
-      setTimeout(() => xp.delete(message.author.id), 60000);
-    }
+    // Thiết lập cooldown
+    message.client.xpCooldowns.set(message.author.id, Date.now());
+    setTimeout(() => {
+      message.client.xpCooldowns.delete(message.author.id);
+    }, 60000); // 60 giây cooldown
 
     return { 
       xpAdded: true, 
       reason: null, 
       points, 
       level: serverData.level,
+      previousLevel,
       totalXp: serverData.xp 
     };
     

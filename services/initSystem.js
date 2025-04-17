@@ -9,8 +9,9 @@ class InitSystem extends EventEmitter {
       greetingPatterns: false,
       commands: false,
       api: false,
-      profiles: false,           // Thêm service profiles
-      conversationHistory: false // Thêm service conversationHistory
+      profiles: false,
+      conversationHistory: false,
+      guildProfiles: false  // Thêm service guildProfiles
     };
   }
 
