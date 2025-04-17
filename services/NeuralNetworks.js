@@ -117,6 +117,157 @@ class NeuralNetworks {
   }
 
   /**
+   * Thực hiện tìm kiếm web bằng Google Custom Search API
+   * @param {string} query - Truy vấn tìm kiếm
+   * @returns {Promise<Array>} - Danh sách kết quả tìm kiếm
+   */
+  async performWebSearch(query) {
+    try {
+      const googleApiKey = process.env.GOOGLE_API_KEY;
+      const googleCseId = process.env.GOOGLE_CSE_ID;
+
+      if (!googleApiKey || !googleCseId) {
+        console.log('Thiếu GOOGLE_API_KEY hoặc GOOGLE_CSE_ID trong biến môi trường. Bỏ qua tìm kiếm web.');
+        return [];
+      }
+
+      // Tối ưu truy vấn tìm kiếm
+      const optimizedQuery = this.optimizeSearchQuery(query);
+      
+      console.log(`Đang thực hiện tìm kiếm web cho: "${optimizedQuery}"`);
+
+      const axiosInstance = axios.create({
+        baseURL: 'https://www.googleapis.com',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 5000 // Thêm timeout để tránh chờ đợi quá lâu
+      });
+
+      const response = await axiosInstance.get('/customsearch/v1', {
+        params: {
+          key: googleApiKey,
+          cx: googleCseId,
+          q: optimizedQuery,
+          num: 5,
+          hl: 'vi', // Ưu tiên kết quả tiếng Việt
+          gl: 'vn'  // Ưu tiên kết quả từ Việt Nam
+        }
+      });
+
+      const results = response.data.items
+        ? response.data.items.map(item => ({
+            title: item.title,
+            snippet: item.snippet,
+            url: item.link,
+            date: item.pagemap?.metatags?.[0]?.['article:published_time'] || null
+          }))
+        : [];
+
+      console.log(`Đã tìm thấy ${results.length} kết quả cho truy vấn: ${optimizedQuery}`);
+      return results;
+    } catch (error) {
+      console.error('Lỗi khi thực hiện tìm kiếm web:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Tối ưu hoá truy vấn tìm kiếm để có kết quả chính xác hơn
+   * @param {string} query - Truy vấn gốc
+   * @returns {string} - Truy vấn đã được tối ưu
+   */
+  optimizeSearchQuery(query) {
+    // Loại bỏ các từ hỏi thông thường để tập trung vào từ khóa chính
+    const commonQuestionWords = /^(làm thế nào|tại sao|tại sao lại|là gì|có phải|ai là|khi nào|ở đâu|what is|how to|why|who is|when|where)/i;
+    let optimized = query.replace(commonQuestionWords, '').trim();
+    
+    // Loại bỏ các cụm từ yêu cầu cá nhân
+    const personalRequests = /(tôi muốn biết|cho tôi biết|hãy nói cho tôi|tell me|i want to know|please explain)/i;
+    optimized = optimized.replace(personalRequests, '').trim();
+    
+    // Nếu truy vấn quá ngắn sau khi tối ưu, sử dụng truy vấn gốc
+    if (optimized.length < 5) {
+      return query;
+    }
+    
+    return optimized;
+  }
+
+  /**
+   * Tạo prompt cải tiến với kết quả tìm kiếm
+   * @param {string} originalPrompt - Prompt ban đầu
+   * @param {Array} searchResults - Kết quả tìm kiếm
+   * @returns {string} - Prompt đã cải tiến
+   */
+  createSearchEnhancedPrompt(originalPrompt, searchResults) {
+    if (searchResults.length === 0) {
+      return originalPrompt;
+    }
+    
+    // Loại bỏ các kết quả trùng lặp hoặc không liên quan
+    const relevantResults = this.filterRelevantResults(searchResults, originalPrompt);
+    
+    if (relevantResults.length === 0) {
+      return originalPrompt;
+    }
+    
+    let enhancedPrompt = `${originalPrompt}\n\n[THÔNG TIN TÌM KIẾM]\n`;
+    enhancedPrompt += 'Dưới đây là thông tin liên quan từ web. Hãy sử dụng thông tin này khi thích hợp để bổ sung cho câu trả lời của bạn, nhưng không cần thiết phải tham khảo tất cả:\n\n';
+    
+    relevantResults.forEach((result, index) => {
+      enhancedPrompt += `[Nguồn ${index + 1}]: ${result.title}\n`;
+      enhancedPrompt += `${result.snippet}\n`;
+      enhancedPrompt += `URL: ${result.url}\n\n`;
+    });
+    
+    enhancedPrompt += 'Hãy tổng hợp thông tin trên một cách tự nhiên vào câu trả lời của bạn, không cần liệt kê lại các nguồn. Trả lời với giọng điệu thân thiện, không quá học thuật.';
+    
+    return enhancedPrompt;
+  }
+
+  /**
+   * Lọc kết quả tìm kiếm để lấy những kết quả liên quan nhất
+   * @param {Array} results - Danh sách kết quả tìm kiếm
+   * @param {string} query - Truy vấn gốc
+   * @returns {Array} - Danh sách kết quả đã được lọc
+   */
+  filterRelevantResults(results, query) {
+    if (results.length === 0) return [];
+    
+    // Trích xuất từ khóa chính từ truy vấn
+    const keywords = this.extractKeywords(query);
+    
+    // Tính điểm liên quan cho mỗi kết quả
+    const scoredResults = results.map(result => {
+      let score = 0;
+      
+      // Kiểm tra sự xuất hiện của từ khóa trong tiêu đề và đoạn trích
+      keywords.forEach(keyword => {
+        if (result.title.toLowerCase().includes(keyword.toLowerCase())) score += 2;
+        if (result.snippet.toLowerCase().includes(keyword.toLowerCase())) score += 1;
+      });
+      
+      // Ưu tiên các kết quả có ngày mới hơn
+      if (result.date) {
+        const resultDate = new Date(result.date);
+        const now = new Date();
+        const monthsAgo = (now - resultDate) / (1000 * 60 * 60 * 24 * 30);
+        if (monthsAgo < 3) score += 2; // Trong vòng 3 tháng
+        else if (monthsAgo < 12) score += 1; // Trong vòng 1 năm
+      }
+      
+      return { ...result, relevanceScore: score };
+    });
+    
+    // Sắp xếp theo điểm liên quan và chỉ lấy tối đa 3 kết quả có liên quan nhất
+    return scoredResults
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .filter(result => result.relevanceScore > 0)
+      .slice(0, 3);
+  }
+
+  /**
    * Nhận phản hồi trò chuyện từ API
    */
   async getCompletion(prompt, message = null) {
@@ -157,10 +308,26 @@ class NeuralNetworks {
         return await this.getMemoryAnalysis(userId, memoryRequest);
       }
 
-      console.log(`Đang gửi yêu cầu chat completion đến ${this.CoreModel}... (hiển thị cho người dùng: ${this.Model})`);
-
-      // Kiểm tra xem có nên bổ sung thông tin từ trí nhớ vào prompt
-      const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
+      console.log(`Đang xử lý yêu cầu chat completion cho prompt: "${prompt.substring(0, 50)}..."`);
+      
+      // Xác định xem prompt có cần tìm kiếm web hay không
+      const shouldSearchWeb = this.shouldPerformWebSearch(prompt);
+      let searchResults = [];
+      
+      if (shouldSearchWeb) {
+        console.log("Prompt có vẻ cần thông tin từ web, đang thực hiện tìm kiếm...");
+        searchResults = await this.performWebSearch(prompt);
+      } else {
+        console.log("Sử dụng kiến thức có sẵn, không cần tìm kiếm web");
+      }
+      
+      // Tạo prompt được nâng cao với kết quả tìm kiếm (nếu có)
+      const promptWithSearch = searchResults.length > 0 
+        ? this.createSearchEnhancedPrompt(prompt, searchResults)
+        : prompt;
+      
+      // Bổ sung thông tin từ trí nhớ cuộc trò chuyện
+      const enhancedPromptWithMemory = await this.enrichPromptWithMemory(promptWithSearch, userId);
 
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -179,6 +346,10 @@ class NeuralNetworks {
         enhancedPrompt += ` IMPORTANT: This is an ongoing conversation, DO NOT introduce yourself again or send greetings like "Chào bạn", "Hi", "Hello" or "Mình là Luna". Continue the conversation naturally without reintroducing yourself.`;
       } else {
         enhancedPrompt += ` If it fits the context, feel free to sprinkle in light humor or kind encouragement.`;
+      }
+      
+      if (searchResults.length > 0) {
+        enhancedPrompt += ` I've provided you with web search results. Incorporate this information naturally into your response without explicitly listing the sources. Respond in a conversational tone as Luna, not as an information aggregator.`;
       }
 
       enhancedPrompt += ` Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${enhancedPromptWithMemory}`;
@@ -205,64 +376,8 @@ class NeuralNetworks {
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
       await conversationManager.addMessage(userId, 'assistant', content);
 
-      // Lọc bỏ các lời chào thông thường ở đầu tin nhắn nếu không phải cuộc trò chuyện mới
-      if (!isNewConversation) {
-        // Sử dụng mẫu lời chào từ cơ sở dữ liệu
-        if (!this.greetingPatterns || this.greetingPatterns.length === 0) {
-          // Nếu chưa tải được mẫu lời chào, tải lại
-          await this.refreshGreetingPatterns();
-        }
-
-        // Áp dụng từng mẫu lọc
-        let contentChanged = false;
-        let originalLength = content.length;
-
-        for (const pattern of this.greetingPatterns) {
-          const previousContent = content;
-          content = content.replace(pattern, '');
-
-          // Kiểm tra nếu có sự thay đổi
-          if (previousContent !== content) {
-            contentChanged = true;
-          }
-        }
-
-        // Xử lý sau khi lọc - giữ nguyên logic hiện tại
-        content = content.replace(/^[\s,.!:;]+/, '');
-
-        // Viết hoa chữ cái đầu tiên nếu cần
-        if (content.length > 0) {
-          content = content.charAt(0).toUpperCase() + content.slice(1);
-        }
-
-        // Nếu nội dung bị thay đổi quá nhiều, có thể là lời chào phức tạp - kiểm tra thêm
-        if (contentChanged && content.length < originalLength * 0.7 && content.length < 20) {
-          // Nếu nội dung còn lại quá ngắn, có thể toàn bộ là lời chào
-          // Kiểm tra thêm các từ khóa phổ biến
-          const commonFiller = /^(uhm|hmm|well|so|vậy|thế|đó|nha|nhé|ok|okay|nào|giờ)/i;
-          content = content.replace(commonFiller, '');
-
-          // Lại dọn dẹp và viết hoa
-          content = content.replace(/^[\s,.!:;]+/, '');
-          if (content.length > 0) {
-            content = content.charAt(0).toUpperCase() + content.slice(1);
-          }
-        }
-
-        // Nếu nội dung sau khi lọc quá ngắn, hãy kiểm tra xem có phải là lời chào kèm thông tin hay không
-        if (content.length < 10 && originalLength > 50) {
-          // Phục hồi nội dung gốc nhưng bỏ 30 ký tự đầu (thường là lời chào)
-          const potentialContentStart = originalLength > 30 ? 30 : Math.floor(originalLength / 2);
-          content = content || originalContent.substring(potentialContentStart).trim();
-
-          // Viết hoa lại chữ cái đầu
-          if (content.length > 0) {
-            content = content.charAt(0).toUpperCase() + content.slice(1);
-          }
-        }
-      } else if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
-        content = `Hii~ mình là ${this.Model} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
-      }
+      // Xử lý và định dạng phản hồi
+      content = await this.formatResponseContent(content, isNewConversation, searchResults);
 
       return content;
     } catch (error) {
@@ -272,6 +387,99 @@ class NeuralNetworks {
       }
       return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
     }
+  }
+  
+  /**
+   * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không
+   * @param {string} prompt - Prompt từ người dùng
+   * @returns {boolean} - True nếu nên thực hiện tìm kiếm web
+   */
+  shouldPerformWebSearch(prompt) {
+    // Nếu prompt quá ngắn, không cần tìm kiếm
+    if (prompt.length < 15) return false;
+    
+    // Các từ khóa gợi ý cần thông tin cập nhật hoặc sự kiện
+    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|recent|current|latest|update|news)/i;
+    
+    // Các từ khóa gợi ý cần dữ liệu cụ thể
+    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|how many|when|where|who is|what is)/i;
+    
+    // Các từ khóa chỉ ý kiến cá nhân hoặc sáng tạo (không cần tìm kiếm)
+    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|what do you think|in your opinion|your thoughts)/i;
+    
+    // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
+    if (opinionKeywords.test(prompt)) return false;
+    
+    // Nếu có từ khóa về thông tin hoặc dữ kiện cụ thể, thực hiện tìm kiếm
+    return informationKeywords.test(prompt) || factsKeywords.test(prompt);
+  }
+  
+  /**
+   * Xử lý và định dạng nội dung phản hồi
+   * @param {string} content - Nội dung phản hồi gốc
+   * @param {boolean} isNewConversation - Là cuộc trò chuyện mới hay không
+   * @param {Array} searchResults - Kết quả tìm kiếm (nếu có)
+   * @returns {string} - Nội dung đã được định dạng
+   */
+  async formatResponseContent(content, isNewConversation, searchResults) {
+    // Lọc bỏ các lời chào thông thường ở đầu tin nhắn nếu không phải cuộc trò chuyện mới
+    if (!isNewConversation) {
+      // Cập nhật mẫu lời chào nếu cần
+      if (!this.greetingPatterns || this.greetingPatterns.length === 0) {
+        await this.refreshGreetingPatterns();
+      }
+
+      // Áp dụng từng mẫu lọc
+      let contentChanged = false;
+      let originalLength = content.length;
+
+      for (const pattern of this.greetingPatterns) {
+        const previousContent = content;
+        content = content.replace(pattern, '');
+        if (previousContent !== content) {
+          contentChanged = true;
+        }
+      }
+
+      // Xử lý sau khi lọc
+      content = content.replace(/^[\s,.!:;]+/, '');
+      if (content.length > 0) {
+        content = content.charAt(0).toUpperCase() + content.slice(1);
+      }
+
+      // Xử lý các trường hợp đặc biệt
+      if (contentChanged && content.length < originalLength * 0.7 && content.length < 20) {
+        const commonFiller = /^(uhm|hmm|well|so|vậy|thế|đó|nha|nhé|ok|okay|nào|giờ)/i;
+        content = content.replace(commonFiller, '');
+        content = content.replace(/^[\s,.!:;]+/, '');
+        if (content.length > 0) {
+          content = content.charAt(0).toUpperCase() + content.slice(1);
+        }
+      }
+
+      if (content.length < 10 && originalLength > 50) {
+        const potentialContentStart = originalLength > 30 ? 30 : Math.floor(originalLength / 2);
+        content = content || content.substring(potentialContentStart).trim();
+        if (content.length > 0) {
+          content = content.charAt(0).toUpperCase() + content.slice(1);
+        }
+      }
+    } else if (content.toLowerCase().trim() === 'chào bạn' || content.length < 6) {
+      content = `Hii~ mình là ${this.Model} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
+    }
+
+    // Thêm chỉ báo về kết quả tìm kiếm nếu có
+    if (searchResults && searchResults.length > 0) {
+      // Chỉ thêm biểu tượng tìm kiếm nhỏ ở đầu để không làm gián đoạn cuộc trò chuyện
+      content = `🔍 ${content}`;
+      
+      // Thêm ghi chú nhỏ về nguồn thông tin ở cuối nếu có nhiều kết quả tìm kiếm
+      if (searchResults.length >= 2) {
+        content += `\n\n*Thông tin được tổng hợp từ ${searchResults.length} nguồn trực tuyến.*`;
+      }
+    }
+
+    return content;
   }
 
   /**
