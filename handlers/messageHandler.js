@@ -315,4 +315,7 @@ function splitMessageRespectWords(text, maxLength = 2000) {
   return chunks;
 }
 
-module.exports = { handleMessage };
+module.exports = { 
+  handleMessage,
+  processXp  // Xuất hàm processXp
+};

@@ -24,6 +24,11 @@ async function storeGuildInDB(guild) {
         welcomeChannel: null,
         moderationEnabled: true,
         autoRoles: []
+      },
+      // Thêm cấu hình XP mặc định cho guild
+      xp: {
+        isActive: true,
+        exceptions: []
       }
     };
     
@@ -33,6 +38,14 @@ async function storeGuildInDB(guild) {
       { $set: guildData },
       { upsert: true }
     );
+    
+    // Lưu cấu hình XP vào client.guildProfiles để sử dụng ở memory
+    if (guild.client && guild.client.guildProfiles) {
+      guild.client.guildProfiles.set(guild.id, {
+        xp: guildData.xp
+      });
+      console.log(`Đã lưu cấu hình XP cho guild ${guild.name} vào bộ nhớ`);
+    }
     
     console.log(`\x1b[32m%s\x1b[0m`, `Đã lưu thông tin server ${guild.name} vào MongoDB`);
   } catch (error) {

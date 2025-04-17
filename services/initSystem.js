@@ -8,7 +8,9 @@ class InitSystem extends EventEmitter {
       mongodb: false,
       greetingPatterns: false,
       commands: false,
-      api: false
+      api: false,
+      profiles: false,           // Thêm service profiles
+      conversationHistory: false // Thêm service conversationHistory
     };
   }
 
