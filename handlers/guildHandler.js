@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const mongoClient = require('../services/mongoClient.js');
 const initSystem = require('../services/initSystem.js');
+const { getCommandsJson } = require('./commandHandler');
 
 /**
  * Lưu thông tin guild vào MongoDB
@@ -122,8 +123,25 @@ async function handleGuildJoin(guild, commands) {
     // Lưu thông tin guild vào MongoDB
     await storeGuildInDB(guild);
     
+    // Đảm bảo rằng commands không rỗng
+    let commandsToRegister = commands;
+    if (!commandsToRegister || !commandsToRegister.length) {
+      // Nếu không có commands được truyền vào, tải lại từ thư mục commands
+      commandsToRegister = [];
+      const commandsPath = path.join(__dirname, '..', 'commands');
+      const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+      
+      for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('data' in command && 'execute' in command) {
+          commandsToRegister.push(command.data.toJSON());
+        }
+      }
+    }
+    
     // Triển khai slash commands cho guild mới
-    await deployCommandsToGuild(guild.id, commands);
+    await deployCommandsToGuild(guild.id, commandsToRegister);
     console.log(`\x1b[32m%s\x1b[0m`, `Đã triển khai các lệnh slash cho server: ${guild.name}`);
     
     // Thông báo cho chủ sở hữu server hoặc kênh mặc định nếu có thể
@@ -173,21 +191,8 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
     // Tạo REST client
     const rest = new REST({ version: '10' }).setToken(token);
     
-    // Nếu không có lệnh được cung cấp, tải lại từ thư mục commands
-    let commands = existingCommands;
-    if (!commands) {
-      commands = [];
-      const commandsPath = path.join(__dirname, '..', 'commands');
-      const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-      
-      for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
-        const command = require(filePath);
-        if ('data' in command && 'execute' in command) {
-          commands.push(command.data.toJSON());
-        }
-      }
-    }
+    // Sử dụng commands từ cache hoặc từ tham số
+    const commands = existingCommands || getCommandsJson();
     
     // Triển khai lệnh đến guild cụ thể
     console.log(`\x1b[36m%s\x1b[0m`, `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
