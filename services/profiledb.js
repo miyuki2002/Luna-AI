@@ -7,8 +7,8 @@ console.log('🔄 ProfileDB module đã được tải vào hệ thống');
 const userProfileCache = new Set();
 
 // Define the profile schema structure for reference
-const profileStructure = {
-  _id: String,
+const createProfileStructure = (userId) => ({
+  _id: userId,
   data: {
     global_xp: 0,
     global_level: 1,
@@ -58,27 +58,22 @@ const profileStructure = {
       notification: true
     }
   }
-};
+});
 
 // Function to get the profile collection
 const getProfileCollection = async () => {
   const db = mongoClient.getDb();
-  // Bỏ thông báo debug để tránh spam console
   return db.collection('user_profiles');
 };
 
 // Helper function to create a new profile with default values
 const createDefaultProfile = (userId) => {
-
   if (!userProfileCache.has(userId)) {
     console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
     userProfileCache.add(userId);
   }
   
-  return {
-    _id: userId,
-    ...profileStructure
-  };
+  return createProfileStructure(userId);
 };
 
 // Helper function to get profile or create if not exists
@@ -90,7 +85,6 @@ const getProfile = async (userId) => {
     profile = createDefaultProfile(userId);
     await collection.insertOne(profile);
   } else {
-    // Nếu đã tìm thấy, thêm vào cache để tránh in thông báo tạo mới sau này
     userProfileCache.add(userId);
   }
   
@@ -98,7 +92,7 @@ const getProfile = async (userId) => {
 };
 
 module.exports = {
-  profileStructure,
+  createProfileStructure,
   getProfileCollection,
   createDefaultProfile,
   getProfile
