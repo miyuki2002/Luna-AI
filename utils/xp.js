@@ -1,7 +1,9 @@
-const { Collection } = require('discord.js');
+const { Collection, AttachmentBuilder } = require('discord.js');
+const path = require('path');
+const fs = require('fs');
 const ProfileDB = require('../services/profiledb');
 const GuildProfileDB = require('../services/guildprofiledb');
-const { checkAchievements } = require('./achievements');
+const { checkAchievements } = require('../services/canvas/achievements');
 
 /**
  * Xử lý điểm kinh nghiệm cho người dùng dựa trên hoạt động nhắn tin của họ
