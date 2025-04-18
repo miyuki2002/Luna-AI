@@ -1,8 +1,8 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { AttachmentBuilder } = require('discord.js');
-const ProfileDB = require('../services/profiledb');
-const mongoClient = require('../services/mongoClient');
-const profileCanvas = require('../utils/profileCanvas'); // Sử dụng class ProfileCanvas
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const storageDB = require('../services/storagedb');
+const profileCommand = require('../utils/profileCommand');
+const profileCanvas = require('../services/canvas/profileCanvas'); // Sử dụng class ProfileCanvas
 
 // Hàm tiện ích để chuẩn hóa thông số font
 function getStandardFont(size, weight = 'normal', fontFamily = 'Montserrat') {
