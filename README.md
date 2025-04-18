@@ -13,7 +13,7 @@ Luna là một bot Discord được hỗ trợ bởi API X.AI (Grok). Cô ấy c
 ## Tính Năng
 
 - 💬 **Trò Chuyện Tự Nhiên**: Chat với Luna một cách thân thiện và tự nhiên
-- 🖼️ **Tạo Hình Ảnh**: Tạo hình ảnh bằng các lệnh đơn giản như "/image [mô tả]"
+- 🖼️ **Tạo Hình Ảnh**: Tạo hình ảnh bằng các lệnh đơn giản như "vẽ, tạo hình [mô tả]"
 - 💻 **Hỗ Trợ Lập Trình**: Nhận trợ giúp cho các nhiệm vụ lập trình
 - 🔄 **Lưu trữ**: Luna ghi nhớ ngữ cảnh cuộc trò chuyện để tương tác tự nhiên hơn
 - ⚙️ **Quản Lý Máy Chủ**: Tự động triển khai lệnh khi tham gia máy chủ mới
