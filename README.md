@@ -71,4 +71,4 @@ Chào đón mọi đóng góp, báo lỗi và yêu cầu tính năng mới! Bot 
 
 ## Giấy Phép
 
-MIT
+[MIT](LICENSE)
