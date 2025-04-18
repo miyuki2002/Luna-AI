@@ -99,7 +99,6 @@ async function handleProfileCommand(interaction) {
     
     // Phản hồi với hình ảnh
     await interaction.editReply({
-      content: `Profile của ${targetUser.username}:`,
       files: [attachment]
     });
   } catch (error) {
