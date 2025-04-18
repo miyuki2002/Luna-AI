@@ -21,12 +21,12 @@ class ProfileCanvas {
         dark: '#0089A8'   // Xanh đậm
       },
       background: {
-        light: '#16161A', // Đen nhạt
-        dark: '#0D0D0F'   // Đen đậm
+        light: '#1A1A25', // Xanh đen nhạt
+        dark: '#0D0D1A'   // Xanh đen đậm
       },
       text: {
         primary: '#FFFFFE', // Trắng
-        secondary: '#94A1B2', // Xám nhạt
+        secondary: '#B8C0D0', // Xanh xám nhạt
         accent: '#7F5AF0'    // Tím
       },
       accent: '#FF8906', // Cam
@@ -49,10 +49,77 @@ class ProfileCanvas {
       try {
         await fs.access(fontsPath);
         
-        // Đăng ký fonts hiện đại
-        registerFont(path.join(fontsPath, 'Montserrat-Regular.ttf'), { family: 'Montserrat' });
-        registerFont(path.join(fontsPath, 'Montserrat-Bold.ttf'), { family: 'Montserrat', weight: 'bold' });
-        registerFont(path.join(fontsPath, 'Montserrat-Medium.ttf'), { family: 'Montserrat', weight: '500' });
+        // Tạo cấu trúc ánh xạ font weights
+        const fontWeightMappings = {
+          'Thin': 100,
+          'ExtraLight': 200,
+          'Light': 300,
+          'Regular': 400,
+          'Medium': 500,
+          'SemiBold': 600,
+          'Bold': 700,
+          'ExtraBold': 800,
+          'Black': 900
+        };
+        
+        // Đăng ký tất cả các biến thể của Montserrat
+        const fontVariants = [
+          { file: 'Montserrat-Thin.otf', weight: 'Thin', style: 'normal' },
+          { file: 'Montserrat-ThinItalic.otf', weight: 'Thin', style: 'italic' },
+          { file: 'Montserrat-ExtraLight.otf', weight: 'ExtraLight', style: 'normal' },
+          { file: 'Montserrat-ExtraLightItalic.otf', weight: 'ExtraLight', style: 'italic' },
+          { file: 'Montserrat-Light.otf', weight: 'Light', style: 'normal' },
+          { file: 'Montserrat-LightItalic.otf', weight: 'Light', style: 'italic' },
+          { file: 'Montserrat-Regular.otf', weight: 'Regular', style: 'normal' },
+          { file: 'Montserrat-Italic.otf', weight: 'Regular', style: 'italic' },
+          { file: 'Montserrat-Medium.otf', weight: 'Medium', style: 'normal' },
+          { file: 'Montserrat-MediumItalic.otf', weight: 'Medium', style: 'italic' },
+          { file: 'Montserrat-SemiBold.otf', weight: 'SemiBold', style: 'normal' },
+          { file: 'Montserrat-SemiBoldItalic.otf', weight: 'SemiBold', style: 'italic' },
+          { file: 'Montserrat-Bold.otf', weight: 'Bold', style: 'normal' },
+          { file: 'Montserrat-BoldItalic.otf', weight: 'Bold', style: 'italic' },
+          { file: 'Montserrat-ExtraBold.otf', weight: 'ExtraBold', style: 'normal' },
+          { file: 'Montserrat-ExtraBoldItalic.otf', weight: 'ExtraBold', style: 'italic' },
+          { file: 'Montserrat-Black.otf', weight: 'Black', style: 'normal' },
+          { file: 'Montserrat-BlackItalic.otf', weight: 'Black', style: 'italic' }
+        ];
+        
+        // Đăng ký fonts với các cách khác nhau để tăng khả năng tương thích với Pango
+        for (const variant of fontVariants) {
+          try {
+            // Cách 1: Đăng ký với tên weight
+            registerFont(path.join(fontsPath, variant.file), {
+              family: 'Montserrat',
+              weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
+              style: variant.style
+            });
+            
+            // Cách 2: Đăng ký với số weight
+            registerFont(path.join(fontsPath, variant.file), {
+              family: 'Montserrat',
+              weight: fontWeightMappings[variant.weight].toString(),
+              style: variant.style
+            });
+            
+            // Cách 3: Đăng ký không có rotation
+            registerFont(path.join(fontsPath, variant.file), {
+              family: 'Montserrat',
+              weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
+              style: variant.style,
+              rotate: false
+            });
+            
+            // Cách 4: Đăng ký không có rotation với số weight
+            registerFont(path.join(fontsPath, variant.file), {
+              family: 'Montserrat',
+              weight: fontWeightMappings[variant.weight].toString(),
+              style: variant.style,
+              rotate: false
+            });
+          } catch (err) {
+            console.warn(`Không thể đăng ký font ${variant.file}:`, err);
+          }
+        }
         
         console.log('Đã đăng ký fonts thành công');
       } catch (err) {
@@ -161,6 +228,25 @@ class ProfileCanvas {
       );
       ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, 900, 420);
+
+      // Vẽ nền banner mặc định
+      try {
+        const bannerImage = await this.loadImageWithCache(path.join(ASSETS_PATH, 'luna-banner.png'));
+        ctx.globalAlpha = 0.8; // Điều chỉnh độ trong suốt
+        ctx.drawImage(bannerImage, 0, 0, 900, 420);
+        ctx.globalAlpha = 1.0;
+        
+        // Thêm overlay gradient để làm cho text và các thành phần khác dễ đọc hơn
+        const overlay = this.createGradient(
+          ctx, 0, 0, 900, 420,
+          'rgba(10, 10, 25, 0.7)',
+          'rgba(10, 10, 25, 0.9)'
+        );
+        ctx.fillStyle = overlay;
+        ctx.fillRect(0, 0, 900, 420);
+      } catch (error) {
+        console.error('Lỗi khi tải banner:', error);
+      }
       
       // Vẽ các thành phần chính
       await this.drawMainProfileCard(ctx, profileData);
@@ -183,16 +269,13 @@ class ProfileCanvas {
     const customColor = profileData.customization?.color;
     const primaryColor = customColor || this.colors.primary.light;
     
-    // PHẦN 1: BANNER HEADER (30% chiều cao)
-    await this.drawHeaderSection(ctx, profileData, primaryColor);
-    
-    // PHẦN 2: THÔNG TIN NGƯỜI DÙNG (bên trái)
+    // PHẦN 1: CARD NGƯỜI DÙNG (bên trái)
     await this.drawUserInfoSection(ctx, profileData, primaryColor);
     
-    // PHẦN 3: THÔNG TIN PROFILE (bên phải)
+    // PHẦN 2: THÔNG TIN PROFILE (bên phải)
     await this.drawProfileInfoSection(ctx, profileData, primaryColor);
     
-    // PHẦN 4: THANH XP
+    // PHẦN 3: THANH XP
     await this.drawXPBar(ctx, profileData, primaryColor);
   }
   
@@ -203,95 +286,7 @@ class ProfileCanvas {
    * @param {string} primaryColor - Màu chủ đạo
    */
   async drawHeaderSection(ctx, profileData, primaryColor) {
-    // Vẽ banner header
-    try {
-      // Nếu người dùng có banner tùy chỉnh
-      let bannerImage;
-      if (profileData.customization?.banner) {
-        try {
-          bannerImage = await loadImage(profileData.customization.banner);
-        } catch (err) {
-          console.warn('Không thể tải banner tùy chỉnh:', err);
-        }
-      }
-      
-      // Nếu không có banner tùy chỉnh, sử dụng gradient
-      if (!bannerImage) {
-        // Tạo gradient từ màu chính
-        const gradient = this.createGradient(
-          ctx, 0, 0, 900, 120,
-          primaryColor,
-          this.adjustColor(primaryColor, -30) // Tối hơn 30%
-        );
-        
-        // Vẽ banner gradient với bo góc
-        this.withShadow(ctx, () => {
-          this.roundRect(ctx, 20, 20, 860, 120, 15);
-          ctx.fillStyle = gradient;
-          ctx.fill();
-        });
-        
-        // Thêm hiệu ứng overlay
-        ctx.globalAlpha = 0.1;
-        for (let i = 0; i < 5; i++) {
-          const size = 80 + Math.random() * 60;
-          const x = Math.random() * 800;
-          const y = Math.random() * 80 + 20;
-          ctx.beginPath();
-          ctx.arc(x, y, size, 0, Math.PI * 2);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      } else {
-        // Vẽ banner tùy chỉnh
-        this.withShadow(ctx, () => {
-          this.roundRect(ctx, 20, 20, 860, 120, 15);
-          ctx.save();
-          ctx.clip();
-          ctx.drawImage(bannerImage, 20, 20, 860, 120);
-          
-          // Overlay để làm cho banner tối hơn
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-          ctx.fillRect(20, 20, 860, 120);
-          ctx.restore();
-        });
-      }
-      
-      // Vẽ huy hiệu server rank nếu top 3
-      if (profileData.rank?.server <= 3) {
-        const rankBadgeSize = 60;
-        const rankLabel = ['', '🥇 #1', '🥈 #2', '🥉 #3'][profileData.rank.server];
-        
-        // Vẽ huy hiệu rank
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.beginPath();
-        ctx.arc(830, 60, rankBadgeSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Vẽ chữ rank
-        ctx.font = 'bold 24px "Montserrat"';
-        ctx.fillStyle = this.colors.text.primary;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(rankLabel, 830, 60);
-      }
-      
-      // Vẽ tiêu đề profile
-      ctx.font = 'bold 28px "Montserrat"';
-      ctx.fillStyle = this.colors.text.primary;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('USER PROFILE', 40, 60);
-      
-      // Vẽ tên server
-      ctx.font = '16px "Montserrat"';
-      ctx.fillStyle = this.colors.text.secondary;
-      ctx.fillText(profileData.serverName || 'Discord Server', 40, 90);
-      
-    } catch (error) {
-      console.error('Lỗi khi vẽ header:', error);
-    }
+    // Không cần vẽ banner header nữa vì đã dùng banner làm nền toàn bộ
   }
   
   /**
@@ -302,12 +297,32 @@ class ProfileCanvas {
    */
   async drawUserInfoSection(ctx, profileData, primaryColor) {
     try {
-      // Vẽ card thông tin người dùng
+      // Vẽ card thông tin người dùng - kiểu thủy tinh hiện đại
       this.withShadow(ctx, () => {
-        this.roundRect(ctx, 20, 100, 300, 280, 15);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, 30, 50, 300, 320, 20);
+        const glassEffect = ctx.createLinearGradient(30, 50, 330, 370);
+        glassEffect.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+        glassEffect.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+        ctx.fillStyle = glassEffect;
         ctx.fill();
+        
+        // Thêm viền mỏng
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       });
+      
+      // Vẽ tiêu đề USER PROFILE
+      ctx.font = 'bold 24px "Montserrat"';
+      ctx.fillStyle = this.colors.text.primary;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('USER PROFILE', 180, 80);
+      
+      // Vẽ tên server
+      ctx.font = '16px "Montserrat"';
+      ctx.fillStyle = this.colors.text.secondary;
+      ctx.fillText(profileData.serverName || 'Discord Server', 180, 110);
       
       // Tải avatar
       let avatarImage;
@@ -321,17 +336,18 @@ class ProfileCanvas {
       this.withShadow(ctx, () => {
         // Vẽ khung avatar
         ctx.beginPath();
-        ctx.arc(170, 180, 60, 0, Math.PI * 2);
-        ctx.fillStyle = this.createGradient(ctx, 110, 120, 120, 120, primaryColor, this.adjustColor(primaryColor, 20));
+        ctx.arc(180, 180, 60, 0, Math.PI * 2);
+        const avatarGlow = this.createGradient(ctx, 120, 120, 120, 120, primaryColor, this.adjustColor(primaryColor, 30));
+        ctx.fillStyle = avatarGlow;
         ctx.fill();
         
         if (avatarImage) {
           // Vẽ avatar
           ctx.save();
           ctx.beginPath();
-          ctx.arc(170, 180, 55, 0, Math.PI * 2);
+          ctx.arc(180, 180, 55, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(avatarImage, 115, 125, 110, 110);
+          ctx.drawImage(avatarImage, 125, 125, 110, 110);
           ctx.restore();
         }
       });
@@ -342,7 +358,7 @@ class ProfileCanvas {
           const wreathImage = await this.loadImageWithCache(
             path.join(ASSETS_PATH, 'wreaths', `${profileData.customization.wreath}.png`)
           );
-          ctx.drawImage(wreathImage, 100, 110, 140, 140);
+          ctx.drawImage(wreathImage, 110, 110, 140, 140);
         } catch (err) {
           console.warn('Không thể tải wreath:', err);
         }
@@ -354,7 +370,7 @@ class ProfileCanvas {
       ctx.fillStyle = this.colors.text.primary;
       ctx.fillText(
         profileData.username || 'User',
-        170,
+        180,
         260,
         280
       );
@@ -363,7 +379,7 @@ class ProfileCanvas {
       if (profileData.discriminator && profileData.discriminator !== '0') {
         ctx.font = '16px "Montserrat"';
         ctx.fillStyle = this.colors.text.secondary;
-        ctx.fillText(`#${profileData.discriminator}`, 170, 285);
+        ctx.fillText(`#${profileData.discriminator}`, 180, 285);
       }
       
       // Vẽ các badge (huy hiệu)
@@ -385,23 +401,44 @@ class ProfileCanvas {
    */
   async drawProfileInfoSection(ctx, profileData, primaryColor) {
     try {
-      // Vẽ card thông tin profile
+      // Vẽ card thông tin profile - kiểu thủy tinh hiện đại
       this.withShadow(ctx, () => {
-        this.roundRect(ctx, 340, 160, 540, 220, 15);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, 360, 50, 510, 320, 20);
+        const glassEffect = ctx.createLinearGradient(360, 50, 870, 370);
+        glassEffect.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+        glassEffect.addColorStop(1, 'rgba(255, 255, 255, 0.04)');
+        ctx.fillStyle = glassEffect;
         ctx.fill();
+        
+        // Thêm viền mỏng
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       });
+      
+      // Vẽ tên server rank nếu top 3
+      if (profileData.rank?.server <= 3) {
+        const rankBadgeSize = 70;
+        const rankLabels = ['', '🥇 TOP #1', '🥈 TOP #2', '🥉 TOP #3'];
+        const rankLabel = rankLabels[profileData.rank.server] || '';
+        
+        ctx.font = 'bold 24px "Montserrat"';
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(rankLabel, 850, 80);
+      }
       
       // Vẽ tiêu đề BIO
       ctx.font = 'bold 20px "Montserrat"';
       ctx.textAlign = 'left';
       ctx.fillStyle = primaryColor;
-      ctx.fillText('BIO', 360, 190);
+      ctx.fillText('BIO', 380, 120);
       
       // Vẽ bio card
       this.withShadow(ctx, () => {
-        this.roundRect(ctx, 360, 200, 500, 60, 10);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, 380, 130, 470, 60, 10);
+        ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
         ctx.fill();
       });
       
@@ -412,21 +449,21 @@ class ProfileCanvas {
       
       // Cắt bio nếu quá dài
       if (bio.length > 70) {
-        ctx.fillText(bio.substring(0, 67) + '...', 370, 235, 480);
+        ctx.fillText(bio.substring(0, 67) + '...', 390, 165, 450);
       } else {
-        ctx.fillText(bio, 370, 235, 480);
+        ctx.fillText(bio, 390, 165, 450);
       }
       
       // Vẽ phần trên bên phải: Birthday + Network
       // Vẽ tiêu đề BIRTHDAY
       ctx.font = 'bold 20px "Montserrat"';
       ctx.fillStyle = primaryColor;
-      ctx.fillText('BIRTHDAY', 360, 290);
+      ctx.fillText('BIRTHDAY', 380, 220);
       
       // Vẽ birthday card
       this.withShadow(ctx, () => {
-        this.roundRect(ctx, 360, 300, 240, 50, 10);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, 380, 230, 220, 50, 10);
+        ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
         ctx.fill();
       });
       
@@ -435,31 +472,31 @@ class ProfileCanvas {
       ctx.fillStyle = this.colors.text.primary;
       ctx.fillText(
         profileData.birthday || 'Not specified',
-        370,
-        330,
-        220
+        390,
+        260,
+        200
       );
       
       // Vẽ tiêu đề NETWORK
       ctx.font = 'bold 20px "Montserrat"';
       ctx.fillStyle = primaryColor;
-      ctx.fillText('NETWORK', 620, 290);
+      ctx.fillText('NETWORK', 630, 220);
       
       // Vẽ network card
       this.withShadow(ctx, () => {
-        this.roundRect(ctx, 620, 300, 240, 50, 10);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, 630, 230, 220, 50, 10);
+        ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
         ctx.fill();
       });
       
       // Vẽ các biểu tượng mạng xã hội
       const networkIcons = ['🌐', '💬', '🕹️', '📱'];
-      const spacing = 50;
+      const spacing = 45;
       
       for (let i = 0; i < networkIcons.length; i++) {
         ctx.font = '20px "Montserrat"';
         ctx.fillStyle = this.colors.text.primary;
-        ctx.fillText(networkIcons[i], 650 + i * spacing, 330);
+        ctx.fillText(networkIcons[i], 650 + i * spacing, 260);
       }
       
       // Vẽ emblem nếu có
@@ -468,7 +505,7 @@ class ProfileCanvas {
           const emblemImage = await this.loadImageWithCache(
             path.join(ASSETS_PATH, 'emblems', `${profileData.customization.emblem}.png`)
           );
-          ctx.drawImage(emblemImage, 800, 180, 60, 60);
+          ctx.drawImage(emblemImage, 790, 300, 60, 60);
         } catch (err) {
           console.warn('Không thể tải emblem:', err);
         }
@@ -497,15 +534,15 @@ class ProfileCanvas {
       const percentComplete = Math.min(1, Math.max(0, levelProgress / levelRange));
       
       // Vẽ thanh XP
-      const barWidth = 860;
+      const barWidth = 840;
       const barHeight = 15;
-      const startX = 20;
+      const startX = 30;
       const startY = 390;
       
       // Vẽ nền thanh XP
       this.withShadow(ctx, () => {
         this.roundRect(ctx, startX, startY, barWidth, barHeight, barHeight / 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillStyle = 'rgba(10, 10, 30, 0.7)';
         ctx.fill();
       });
       
@@ -556,35 +593,35 @@ class ProfileCanvas {
     
     // Vẽ level
     this.withShadow(ctx, () => {
-      this.roundRect(ctx, 40, 330, 80, 30, 15);
-      ctx.fillStyle = this.createGradient(ctx, 40, 330, 80, 30, primaryColor, this.adjustColor(primaryColor, 30));
+      this.roundRect(ctx, 55, 330, 80, 30, 15);
+      ctx.fillStyle = this.createGradient(ctx, 55, 330, 80, 30, primaryColor, this.adjustColor(primaryColor, 30));
       ctx.fill();
     });
     
     ctx.font = 'bold 16px "Montserrat"';
     ctx.textAlign = 'center';
     ctx.fillStyle = this.colors.text.primary;
-    ctx.fillText(`LVL ${profileData.level || 1}`, 80, 350);
+    ctx.fillText(`LVL ${profileData.level || 1}`, 95, 345);
     
     // Vẽ server rank
     this.withShadow(ctx, () => {
-      this.roundRect(ctx, 130, 330, 80, 30, 15);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      this.roundRect(ctx, 145, 330, 80, 30, 15);
+      ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
       ctx.fill();
     });
     
     ctx.fillStyle = this.colors.text.primary;
-    ctx.fillText(`#${serverRank}`, 170, 350);
+    ctx.fillText(`#${serverRank}`, 185, 345);
     
     // Vẽ global rank
     this.withShadow(ctx, () => {
-      this.roundRect(ctx, 220, 330, 80, 30, 15);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      this.roundRect(ctx, 235, 330, 80, 30, 15);
+      ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
       ctx.fill();
     });
     
     ctx.fillStyle = this.colors.text.primary;
-    ctx.fillText(`G#${globalRank}`, 260, 350);
+    ctx.fillText(`G#${globalRank}`, 275, 345);
   }
   
   /**

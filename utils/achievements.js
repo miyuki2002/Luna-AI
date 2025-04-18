@@ -7,11 +7,59 @@ const fs = require('fs');
 const ASSETS_PATH = path.join(__dirname, '../assets');
 const FONTS_PATH = path.join(ASSETS_PATH, 'fonts');
 
-// Đăng ký fonts
+// Đăng ký fonts với nhiều cách khác nhau để tăng khả năng tương thích với Pango
 try {
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Regular.otf'), { family: 'Montserrat' });
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Bold.otf'), { family: 'Montserrat', weight: 'bold' });
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Italic.otf'), { family: 'Montserrat', style: 'italic' });
+  // Map giữa weights dạng chữ và số
+  const fontWeightMappings = {
+    'Thin': 100,
+    'ExtraLight': 200,
+    'Light': 300,
+    'Regular': 400,
+    'Medium': 500,
+    'SemiBold': 600,
+    'Bold': 700,
+    'ExtraBold': 800,
+    'Black': 900
+  };
+
+  // Đăng ký tất cả các biến thể font Montserrat cơ bản với nhiều cách khác nhau
+  const fontVariants = [
+    { file: 'Montserrat-Regular.otf', weight: 'Regular', style: 'normal' },
+    { file: 'Montserrat-Bold.otf', weight: 'Bold', style: 'normal' },
+    { file: 'Montserrat-Italic.otf', weight: 'Regular', style: 'italic' },
+    { file: 'Montserrat-BoldItalic.otf', weight: 'Bold', style: 'italic' },
+    { file: 'Montserrat-Medium.otf', weight: 'Medium', style: 'normal' },
+  ];
+
+  // Đăng ký với mỗi cách khác nhau
+  for (const variant of fontVariants) {
+    try {
+      // Cách 1: Đăng ký với tên weight
+      registerFont(path.join(FONTS_PATH, variant.file), {
+        family: 'Montserrat',
+        weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
+        style: variant.style
+      });
+
+      // Cách 2: Đăng ký với số weight
+      registerFont(path.join(FONTS_PATH, variant.file), {
+        family: 'Montserrat',
+        weight: fontWeightMappings[variant.weight].toString(),
+        style: variant.style
+      });
+
+      // Cách 3: Đăng ký không có rotation
+      registerFont(path.join(FONTS_PATH, variant.file), {
+        family: 'Montserrat',
+        weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
+        style: variant.style,
+        rotate: false
+      });
+    } catch (err) {
+      console.warn(`Không thể đăng ký font ${variant.file}:`, err.message);
+    }
+  }
+  
   console.log('Đã đăng ký font Montserrat thành công');
 } catch (err) {
   console.error('Không thể đăng ký font Montserrat:', err.message);
@@ -224,8 +272,8 @@ async function createAchievementCanvas(data) {
     ctx.fill();
   });
   
-  // Tiêu đề "ACHIEVEMENT UNLOCKED"
-  ctx.font = 'bold 28px Arial, sans-serif';
+  // Tiêu đề "ACHIEVEMENT UNLOCKED" - Sửa đổi cách định dạng font
+  ctx.font = '700 28px Montserrat, Arial, sans-serif';
   ctx.fillStyle = lightColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -321,8 +369,8 @@ async function createAchievementCanvas(data) {
   const infoX = width / 2 + 60;
   let infoY = 120;
   
-  // Tên thành tựu
-  ctx.font = 'bold 40px Arial, sans-serif';
+  // Tên thành tựu - Sửa đổi cách định dạng font
+  ctx.font = '700 40px Montserrat, Arial, sans-serif';
   const achievementTitle = data.title || 'First Steps';
   ctx.fillStyle = accentColor;
   ctx.textAlign = 'left';
@@ -338,10 +386,10 @@ async function createAchievementCanvas(data) {
   
   infoY += 50;
   
-  // Mô tả thành tựu
+  // Mô tả thành tựu - Sửa đổi cách định dạng font
   const description = data.description || `Bạn đã nhận được ${data.points} XP đầu tiên trong ${data.serverName}!`;
   
-  ctx.font = '22px Arial, sans-serif';
+  ctx.font = '400 22px Montserrat, Arial, sans-serif';
   ctx.fillStyle = lightColor;
   
   // Hiển thị mô tả (tối đa 2 dòng)
@@ -381,8 +429,8 @@ async function createAchievementCanvas(data) {
     ctx.fill();
   });
   
-  // Hiển thị thông tin cấp độ
-  ctx.font = 'bold 20px Arial, sans-serif';
+  // Hiển thị thông tin cấp độ - Sửa đổi cách định dạng font
+  ctx.font = '700 20px Montserrat, Arial, sans-serif';
   ctx.fillStyle = lightColor;
   ctx.textAlign = 'center';
   ctx.fillText(`Đã đạt Cấp độ ${data.level}`, infoX + 150, infoY + 30);
@@ -396,12 +444,12 @@ async function createAchievementCanvas(data) {
     ctx.fill();
   });
   
-  // Hiển thị thông tin XP
+  // Hiển thị thông tin XP - Sửa đổi cách định dạng font
   ctx.fillStyle = lightColor;
-  ctx.font = '18px Arial, sans-serif';
+  ctx.font = '400 18px Montserrat, Arial, sans-serif';
   ctx.fillText(`Tổng XP: ${data.totalXp} | Đã nhận: +${data.points} XP`, infoX + 150, infoY + 30);
   
-  // Thêm label "NEW" ở góc
+  // Thêm label "NEW" ở góc - Sửa đổi cách định dạng font
   ctx.save();
   ctx.translate(width - 110, 130);
   ctx.rotate(-Math.PI / 12);
@@ -410,7 +458,7 @@ async function createAchievementCanvas(data) {
   ctx.fillStyle = accentColor;
   ctx.fill();
   
-  ctx.font = 'bold 16px Arial, sans-serif';
+  ctx.font = '700 16px Montserrat, Arial, sans-serif';
   ctx.fillStyle = darkColor;
   ctx.textAlign = 'center';
   ctx.fillText('NEW!', 0, 5);

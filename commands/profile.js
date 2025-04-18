@@ -4,6 +4,12 @@ const ProfileDB = require('../services/profiledb');
 const mongoClient = require('../services/mongoClient');
 const profileCanvas = require('../utils/profileCanvas'); // Sử dụng class ProfileCanvas
 
+// Utility function to standardize font specification
+function getStandardFont(size, weight = 'normal', fontFamily = 'Montserrat') {
+  // Use CSS-style font specification that's compatible with Pango
+  return `${weight} ${size}px "${fontFamily}", Arial, sans-serif`;
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('profile')
