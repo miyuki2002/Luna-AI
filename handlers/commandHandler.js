@@ -1,11 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 
+// Cache cho commands JSON
+let commandsJsonCache = null;
+
 // Tải tất cả các tệp lệnh
 const loadCommands = (client) => {
   const commandsPath = path.join(__dirname, '../commands');
   const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
+  const commandsJson = [];
+  
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const command = require(filePath);
@@ -13,12 +18,24 @@ const loadCommands = (client) => {
     // Đặt một mục mới trong Collection với key là tên lệnh và value là module được xuất
     if ('data' in command && 'execute' in command) {
       client.commands.set(command.data.name, command);
+      commandsJson.push(command.data.toJSON());
     } else {
       console.log(`[CẢNH BÁO] Lệnh tại ${filePath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
     }
   }
+
+  // Lưu vào cache
+  commandsJsonCache = commandsJson;
   
   return client.commands.size;
+};
+
+// Lấy commands dưới dạng JSON từ cache hoặc tải mới
+const getCommandsJson = (client) => {
+  if (!commandsJsonCache) {
+    loadCommands(client);
+  }
+  return commandsJsonCache;
 };
 
 // Xử lý việc thực thi lệnh
@@ -49,5 +66,6 @@ const handleCommand = async (interaction, client) => {
 
 module.exports = {
   loadCommands,
-  handleCommand
+  handleCommand,
+  getCommandsJson
 };

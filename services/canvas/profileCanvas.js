@@ -1,10 +1,10 @@
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const fs = require('fs').promises;
-const fontManager = require('./fonts');
+const fontManager = require('../fonts/fonts');
 
 // Định nghĩa đường dẫn tới thư mục assets
-const ASSETS_PATH = path.join(__dirname, '../assets');
+const ASSETS_PATH = path.join(__dirname, '../../assets');
 
 class ProfileCanvas {
   constructor() {
