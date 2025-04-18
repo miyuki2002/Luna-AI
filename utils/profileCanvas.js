@@ -269,6 +269,9 @@ class ProfileCanvas {
     const customColor = profileData.customization?.color;
     const primaryColor = customColor || this.colors.primary.light;
     
+    // Thiết lập font mặc định với định dạng CSS
+    ctx.font = '400 16px "Montserrat", Arial, sans-serif';
+    
     // PHẦN 1: CARD NGƯỜI DÙNG (bên trái)
     await this.drawUserInfoSection(ctx, profileData, primaryColor);
     
