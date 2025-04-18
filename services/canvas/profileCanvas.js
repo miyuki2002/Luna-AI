@@ -661,7 +661,7 @@ class ProfileCanvas {
     
     try {
       // Thử vẽ text với font hiện tại
-      ctx.font = '16px Montserrat';
+      ctx.font = '16px Sans';
       const metrics = ctx.measureText(text);
       
       // Nếu width = 0 hoặc không có metrics, font không hoạt động
