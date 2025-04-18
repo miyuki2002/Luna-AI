@@ -39,9 +39,6 @@ class NeuralNetworks {
     storageDB.setMaxConversationLength(10);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
 
-    // DỌN DẸP: Không gọi initializeGreetingPatterns trực tiếp trong constructor nữa
-    // this.initializeGreetingPatterns();
-
     // Khởi tạo mảng rỗng để sử dụng trước khi có dữ liệu từ MongoDB
     this.greetingPatterns = [];
 

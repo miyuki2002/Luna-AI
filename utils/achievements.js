@@ -1,22 +1,14 @@
-const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const { AttachmentBuilder } = require('discord.js');
+const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const fs = require('fs');
+const fontManager = require('./fonts');
 
 // Định nghĩa đường dẫn tới thư mục assets
 const ASSETS_PATH = path.join(__dirname, '../assets');
-const FONTS_PATH = path.join(ASSETS_PATH, 'fonts');
 
-// Đăng ký fonts
-try {
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Regular.otf'), { family: 'Montserrat' });
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Bold.otf'), { family: 'Montserrat', weight: 'bold' });
-  registerFont(path.join(FONTS_PATH, 'Montserrat-Italic.otf'), { family: 'Montserrat', style: 'italic' });
-  console.log('Đã đăng ký font Montserrat thành công');
-} catch (err) {
-  console.error('Không thể đăng ký font Montserrat:', err.message);
-  console.warn('Sẽ sử dụng font dự phòng');
-}
+// Khởi tạo fonts
+fontManager.initialize(ASSETS_PATH);
 
 /**
  * Tạo hiệu ứng bo góc cho hình chữ nhật
@@ -191,236 +183,174 @@ function adjustColor(color, percent) {
  */
 async function createAchievementCanvas(data) {
   // Cấu hình canvas
-  const width = 900;
-  const height = 320;
+  const width = 800;
+  const height = 220;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
-  
+
   // Màu sắc chủ đạo
-  const primaryColor = '#7F5AF0'; // Màu tím
-  const accentColor = '#FFD166'; // Màu vàng đậm
-  const darkColor = '#16161A'; // Nền tối
-  const lightColor = '#FFFFFE'; // Màu sáng (text)
-  
-  // Vẽ nền chính
-  const bgGradient = createGradient(ctx, 0, 0, width, height, darkColor, '#242629');
+  const primaryColor = '#8B5CF6'; // Tím chính
+  const accentColor = '#C4B5FD'; // Tím nhạt
+  const darkColor = '#1E1B4B'; // Xanh đen
+  const lightColor = '#FFFFFF';
+
+  // Vẽ nền với gradient phức tạp
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, '#2E1065');
+  bgGradient.addColorStop(1, '#4C1D95');
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
-  
-  // Thêm hiệu ứng particles
-  drawParticles(ctx, width, height, adjustColor(primaryColor, 30));
-  
-  // Vẽ khung chính
-  withShadow(ctx, () => {
-    roundRect(ctx, 20, 20, width - 40, height - 40, 20);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+
+  // Vẽ các hình học mờ cho nền
+  ctx.save();
+  ctx.globalAlpha = 0.1;
+  for (let i = 0; i < 5; i++) {
+    const size = Math.random() * 150 + 50;
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    ctx.beginPath();
+    if (Math.random() > 0.5) {
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + size, y - size/2);
+      ctx.lineTo(x + size*1.5, y);
+      ctx.lineTo(x + size, y + size/2);
+    } else {
+      ctx.arc(x, y, size/2, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = accentColor;
     ctx.fill();
-  });
+  }
+  ctx.restore();
+
+  // Card chính chứa nội dung
+  const cardX = 40;
+  const cardY = 20;
+  const cardW = width - 80;
+  const cardH = height - 40;
   
-  // Vẽ banner "Achievement Unlocked"
-  withShadow(ctx, () => {
-    roundRect(ctx, width / 2 - 250, 20, 500, 60, 15);
-    ctx.fillStyle = createGradient(ctx, width / 2 - 250, 20, 500, 60, primaryColor, adjustColor(primaryColor, -20));
-    ctx.fill();
-  });
-  
-  // Tiêu đề "ACHIEVEMENT UNLOCKED"
-  ctx.font = 'bold 28px Arial, sans-serif';
-  ctx.fillStyle = lightColor;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('ACHIEVEMENT UNLOCKED!', width / 2, 50);
-  
+  // Vẽ card với hiệu ứng trong suốt
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  roundRect(ctx, cardX, cardY, cardW, cardH, 20);
+  const cardGradient = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
+  cardGradient.addColorStop(0, '#F5F3FF');
+  cardGradient.addColorStop(1, '#DDD6FE');
+  ctx.fillStyle = cardGradient;
+  ctx.fill();
+  ctx.restore();
+
+  // Vẽ viền card với gradient
+  ctx.strokeStyle = createGradient(ctx, cardX, cardY, cardW, cardH, '#A78BFA', '#7C3AED');
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
   try {
     // Vẽ icon thành tựu
     let iconPath = path.join(ASSETS_PATH, 'xp-icon.png');
     if (!fs.existsSync(iconPath)) {
       iconPath = path.join(ASSETS_PATH, 'luna-avatar.png');
     }
-    
     const icon = await loadImage(iconPath);
-    const iconSize = 120;
-    const iconX = 100;
-    const iconY = height / 2 + 10;
+    const iconSize = 160;
+    const iconX = 180;
+    const iconY = height/2;
+
+    // Hiệu ứng hào quang cho icon
+    const glowGradient = ctx.createRadialGradient(
+      iconX, iconY, iconSize/4,
+      iconX, iconY, iconSize
+    );
+    glowGradient.addColorStop(0, 'rgba(167, 139, 250, 0.3)');
+    glowGradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.1)');
+    glowGradient.addColorStop(1, 'rgba(124, 58, 237, 0)');
     
-    // Vẽ hào quang xung quanh icon
     ctx.save();
-    ctx.globalAlpha = 0.3;
-    for (let i = 0; i < 3; i++) {
-      const glowSize = iconSize + 10 * (i + 1);
-      ctx.beginPath();
-      ctx.arc(iconX, iconY, glowSize / 2, 0, Math.PI * 2);
-      ctx.fillStyle = accentColor;
-      ctx.fill();
-    }
+    ctx.beginPath();
+    ctx.arc(iconX, iconY, iconSize, 0, Math.PI * 2);
+    ctx.fillStyle = glowGradient;
+    ctx.fill();
     ctx.restore();
-    
-    // Vẽ các ngôi sao xung quanh icon
-    for (let i = 0; i < 5; i++) {
-      const starX = iconX + Math.cos(i * Math.PI * 2 / 5) * (iconSize / 1.5);
-      const starY = iconY + Math.sin(i * Math.PI * 2 / 5) * (iconSize / 1.5);
-      const starSize = 10 + Math.random() * 8;
-      drawStar(ctx, starX, starY, starSize, accentColor);
-    }
-    
-    // Vẽ icon trong khung tròn
+
+    // Vẽ icon với clip path tròn
     ctx.save();
+    ctx.beginPath();
+    ctx.arc(iconX, iconY, iconSize/2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(icon, iconX - iconSize/2, iconY - iconSize/2, iconSize, iconSize);
+    ctx.restore();
+
+    // Viền icon
+    ctx.beginPath();
+    ctx.arc(iconX, iconY, iconSize/2, 0, Math.PI * 2);
+    ctx.strokeStyle = createGradient(ctx, iconX - iconSize/2, iconY - iconSize/2, iconSize, iconSize, '#A78BFA', '#7C3AED');
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Nội dung bên phải
+    const contentX = iconX + iconSize;
+    let contentY = 50;
+
+    // Achievement Unlocked text với viền sáng
+    ctx.font = '600 24px Montserrat';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#DDD6FE';
+    ctx.fillText('Achievement Unlocked', contentX + 30, contentY);
+
+    // Tên thành tựu
+    contentY += 45;
+    ctx.font = '700 36px Montserrat';
+    ctx.fillStyle = lightColor;
+    const achievementTitle = data.title || 'First Steps';
+    ctx.fillText(achievementTitle, contentX + 30, contentY);
+
+    // Mô tả thành tựu
+    contentY += 35;
+    ctx.font = '500 20px Montserrat';
+    ctx.fillStyle = '#E9D5FF';
+    const description = data.description || `Nhận được ${data.points} XP vì tương tác lần đầu!`;
+    ctx.fillText(description, contentX + 30, contentY);
+
+    // Khung cấp độ
+    contentY += 45;
     withShadow(ctx, () => {
-      ctx.beginPath();
-      ctx.arc(iconX, iconY, iconSize / 2, 0, Math.PI * 2);
-      ctx.fillStyle = createGradient(ctx, iconX - iconSize/2, iconY - iconSize/2, iconSize, iconSize, primaryColor, adjustColor(primaryColor, 30));
+      roundRect(ctx, contentX + 30, contentY - 25, 140, 36, 18);
+      const levelGradient = createGradient(
+        ctx, 
+        contentX + 30, 
+        contentY - 25, 
+        140, 
+        36, 
+        '#A78BFA', 
+        '#7C3AED'
+      );
+      ctx.fillStyle = levelGradient;
       ctx.fill();
     });
-    
-    // Vẽ icon avatar
-    ctx.beginPath();
-    ctx.arc(iconX, iconY, iconSize / 2 - 5, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(icon, iconX - iconSize/2 + 5, iconY - iconSize/2 + 5, iconSize - 10, iconSize - 10);
-    ctx.restore();
-    
-    // Vẽ viền tròn cho icon
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = accentColor;
-    ctx.beginPath();
-    ctx.arc(iconX, iconY, iconSize / 2, 0, Math.PI * 2);
-    ctx.stroke();
-    
+
+    // Text cấp độ
+    ctx.font = '600 18px Montserrat';
+    ctx.fillStyle = lightColor;
+    ctx.fillText(`Cấp độ ${data.level}`, contentX + 50, contentY);
+
+    // Khung XP
+    withShadow(ctx, () => {
+      roundRect(ctx, contentX + 190, contentY - 25, 180, 36, 18);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fill();
+    });
+
+    // Text XP
+    ctx.fillStyle = lightColor;
+    ctx.fillText(`+${data.points} XP`, contentX + 210, contentY);
+
   } catch (err) {
-    console.error('Không thể tải hình ảnh icon:', err);
+    console.error('Lỗi khi tạo canvas:', err);
   }
-  
-  // Vẽ avatar người dùng
-  try {
-    if (data.avatarURL) {
-      const avatar = await loadImage(data.avatarURL);
-      const avatarSize = 60;
-      
-      // Vẽ khung avatar
-      withShadow(ctx, () => {
-        ctx.beginPath();
-        ctx.arc(width - 60, 50, avatarSize / 2, 0, Math.PI * 2);
-        const avatarBorderGradient = createGradient(ctx, width - 90, 20, 60, 60, adjustColor(accentColor, -20), accentColor);
-        ctx.fillStyle = avatarBorderGradient;
-        ctx.fill();
-      });
-      
-      // Vẽ avatar
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(width - 60, 50, avatarSize / 2 - 3, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(avatar, width - 90, 20, 60, 60);
-      ctx.restore();
-    }
-  } catch (err) {
-    console.error('Không thể tải avatar người dùng:', err);
-  }
-  
-  // Vẽ thông tin thành tựu (bên phải)
-  const infoX = width / 2 + 60;
-  let infoY = 120;
-  
-  // Tên thành tựu
-  ctx.font = 'bold 40px Arial, sans-serif';
-  const achievementTitle = data.title || 'First Steps';
-  ctx.fillStyle = accentColor;
-  ctx.textAlign = 'left';
-  ctx.fillText(achievementTitle, infoX, infoY);
-  
-  // Vẽ đường gạch trang trí dưới tên thành tựu
-  ctx.beginPath();
-  ctx.moveTo(infoX, infoY + 15);
-  ctx.lineTo(infoX + ctx.measureText(achievementTitle).width * 0.8, infoY + 15);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = adjustColor(accentColor, -20);
-  ctx.stroke();
-  
-  infoY += 50;
-  
-  // Mô tả thành tựu
-  const description = data.description || `Bạn đã nhận được ${data.points} XP đầu tiên trong ${data.serverName}!`;
-  
-  ctx.font = '22px Arial, sans-serif';
-  ctx.fillStyle = lightColor;
-  
-  // Hiển thị mô tả (tối đa 2 dòng)
-  const words = description.split(' ');
-  let line = '';
-  const maxLineWidth = width - infoX - 30;
-  let lineCount = 0;
-  
-  for (const word of words) {
-    const testLine = line + word + ' ';
-    const metrics = ctx.measureText(testLine);
-    
-    if (metrics.width > maxLineWidth && line !== '') {
-      ctx.fillText(line, infoX, infoY);
-      line = word + ' ';
-      infoY += 30;
-      lineCount++;
-      
-      if (lineCount >= 2) break;
-    } else {
-      line = testLine;
-    }
-  }
-  
-  if (lineCount < 2) {
-    ctx.fillText(line, infoX, infoY);
-    infoY += 30;
-  }
-  
-  infoY += 10;
-  
-  // Vẽ khung thông tin cấp độ
-  withShadow(ctx, () => {
-    roundRect(ctx, infoX, infoY, 300, 50, 10);
-    const levelGradient = createGradient(ctx, infoX, infoY, 300, 50, adjustColor(primaryColor, -20), adjustColor(primaryColor, 20));
-    ctx.fillStyle = levelGradient;
-    ctx.fill();
-  });
-  
-  // Hiển thị thông tin cấp độ
-  ctx.font = 'bold 20px Arial, sans-serif';
-  ctx.fillStyle = lightColor;
-  ctx.textAlign = 'center';
-  ctx.fillText(`Đã đạt Cấp độ ${data.level}`, infoX + 150, infoY + 30);
-  
-  infoY += 70;
-  
-  // Vẽ khung thông tin XP
-  withShadow(ctx, () => {
-    roundRect(ctx, infoX, infoY, 300, 50, 10);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fill();
-  });
-  
-  // Hiển thị thông tin XP
-  ctx.fillStyle = lightColor;
-  ctx.font = '18px Arial, sans-serif';
-  ctx.fillText(`Tổng XP: ${data.totalXp} | Đã nhận: +${data.points} XP`, infoX + 150, infoY + 30);
-  
-  // Thêm label "NEW" ở góc
-  ctx.save();
-  ctx.translate(width - 110, 130);
-  ctx.rotate(-Math.PI / 12);
-  
-  roundRect(ctx, -50, -15, 100, 30, 5);
-  ctx.fillStyle = accentColor;
-  ctx.fill();
-  
-  ctx.font = 'bold 16px Arial, sans-serif';
-  ctx.fillStyle = darkColor;
-  ctx.textAlign = 'center';
-  ctx.fillText('NEW!', 0, 5);
-  ctx.restore();
-  
+
   return canvas.toBuffer();
 }
 
 /**
- * Tạo canvas thành tựu "First XP" với thiết kế hiện đại
  * @param {Object} data - Dữ liệu để vẽ thành tựu
  * @returns {Promise<Buffer>} - Buffer chứa hình ảnh thành tựu
  */
@@ -428,7 +358,7 @@ async function createFirstXPAchievement(data) {
   // Chuẩn bị dữ liệu cho canvas thành tựu
   const achievementData = {
     title: 'First Steps',
-    description: `Bạn đã nhận được ${data.points} XP đầu tiên trong ${data.serverName}!`,
+    description: `Nhận được ${data.points} XP vì tương tác lần đầu!`,
     points: data.points,
     level: data.level,
     totalXp: data.totalXp,
@@ -481,7 +411,7 @@ async function createLevelUpAchievement(data) {
   // Chuẩn bị dữ liệu cho canvas thành tựu
   const achievementData = {
     title: 'Level Up!',
-    description: `Bạn đã đạt được cấp độ ${data.level} trong ${data.serverName}!`,
+    description: `Bạn đã đạt được cấp độ ${data.level}!`,
     points: data.points,
     level: data.level,
     totalXp: data.totalXp,
