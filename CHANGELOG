@@ -1,0 +1,50 @@
+# Changelog
+All notable changes to Luna bot will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2025-04-18
+### Added
+- Initial release of Luna Discord bot
+- Integration with X.AI (Grok) for natural language processing
+- Slash commands system with automatic deployment
+- Profile system with modern card design
+- Experience (XP) and achievement system
+- MongoDB integration for data persistence
+- Conversation memory and context management
+- Image generation capabilities
+- Server management features
+- Chat-based programming assistance
+- Custom font management system using Montserrat family
+
+### Features
+- Natural conversation through @mentions
+- `/help` command for viewing available commands
+- `/ping` command for checking bot latency
+- `/about` command for bot information
+- `/image` command for AI image generation
+- `/reset` command for resetting conversations
+- `/profile` command for viewing user stats
+- Auto-deployment of commands for new servers
+- User leveling and achievements
+- Persistent conversation history
+- Modern profile cards with customization
+- Server-specific XP tracking
+
+### Technical
+- Modular architecture with handlers and services
+- MongoDB for data storage and retrieval
+- Canvas-based image generation for profiles and achievements
+- Efficient command caching system
+- Event-driven architecture
+- Error handling and logging system
+- Environment-based configuration
+- Font management system for consistent typography
+
+### Documentation
+- Installation instructions in README
+- Code documentation with JSDoc comments
+- Project structure documentation
+- Privacy policy and terms of service
+- Command usage documentation
