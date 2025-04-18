@@ -291,21 +291,21 @@ async function createAchievementCanvas(data) {
     let contentY = 50;
 
     // Achievement Unlocked text với viền sáng
-    ctx.font = '600 24px Montserrat';
+    ctx.font = '600 24px Sans';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#DDD6FE';
     ctx.fillText('Achievement Unlocked', contentX + 30, contentY);
 
     // Tên thành tựu
     contentY += 45;
-    ctx.font = '700 36px Montserrat';
+    ctx.font = '700 36px Sans';
     ctx.fillStyle = lightColor;
     const achievementTitle = data.title || 'First Steps';
     ctx.fillText(achievementTitle, contentX + 30, contentY);
 
     // Mô tả thành tựu
     contentY += 35;
-    ctx.font = '500 20px Montserrat';
+    ctx.font = '500 20px Sans';
     ctx.fillStyle = '#E9D5FF';
     const description = data.description || `Nhận được ${data.points} XP vì tương tác lần đầu!`;
     ctx.fillText(description, contentX + 30, contentY);
@@ -328,7 +328,7 @@ async function createAchievementCanvas(data) {
     });
 
     // Text cấp độ
-    ctx.font = '600 18px Montserrat';
+    ctx.font = '600 18px Sans';
     ctx.fillStyle = lightColor;
     ctx.fillText(`Cấp độ ${data.level}`, contentX + 50, contentY);
 
