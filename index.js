@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Events, Collection } = require('discord.js');
 const { handleMessage } = require('./handlers/messageHandler');
-const { handleCommand, loadCommands } = require('./handlers/commandHandler');
+const { handleCommand, loadCommands, getCommandsJson } = require('./handlers/commandHandler');
 const { startbot } = require('./events/ready');
 const { setupGuildHandlers } = require('./handlers/guildHandler');
 
@@ -24,16 +24,9 @@ client.logs = []; // Mảng để lưu các log
 // Sử dụng handler cho sự kiện ready - mọi khởi tạo sẽ diễn ra ở đây
 startbot(client, () => loadCommands(client));
 
-// Chuẩn bị mảng commands JSON để deploy
-const commandsJson = [];
-for (const [name, command] of client.commands) {
-  if ('data' in command && 'execute' in command) {
-    commandsJson.push(command.data.toJSON());
-  }
-}
-
 // Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
-setupGuildHandlers(client, commandsJson);
+// Sử dụng getCommandsJson để lấy commands từ cache
+setupGuildHandlers(client);
 
 // Đăng ký sự kiện tin nhắn - sẽ được kích hoạt sau khi ready
 client.on(Events.MessageCreate, async message => {
