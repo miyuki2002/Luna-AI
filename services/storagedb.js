@@ -8,37 +8,37 @@ class StorageDB {
   constructor() {
     // Số lượng tin nhắn tối đa để giữ trong ngữ cảnh
     this.maxConversationLength = 20;
-    
+
     // Tuổi thọ tối đa của cuộc trò chuyện (tính bằng mili giây) - 3 giờ
     this.maxConversationAge = 3 * 60 * 60 * 1000;
-    
+
     // Bỏ việc khởi tạo kết nối MongoDB ở đây để tránh kết nối kép
     // Việc khởi tạo sẽ được chuyển sang ready.js
-    
+
     // Lên lịch dọn dẹp cuộc trò chuyện cũ mỗi giờ
     setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
   }
-  
+
   /**
    * Thiết lập các collections và indexes MongoDB
    */
   async setupCollections() {
     try {
       const db = mongoClient.getDb();
-      
+
       // Tạo các indexes cần thiết
       await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
 
-      
+
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
       console.error('Lỗi khi thiết lập collections MongoDB:', error);
       throw error;
     }
   }
-  
+
   /**
    * Khởi tạo kết nối MongoDB
    */
@@ -47,7 +47,7 @@ class StorageDB {
       // Kết nối tới MongoDB
       await mongoClient.connect();
       console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
-      
+
       // Khởi tạo các hệ thống
       await this.initializeConversationHistory();
       await this.initializeGreetingPatterns();
@@ -67,10 +67,10 @@ class StorageDB {
   async addMessageToConversation(userId, role, content) {
     try {
       const db = mongoClient.getDb();
-      
+
       // Lấy số lượng tin nhắn hiện tại của người dùng
       const count = await db.collection('conversations').countDocuments({ userId });
-      
+
       // Thêm tin nhắn mới
       await db.collection('conversations').insertOne({
         userId,
@@ -79,14 +79,14 @@ class StorageDB {
         content,
         timestamp: Date.now()
       });
-      
+
       // Cập nhật timestamp trong bảng meta
       await db.collection('conversation_meta').updateOne(
         { userId },
         { $set: { lastUpdated: Date.now() } },
         { upsert: true }
       );
-      
+
       // Nếu vượt quá giới hạn, xóa tin nhắn cũ nhất (trừ lời nhắc hệ thống ở index 0)
       if (count >= this.maxConversationLength) {
         // Lấy tin nhắn cũ nhất (ngoại trừ lời nhắc hệ thống)
@@ -95,14 +95,14 @@ class StorageDB {
             { userId, messageIndex: { $gt: 0 } },
             { sort: { messageIndex: 1 } }
           );
-        
+
         if (oldestMsg) {
           // Xóa tin nhắn cũ nhất
-          await db.collection('conversations').deleteOne({ 
-            userId, 
-            messageIndex: oldestMsg.messageIndex 
+          await db.collection('conversations').deleteOne({
+            userId,
+            messageIndex: oldestMsg.messageIndex
           });
-          
+
           // Cập nhật lại chỉ số của các tin nhắn
           await db.collection('conversations').updateMany(
             { userId, messageIndex: { $gt: oldestMsg.messageIndex } },
@@ -110,13 +110,13 @@ class StorageDB {
           );
         }
       }
-      
+
       // console.log(`Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, số lượng tin nhắn: ${count + 1}`);
     } catch (error) {
       console.error('Lỗi khi thêm tin nhắn vào MongoDB:', error);
     }
   }
-  
+
   /**
    * Lấy lịch sử cuộc trò chuyện của người dùng từ MongoDB
    * @param {string} userId - Định danh người dùng
@@ -127,15 +127,15 @@ class StorageDB {
   async getConversationHistory(userId, systemPrompt, modelName) {
     try {
       const db = mongoClient.getDb();
-      
+
       // Kiểm tra xem người dùng đã có lịch sử chưa
       const count = await db.collection('conversations').countDocuments({ userId });
-      
+
       if (count === 0) {
         // Khởi tạo với lời nhắc hệ thống nếu không có lịch sử
-        const systemMessage = { 
-          role: 'system', 
-          content: systemPrompt + ` You are running on ${modelName} model.` 
+        const systemMessage = {
+          role: 'system',
+          content: systemPrompt + ` You are running on ${modelName} model.`
         };
         await this.addMessageToConversation(userId, systemMessage.role, systemMessage.content);
         return [systemMessage];
@@ -145,26 +145,26 @@ class StorageDB {
           { userId },
           { $set: { lastUpdated: Date.now() } }
         );
-        
+
         // Lấy tất cả tin nhắn theo thứ tự
         const messages = await db.collection('conversations')
           .find({ userId })
           .sort({ messageIndex: 1 })
           .project({ _id: 0, role: 1, content: 1 })
           .toArray();
-        
+
         return messages;
       }
     } catch (error) {
       console.error('Lỗi khi lấy lịch sử cuộc trò chuyện:', error);
       // Trả về lời nhắc hệ thống mặc định nếu có lỗi
-      return [{ 
-        role: 'system', 
-        content: systemPrompt + ` You are running on ${modelName} model.` 
+      return [{
+        role: 'system',
+        content: systemPrompt + ` You are running on ${modelName} model.`
       }];
     }
   }
-  
+
   /**
    * Xóa lịch sử cuộc trò chuyện của người dùng
    * @param {string} userId - Định danh người dùng
@@ -174,30 +174,30 @@ class StorageDB {
   async clearConversationHistory(userId, systemPrompt, modelName) {
     try {
       const db = mongoClient.getDb();
-      
+
       // Xóa tất cả tin nhắn của người dùng
       await db.collection('conversations').deleteMany({ userId });
-      
+
       // Khởi tạo lại với lời nhắc hệ thống
-      const systemMessage = { 
-        role: 'system', 
-        content: systemPrompt + ` You are running on ${modelName} model.` 
+      const systemMessage = {
+        role: 'system',
+        content: systemPrompt + ` You are running on ${modelName} model.`
       };
       await this.addMessageToConversation(userId, systemMessage.role, systemMessage.content);
-      
+
       // Cập nhật meta
       await db.collection('conversation_meta').updateOne(
         { userId },
         { $set: { lastUpdated: Date.now() } },
         { upsert: true }
       );
-      
+
       console.log(`Đã xóa cuộc trò chuyện của người dùng ${userId}`);
     } catch (error) {
       console.error('Lỗi khi xóa lịch sử cuộc trò chuyện:', error);
     }
   }
-  
+
   /**
    * Xóa các cuộc trò chuyện cũ để giải phóng bộ nhớ
    */
@@ -205,27 +205,27 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const now = Date.now();
-      
+
       // Tìm người dùng có cuộc trò chuyện cũ
       const oldUsers = await db.collection('conversation_meta')
         .find({ lastUpdated: { $lt: now - this.maxConversationAge } })
         .project({ userId: 1, _id: 0 })
         .toArray();
-      
+
       if (oldUsers.length > 0) {
         const userIds = oldUsers.map(user => user.userId);
-        
+
         // Xóa tin nhắn và metadata của người dùng có cuộc trò chuyện cũ
         await db.collection('conversations').deleteMany({ userId: { $in: userIds } });
         await db.collection('conversation_meta').deleteMany({ userId: { $in: userIds } });
-        
+
         console.log(`Đã dọn dẹp ${oldUsers.length} cuộc trò chuyện cũ`);
       }
     } catch (error) {
       console.error('Lỗi khi dọn dẹp cuộc trò chuyện cũ:', error);
     }
   }
-  
+
   /**
    * Đặt giá trị cho maxConversationLength
    * @param {number} value - Số lượng tin nhắn tối đa
@@ -233,7 +233,7 @@ class StorageDB {
   setMaxConversationLength(value) {
     this.maxConversationLength = value;
   }
-  
+
   /**
    * Đặt giá trị cho maxConversationAge
    * @param {number} value - Tuổi thọ tối đa (mili giây)
@@ -241,7 +241,7 @@ class StorageDB {
   setMaxConversationAge(value) {
     this.maxConversationAge = value;
   }
-  
+
   /**
    * Lấy danh sách các mẫu lời chào từ cơ sở dữ liệu
    * @returns {Promise<Array>} - Mảng các mẫu regex lời chào
@@ -250,10 +250,10 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const collection = db.collection('greetingPatterns');
-      
+
       // Lấy tất cả các mẫu lời chào
       const patterns = await collection.find({}).toArray();
-      
+
       // Chuyển đổi các mẫu chuỗi thành đối tượng RegExp
       return patterns.map(item => new RegExp(item.pattern, item.flags));
     } catch (error) {
@@ -273,21 +273,21 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const collection = db.collection('greetingPatterns');
-      
+
       // Kiểm tra xem mẫu đã tồn tại chưa
       const existing = await collection.findOne({ pattern });
       if (existing) {
         return false; // Mẫu đã tồn tại
       }
-      
+
       // Thêm mẫu mới
-      await collection.insertOne({ 
-        pattern, 
-        flags, 
+      await collection.insertOne({
+        pattern,
+        flags,
         description,
-        createdAt: new Date() 
+        createdAt: new Date()
       });
-      
+
       return true;
     } catch (error) {
       console.error('Lỗi khi thêm mẫu lời chào:', error);
@@ -304,7 +304,7 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const collection = db.collection('greetingPatterns');
-      
+
       const result = await collection.deleteOne({ pattern });
       return result.deletedCount > 0;
     } catch (error) {
@@ -321,13 +321,13 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const collection = db.collection('greetingPatterns');
-      
+
       // Kiểm tra xem collection có trống không
       const count = await collection.countDocuments();
       if (count > 0) {
         return; // Các mẫu đã tồn tại
       }
-      
+
       // Các mẫu lời chào mặc định
       const defaultPatterns = [
         { pattern: '^(xin\\s+)?(chào|kính\\s+chào|chào\\s+mừng|xin\\s+chúc|hú|hú\\s+hú|của\\s+nợ|haly|halo|ha\\s+lô|lô|lô\\s+lô)\\s+(bạn|cậu|các\\s+bạn|mọi\\s+người|anh|chị|em|quý\\s+khách|quý\\s+vị|mọi\\s+người)?(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào tiếng Việt cơ bản' },
@@ -345,7 +345,7 @@ class StorageDB {
         { pattern: '^(chào|hi|hello|hey|xin\\s+chào)\\s+.{1,10}(,|\\.|\\!|\\?)\\s+mình\\s+là\\s+luna', flags: 'i', description: 'Lời chào mở rộng' },
         { pattern: '^(mình|tôi|tớ|em)\\s+(đã|sẽ|đang|vẫn|luôn)\\s+(sẵn\\s+sàng|ở\\s+đây|có\\s+mặt)(\\s+(để|nhằm))?\\s+(giúp|hỗ\\s+trợ|trả\\s+lời|giúp\\s+đỡ|hỗ\\s+trợ|phục\\s+vụ|làm\\s+việc\\s+với)\\s+(bạn|các\\s+bạn|cậu|bạn\\s+đó|quý\\s+khách)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào với thông báo sẵn sàng' }
       ];
-      
+
       // Thêm các mẫu
       await collection.insertMany(defaultPatterns);
       console.log('Đã khởi tạo các mẫu lời chào mặc định');
@@ -361,22 +361,22 @@ class StorageDB {
   async initializeConversationHistory() {
     try {
       const db = mongoClient.getDb();
-      
+
       // Kiểm tra và tạo indexes cho collection conversations nếu chưa có
       const existingIndexes = await db.collection('conversations').listIndexes().toArray();
       const hasTimeIndex = existingIndexes.some(index => index.name === 'timestamp_1');
-      
+
       if (!hasTimeIndex) {
         // Tạo index theo timestamp để tối ưu hóa truy vấn theo thời gian
         await db.collection('conversations').createIndex({ timestamp: 1 });
         console.log('Đã tạo index timestamp cho collection conversations');
       }
-      
+
       // Kiểm tra xem có cần cập nhật cấu trúc dữ liệu lịch sử cuộc trò chuyện không
       const conversationMeta = await db.collection('conversation_meta').findOne({
         metaVersion: { $exists: true }
       });
-      
+
       if (!conversationMeta) {
         // Khởi tạo document meta với phiên bản hiện tại
         await db.collection('conversation_meta').insertOne({
@@ -392,16 +392,18 @@ class StorageDB {
         // Cập nhật cấu hình nếu cần
         await db.collection('conversation_meta').updateOne(
           { metaVersion: { $exists: true } },
-          { $set: { 
-            'config.maxConversationLength': this.maxConversationLength,
-            'config.maxConversationAge': this.maxConversationAge,
-          }}
+          {
+            $set: {
+              'config.maxConversationLength': this.maxConversationLength,
+              'config.maxConversationAge': this.maxConversationAge,
+            }
+          }
         );
       }
-      
+
       // Thực hiện dọn dẹp ban đầu cho dữ liệu cũ
       await this.cleanupOldConversations();
-      
+
       console.log('Hệ thống lịch sử cuộc trò chuyện đã sẵn sàng');
     } catch (error) {
       console.error('Lỗi khi khởi tạo lịch sử cuộc trò chuyện:', error);
@@ -417,17 +419,17 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const profiles = db.collection('user_profiles');
-      
+
       // Tìm profile của người dùng
       let profile = await profiles.findOne({ _id: userId });
-      
+
       // Nếu người dùng không có profile, tạo mới
       if (!profile) {
         profile = Profile.createDefaultProfile(userId);
         await profiles.insertOne(profile);
         console.log(`Đã tạo profile mới cho người dùng ${userId}`);
       }
-      
+
       return profile;
     } catch (error) {
       console.error('Lỗi khi lấy thông tin profile:', error);
@@ -445,14 +447,14 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const profiles = db.collection('user_profiles');
-      
+
       // Cập nhật dữ liệu
       const result = await profiles.updateOne(
         { _id: userId },
         { $set: updateData },
         { upsert: true }
       );
-      
+
       return result.acknowledged;
     } catch (error) {
       console.error('Lỗi khi cập nhật profile:', error);
@@ -471,27 +473,27 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const profiles = db.collection('user_profiles');
-      
+
       // Xác định đường dẫn của trường cần cập nhật
       const fieldPath = `data.economy.${resourceType}`;
-      
+
       // Tạo đối tượng cập nhật
       const updateObj = { $inc: {} };
       updateObj.$inc[fieldPath] = amount;
-      
+
       // Cập nhật dữ liệu
       await profiles.updateOne(
         { _id: userId },
         updateObj,
         { upsert: true }
       );
-      
+
       // Lấy dữ liệu economy mới sau khi cập nhật
       const updatedProfile = await profiles.findOne(
         { _id: userId },
         { projection: { 'data.economy': 1 } }
       );
-      
+
       return updatedProfile?.data?.economy || null;
     } catch (error) {
       console.error('Lỗi khi cập nhật economy của người dùng:', error);
@@ -506,20 +508,20 @@ class StorageDB {
   async initializeProfiles() {
     try {
       const db = mongoClient.getDb();
-      
+
       // Kiểm tra và tạo collection nếu chưa có
       const collections = await db.listCollections({ name: 'user_profiles' }).toArray();
       if (collections.length === 0) {
         await db.createCollection('user_profiles');
         console.log('Đã tạo collection user_profiles');
       }
-      
+
       // Xóa index cũ nếu tồn tại để tránh xung đột
       try {
         // Kiểm tra xem index userId_1 có tồn tại không
         const indexes = await db.collection('user_profiles').listIndexes().toArray();
         const hasUserIdIndex = indexes.some(index => index.name === 'userId_1');
-        
+
         if (hasUserIdIndex) {
           // Nếu tồn tại, xóa index này
           await db.collection('user_profiles').dropIndex('userId_1');
@@ -527,12 +529,8 @@ class StorageDB {
         }
       } catch (indexError) {
         console.warn('Cảnh báo khi xóa index cũ:', indexError.message);
-        // Tiếp tục ngay cả khi có lỗi xóa index
       }
-      
-      // Tạo index mới cho _id (MongoDB đã tự động tạo)
-      // và các index khác nếu cần
-      
+
       console.log('Hệ thống profile người dùng đã sẵn sàng');
     } catch (error) {
       console.error('Lỗi khi khởi tạo hệ thống profile:', error);
@@ -547,19 +545,19 @@ class StorageDB {
   async getProfileCardData(userId) {
     try {
       const profile = await this.getUserProfile(userId);
-      
+
       // Lấy thêm thông tin xếp hạng từ database (nếu có)
       const db = mongoClient.getDb();
-      
+
       // Lấy tất cả người dùng theo global_xp để tính xếp hạng
       const allProfiles = await db.collection('user_profiles')
         .find({}, { projection: { _id: 1, 'data.global_xp': 1 } })
         .sort({ 'data.global_xp': -1 })
         .toArray();
-      
+
       // Tính toán xếp hạng toàn cầu
       const globalRank = allProfiles.findIndex(p => p._id === userId) + 1;
-      
+
       // Trả về dữ liệu cần thiết cho profile card
       return {
         userId: profile._id,
@@ -602,11 +600,11 @@ class StorageDB {
     try {
       // Lấy dữ liệu profile
       const profileData = await this.getProfileCardData(userId);
-      
+
       // Sử dụng module profileCanvas để tạo hình ảnh
       const profileCanvas = require('./canvas/profileCanvas');
       const cardBuffer = await profileCanvas.createProfileCard(profileData);
-      
+
       return cardBuffer;
     } catch (error) {
       console.error('Lỗi khi tạo profile card:', error);
