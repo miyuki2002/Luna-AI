@@ -43,7 +43,7 @@ Luna/
 ├── events/         # Event handlers
 ├── handlers/       # Logic xử lý
 ├── services/       # Các dịch vụ (DB, AI, Canvas)
-└── utils/         # Tiện ích
+└── utils/          # Tiện ích
 ```
 
 ## Cách Sử Dụng
