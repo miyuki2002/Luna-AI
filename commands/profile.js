@@ -4,19 +4,19 @@ const ProfileDB = require('../services/profiledb');
 const mongoClient = require('../services/mongoClient');
 const profileCanvas = require('../utils/profileCanvas'); // Sử dụng class ProfileCanvas
 
-// Utility function to standardize font specification
+// Hàm tiện ích để chuẩn hóa thông số font
 function getStandardFont(size, weight = 'normal', fontFamily = 'Montserrat') {
-  // Use CSS-style font specification that's compatible with Pango
+  // Sử dụng định dạng font kiểu CSS tương thích với Pango
   return `${weight} ${size}px "${fontFamily}", Arial, sans-serif`;
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('profile')
-    .setDescription('Shows the current xp, level, rank, and other details of a user')
+    .setDescription('Hiển thị XP hiện tại, cấp độ, xếp hạng và các thông tin khác của người dùng')
     .addUserOption(option => 
       option.setName('user')
-        .setDescription('The user whose profile you want to view')
+        .setDescription('Người dùng mà bạn muốn xem hồ sơ')
         .setRequired(false)),
     
   async execute(interaction) {
@@ -26,7 +26,7 @@ module.exports = {
     const member = await interaction.guild.members.fetch(targetUser.id).catch(() => interaction.member);
     
     if (member.user.bot) {
-      return interaction.editReply(`❌ Bots cannot earn XP!`);
+      return interaction.editReply(`❌ Bot không thể nhận XP!`);
     }
     
     try {
@@ -35,14 +35,14 @@ module.exports = {
       
       // Kiểm tra cẩn thận cấu trúc dữ liệu
       if (!doc || !doc.data || !doc.data.xp || !Array.isArray(doc.data.xp)) {
-        return interaction.editReply(`❌ **${member.user.username}** has no XP data yet!`);
+        return interaction.editReply(`❌ **${member.user.username}** chưa có dữ liệu XP nào!`);
       }
       
       // Tìm dữ liệu XP cho server hiện tại
       const serverData = doc.data.xp.find(x => x.id === interaction.guild.id);
       
       if (!serverData) {
-        return interaction.editReply(`❌ **${member.user.username}** has not started earning XP in this server yet!`);
+        return interaction.editReply(`❌ **${member.user.username}** chưa bắt đầu nhận XP trong server này!`);
       }
       
       // Lấy collection để tính xếp hạng
@@ -117,7 +117,7 @@ module.exports = {
       
     } catch (err) {
       console.error(err);
-      return interaction.editReply(`❌ [DATABASE_ERR]: The database responded with error: ${err.name}`);
+      return interaction.editReply(`❌ [LỖI CSDL]: Cơ sở dữ liệu phản hồi lỗi: ${err.name}`);
     }
   }
 };

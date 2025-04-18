@@ -1,7 +1,6 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
 
-// Log khi module được tải (chỉ in một lần)
 console.log('🔄 ProfileDB module đã được tải vào hệ thống');
 
 // Cache để theo dõi những user đã được tạo profile
@@ -23,7 +22,6 @@ const profileStructure = {
       color: null,
       birthday: null,
       inventory: [],
-      // Thêm các trường mới
       social: {
         twitter: null,
         youtube: null,
@@ -71,7 +69,7 @@ const getProfileCollection = async () => {
 
 // Helper function to create a new profile with default values
 const createDefaultProfile = (userId) => {
-  // Chỉ in thông báo khi thực sự tạo mới, không phải khi hàm được gọi
+
   if (!userProfileCache.has(userId)) {
     console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
     userProfileCache.add(userId);

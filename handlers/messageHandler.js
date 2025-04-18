@@ -61,7 +61,7 @@ async function processXp(message, commandExecuted, execute) {
   try {
     const response = await experience(message, commandExecuted, execute);
     
-    // Log errors not caused by expected reasons
+    // Ghi log lỗi không gây ra bởi lý do đã biết
     if (!response.xpAdded && ![
       'DISABLED',             // XP bị tắt, cần EXPERIENCE_POINTS trong client#features
       'COMMAND_EXECUTED',     // Lệnh đã được thực thi thành công
