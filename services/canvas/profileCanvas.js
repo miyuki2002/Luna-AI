@@ -2,6 +2,7 @@ const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const fs = require('fs').promises;
 const fontManager = require('../fonts/fonts');
+const stringUtils = require('../../utils/string');
 
 // Định nghĩa đường dẫn tới thư mục assets
 const ASSETS_PATH = path.join(__dirname, '../../assets');
@@ -127,7 +128,7 @@ class ProfileCanvas {
       const ctx = canvas.getContext('2d');
       
       // Thiết lập font mặc định
-      ctx.font = '16px "Montserrat", sans-serif';
+      ctx.font = '16px Sans, sans-serif';
       
       // Vẽ nền chính với hiệu ứng gradient
       const bgGradient = this.createGradient(
@@ -179,7 +180,7 @@ class ProfileCanvas {
     const primaryColor = customColor || this.colors.primary.light;
     
     // Thiết lập font mặc định với định dạng CSS
-    ctx.font = '400 16px "Montserrat", Arial, sans-serif';
+    ctx.font = 'Regular 16px Sans, Arial, sans-serif';
     
     // PHẦN 1: CARD NGƯỜI DÙNG (bên trái)
     await this.drawUserInfoSection(ctx, profileData, primaryColor);
@@ -225,16 +226,17 @@ class ProfileCanvas {
       });
       
       // Vẽ tiêu đề USER PROFILE
-      ctx.font = 'bold 24px "Montserrat"';
+      ctx.font = 'Bold 24px Sans';
       ctx.fillStyle = this.colors.text.primary;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('USER PROFILE', 180, 80);
       
-      // Vẽ tên server
-      ctx.font = '16px "Montserrat"';
+      // Chuẩn hóa và vẽ tên server
+      const normalizedServerName = stringUtils.normalizeText(profileData.serverName) || 'Discord Server';
+      ctx.font = '16px Sans, Arial, sans-serif';
       ctx.fillStyle = this.colors.text.secondary;
-      ctx.fillText(profileData.serverName || 'Discord Server', 180, 110);
+      ctx.fillText(normalizedServerName, 180, 110);
       
       // Tải avatar
       let avatarImage;
@@ -277,7 +279,7 @@ class ProfileCanvas {
       }
       
       // Vẽ tên người dùng
-      ctx.font = 'bold 24px "Montserrat"';
+      ctx.font = 'Bold 24px Sans';
       ctx.textAlign = 'center';
       ctx.fillStyle = this.colors.text.primary;
       ctx.fillText(
@@ -289,7 +291,7 @@ class ProfileCanvas {
       
       // Vẽ discriminator nếu có
       if (profileData.discriminator && profileData.discriminator !== '0') {
-        ctx.font = '16px "Montserrat"';
+        ctx.font = '16px Sans';
         ctx.fillStyle = this.colors.text.secondary;
         ctx.fillText(`#${profileData.discriminator}`, 180, 285);
       }
@@ -334,7 +336,7 @@ class ProfileCanvas {
         const rankLabels = ['', '🥇 TOP #1', '🥈 TOP #2', '🥉 TOP #3'];
         const rankLabel = rankLabels[profileData.rank.server] || '';
         
-        ctx.font = 'bold 24px "Montserrat"';
+        ctx.font = 'Bold 24px Sans';
         ctx.fillStyle = this.colors.text.primary;
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
@@ -342,7 +344,7 @@ class ProfileCanvas {
       }
       
       // Vẽ tiêu đề BIO
-      ctx.font = 'bold 20px "Montserrat"';
+      ctx.font = 'Bold 20px Sans';
       ctx.textAlign = 'left';
       ctx.fillStyle = primaryColor;
       ctx.fillText('BIO', 380, 120);
@@ -355,7 +357,7 @@ class ProfileCanvas {
       });
       
       // Vẽ nội dung bio
-      ctx.font = '16px "Montserrat"';
+      ctx.font = '16px Sans';
       ctx.fillStyle = this.colors.text.primary;
       const bio = profileData.bio || 'No bio written.';
       
@@ -368,7 +370,7 @@ class ProfileCanvas {
       
       // Vẽ phần trên bên phải: Birthday + Network
       // Vẽ tiêu đề BIRTHDAY
-      ctx.font = 'bold 20px "Montserrat"';
+      ctx.font = 'Bold 20px Sans';
       ctx.fillStyle = primaryColor;
       ctx.fillText('BIRTHDAY', 380, 220);
       
@@ -380,7 +382,7 @@ class ProfileCanvas {
       });
       
       // Vẽ nội dung birthday
-      ctx.font = '16px "Montserrat"';
+      ctx.font = '16px Sans';
       ctx.fillStyle = this.colors.text.primary;
       ctx.fillText(
         profileData.birthday || 'Not specified',
@@ -390,7 +392,7 @@ class ProfileCanvas {
       );
       
       // Vẽ tiêu đề NETWORK
-      ctx.font = 'bold 20px "Montserrat"';
+      ctx.font = 'Bold 20px Sans';
       ctx.fillStyle = primaryColor;
       ctx.fillText('NETWORK', 630, 220);
       
@@ -406,7 +408,7 @@ class ProfileCanvas {
       const spacing = 45;
       
       for (let i = 0; i < networkIcons.length; i++) {
-        ctx.font = '20px "Montserrat"';
+        ctx.font = '20px Sans';
         ctx.fillStyle = this.colors.text.primary;
         ctx.fillText(networkIcons[i], 650 + i * spacing, 260);
       }
@@ -475,7 +477,7 @@ class ProfileCanvas {
       }
       
       // Vẽ thông tin XP (text)
-      ctx.font = 'bold 14px "Montserrat"';
+      ctx.font = 'Bold 14px Sans';
       ctx.textAlign = 'left';
       ctx.fillStyle = this.colors.text.primary;
       ctx.fillText(`Level ${level}`, startX, startY - 10);
@@ -510,7 +512,7 @@ class ProfileCanvas {
       ctx.fill();
     });
     
-    ctx.font = 'bold 16px "Montserrat"';
+    ctx.font = 'Bold 16px Sans';
     ctx.textAlign = 'center';
     ctx.fillStyle = this.colors.text.primary;
     ctx.fillText(`LVL ${profileData.level || 1}`, 95, 345);
@@ -575,7 +577,7 @@ class ProfileCanvas {
             ctx.drawImage(badgeIcon, x - badgeSize / 2, startY - badgeSize / 2, badgeSize, badgeSize);
           } else {
             // Nếu không có icon, vẽ emoji đại diện
-            ctx.font = '16px "Montserrat"';
+            ctx.font = '16px Sans';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = this.colors.text.primary;
@@ -584,7 +586,7 @@ class ProfileCanvas {
         } catch (err) {
           console.warn('Không thể tải badge icon:', err);
           // Vẽ badge fallback
-          ctx.font = '16px "Montserrat"';
+          ctx.font = '16px Sans';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = this.colors.text.primary;
@@ -605,7 +607,7 @@ class ProfileCanvas {
         });
         
         // Vẽ số lượng badges còn lại
-        ctx.font = 'bold 14px "Montserrat"';
+        ctx.font = 'Bold 14px Sans';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = this.colors.text.primary;
@@ -645,6 +647,42 @@ class ProfileCanvas {
     const BB = ((B.toString(16).length === 1) ? '0' + B.toString(16) : B.toString(16));
 
     return '#' + RR + GG + BB;
+  }
+
+  /**
+   * Kiểm tra xem chuỗi có thể hiển thị được với font hiện tại không
+   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * @param {string} text - Chuỗi cần kiểm tra
+   * @returns {boolean} - true nếu có thể hiển thị, false nếu không
+   */
+  checkTextRendering(ctx, text) {
+    const originalFont = ctx.font;
+    let canRender = true;
+    
+    try {
+      // Thử vẽ text với font hiện tại
+      ctx.font = '16px Montserrat';
+      const metrics = ctx.measureText(text);
+      
+      // Nếu width = 0 hoặc không có metrics, font không hoạt động
+      if (metrics.width === 0 || !metrics.actualBoundingBoxAscent) {
+        canRender = false;
+      }
+      
+      // Kiểm tra từng ký tự
+      for (let char of text) {
+        if (!ctx.measureText(char).width) {
+          canRender = false;
+          break;
+        }
+      }
+    } catch (e) {
+      canRender = false;
+    }
+    
+    // Khôi phục font ban đầu
+    ctx.font = originalFont;
+    return canRender;
   }
 }
 
