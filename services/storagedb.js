@@ -604,7 +604,7 @@ class StorageDB {
       const profileData = await this.getProfileCardData(userId);
       
       // Sử dụng module profileCanvas để tạo hình ảnh
-      const profileCanvas = require('../utils/profileCanvas');
+      const profileCanvas = require('./canvas/profileCanvas');
       const cardBuffer = await profileCanvas.createProfileCard(profileData);
       
       return cardBuffer;
