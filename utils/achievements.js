@@ -1,70 +1,14 @@
 const { AttachmentBuilder } = require('discord.js');
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const fs = require('fs');
+const fontManager = require('./fonts');
 
 // Định nghĩa đường dẫn tới thư mục assets
 const ASSETS_PATH = path.join(__dirname, '../assets');
-const FONTS_PATH = path.join(ASSETS_PATH, 'fonts');
 
-// Đăng ký fonts với nhiều cách khác nhau để tăng khả năng tương thích với Pango
-try {
-  // Map giữa weights dạng chữ và số
-  const fontWeightMappings = {
-    'Thin': 100,
-    'ExtraLight': 200,
-    'Light': 300,
-    'Regular': 400,
-    'Medium': 500,
-    'SemiBold': 600,
-    'Bold': 700,
-    'ExtraBold': 800,
-    'Black': 900
-  };
-
-  // Đăng ký tất cả các biến thể font Montserrat cơ bản với nhiều cách khác nhau
-  const fontVariants = [
-    { file: 'Montserrat-Regular.otf', weight: 'Regular', style: 'normal' },
-    { file: 'Montserrat-Bold.otf', weight: 'Bold', style: 'normal' },
-    { file: 'Montserrat-Italic.otf', weight: 'Regular', style: 'italic' },
-    { file: 'Montserrat-BoldItalic.otf', weight: 'Bold', style: 'italic' },
-    { file: 'Montserrat-Medium.otf', weight: 'Medium', style: 'normal' },
-  ];
-
-  // Đăng ký với mỗi cách khác nhau
-  for (const variant of fontVariants) {
-    try {
-      // Cách 1: Đăng ký với tên weight
-      registerFont(path.join(FONTS_PATH, variant.file), {
-        family: 'Montserrat',
-        weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
-        style: variant.style
-      });
-
-      // Cách 2: Đăng ký với số weight
-      registerFont(path.join(FONTS_PATH, variant.file), {
-        family: 'Montserrat',
-        weight: fontWeightMappings[variant.weight].toString(),
-        style: variant.style
-      });
-
-      // Cách 3: Đăng ký không có rotation
-      registerFont(path.join(FONTS_PATH, variant.file), {
-        family: 'Montserrat',
-        weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
-        style: variant.style,
-        rotate: false
-      });
-    } catch (err) {
-      console.warn(`Không thể đăng ký font ${variant.file}:`, err.message);
-    }
-  }
-  
-  console.log('Đã đăng ký font Montserrat thành công');
-} catch (err) {
-  console.error('Không thể đăng ký font Montserrat:', err.message);
-  console.warn('Sẽ sử dụng font dự phòng');
-}
+// Khởi tạo fonts
+fontManager.initialize(ASSETS_PATH);
 
 /**
  * Tạo hiệu ứng bo góc cho hình chữ nhật
