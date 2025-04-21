@@ -15,34 +15,34 @@ class MessageMonitor {
    */
   async initialize(client) {
     if (this.isInitialized) {
-      console.log('Hệ thống giám sát tin nhắn đã được khởi tạo trước đó');
+      logger.info('MONITOR', 'Hệ thống giám sát tin nhắn đã được khởi tạo trước đó');
       return;
     }
 
     // Lưu tham chiếu đến client
     this.client = client;
-    console.log(`[MONITOR] Đang khởi tạo hệ thống giám sát tin nhắn với client ID: ${client.user.id}`);
+    logger.info('MONITOR', `Đang khởi tạo hệ thống giám sát tin nhắn với client ID: ${client.user.id}`);
 
     try {
       // Tải cài đặt giám sát từ cơ sở dữ liệu
-      console.log('[MONITOR] Đang tải cài đặt giám sát từ cơ sở dữ liệu...');
+      logger.info('MONITOR', 'Đang tải cài đặt giám sát từ cơ sở dữ liệu...');
       await this.loadMonitorSettings();
 
       // Đăng ký sự kiện messageCreate riêng cho chức năng monitor
       // Sử dụng Events.MessageCreate thay vì 'messageCreate' để đồng bộ với cách đăng ký sự kiện trong index.js
-      console.log('[MONITOR] Đang đăng ký sự kiện MessageCreate cho chức năng giám sát...');
+      logger.info('MONITOR', 'Đang đăng ký sự kiện MessageCreate cho chức năng giám sát...');
       const { Events } = require('discord.js');
       client.on(Events.MessageCreate, this.handleMessage.bind(this));
-      console.log('[MONITOR] Đã đăng ký sự kiện MessageCreate thành công');
+      logger.info('MONITOR', 'Đã đăng ký sự kiện MessageCreate thành công');
 
       // Đánh dấu đã khởi tạo
       this.isInitialized = true;
-      console.log('✅ Đã khởi tạo hệ thống giám sát tin nhắn thành công');
-      console.log(`🔑 Bot ID: ${client.user.id}`);
-      console.log('📝 Chức năng monitor sẽ đọc tất cả tin nhắn khi được bật');
-      console.log('🔔 Chức năng monitor và trò chuyện sẽ hoạt động song song');
+      logger.info('MONITOR', '✅ Đã khởi tạo hệ thống giám sát tin nhắn thành công');
+      logger.info('MONITOR', `🔑 Bot ID: ${client.user.id}`);
+      logger.info('MONITOR', '📝 Chức năng monitor sẽ đọc tất cả tin nhắn khi được bật');
+      logger.info('MONITOR', '🔔 Chức năng monitor và trò chuyện sẽ hoạt động song song');
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
+      logger.error('MONITOR', '❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
     }
   }
 
