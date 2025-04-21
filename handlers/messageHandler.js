@@ -9,7 +9,7 @@ async function handleMessage(message) {
   try {
     // Biến để kiểm tra xem lệnh có được thực thi hay không
     let commandExecuted = false;
-    
+
     // Lấy nội dung mà không có phần đề cập
     const content = message.content
       .replace(/<@!?\d+>/g, '')
@@ -39,13 +39,13 @@ async function handleMessage(message) {
 
     // Mặc định là phản hồi trò chuyện
     await handleChatRequest(message, content);
-    
+
     // Xử lý XP sau khi xử lý tin nhắn
     processXp(message, commandExecuted, true);
   } catch (error) {
     console.error('Lỗi khi xử lý tin nhắn:', error);
     await message.reply('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn.');
-    
+
     // Xử lý XP với thông tin rằng có lỗi xảy ra
     processXp(message, false, false);
   }
@@ -60,7 +60,7 @@ async function handleMessage(message) {
 async function processXp(message, commandExecuted, execute) {
   try {
     const response = await experience(message, commandExecuted, execute);
-    
+
     // Ghi log lỗi không gây ra bởi lý do đã biết
     if (!response.xpAdded && ![
       'DISABLED',             // XP bị tắt, cần EXPERIENCE_POINTS trong client#features
@@ -79,12 +79,12 @@ async function processXp(message, commandExecuted, execute) {
         console.error(`Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
       }
     }
-    
+
     // Nếu người dùng lên cấp, có thể hiển thị thông báo
     if (response.xpAdded && response.level && response.previousLevel && response.level > response.previousLevel) {
       // Tùy chọn: Thông báo người dùng đã lên cấp
       console.log(`${message.author.tag} đã lên cấp ${response.level} trong server ${message.guild.name}`);
-      
+
       // Tùy chọn: Gửi thông báo lên cấp trong kênh
       // await message.channel.send(`🎉 Chúc mừng ${message.author}! Bạn đã đạt cấp độ ${response.level}!`);
     }
@@ -168,7 +168,7 @@ async function handleCodeRequest(message, prompt) {
   await message.channel.sendTyping();
 
   try {
-    const codeResponse = await NeuralNetworks.getCodeCompletion(prompt);
+    const codeResponse = await NeuralNetworks.getCodeCompletion(prompt, message);
 
     // Trích xuất khối mã hoặc định dạng dưới dạng mã
     let formattedResponse = codeResponse;
@@ -285,20 +285,20 @@ function splitMessageRespectWords(text, maxLength = 2000) {
   } else {
     // Chia thông minh theo ranh giới từ cho tin nhắn không phải mã
     let startPos = 0;
-    
+
     while (startPos < text.length) {
       // Nếu đoạn còn lại ngắn hơn maxLength, lấy hết
       if (startPos + maxLength >= text.length) {
         chunks.push(text.substring(startPos));
         break;
       }
-      
+
       // Tìm vị trí khoảng trắng gần nhất gần maxLength
       let endPos = startPos + maxLength;
       while (endPos > startPos && text[endPos] !== ' ' && text[endPos] !== '\n') {
         endPos--;
       }
-      
+
       // Nếu không tìm thấy khoảng trắng, buộc phải cắt ở maxLength
       if (endPos === startPos) {
         endPos = startPos + maxLength;
@@ -306,7 +306,7 @@ function splitMessageRespectWords(text, maxLength = 2000) {
         // Nếu tìm thấy khoảng trắng, lấy hết khoảng trắng đó
         endPos++;
       }
-      
+
       chunks.push(text.substring(startPos, endPos));
       startPos = endPos;
     }
@@ -315,7 +315,7 @@ function splitMessageRespectWords(text, maxLength = 2000) {
   return chunks;
 }
 
-module.exports = { 
+module.exports = {
   handleMessage,
   processXp  // Xuất hàm processXp
 };

@@ -130,7 +130,7 @@ class NeuralNetworks {
 
       // Tối ưu truy vấn tìm kiếm
       const optimizedQuery = this.optimizeSearchQuery(query);
-      
+
       console.log(`Đang thực hiện tìm kiếm web cho: "${optimizedQuery}"`);
 
       const axiosInstance = axios.create({
@@ -178,16 +178,16 @@ class NeuralNetworks {
     // Loại bỏ các từ hỏi thông thường để tập trung vào từ khóa chính
     const commonQuestionWords = /^(làm thế nào|tại sao|tại sao lại|là gì|có phải|ai là|khi nào|ở đâu|what is|how to|why|who is|when|where)/i;
     let optimized = query.replace(commonQuestionWords, '').trim();
-    
+
     // Loại bỏ các cụm từ yêu cầu cá nhân
     const personalRequests = /(tôi muốn biết|cho tôi biết|hãy nói cho tôi|tell me|i want to know|please explain)/i;
     optimized = optimized.replace(personalRequests, '').trim();
-    
+
     // Nếu truy vấn quá ngắn sau khi tối ưu, sử dụng truy vấn gốc
     if (optimized.length < 5) {
       return query;
     }
-    
+
     return optimized;
   }
 
@@ -201,25 +201,25 @@ class NeuralNetworks {
     if (searchResults.length === 0) {
       return originalPrompt;
     }
-    
+
     // Loại bỏ các kết quả trùng lặp hoặc không liên quan
     const relevantResults = this.filterRelevantResults(searchResults, originalPrompt);
-    
+
     if (relevantResults.length === 0) {
       return originalPrompt;
     }
-    
+
     let enhancedPrompt = `${originalPrompt}\n\n[THÔNG TIN TÌM KIẾM]\n`;
     enhancedPrompt += 'Dưới đây là thông tin liên quan từ web. Hãy sử dụng thông tin này khi thích hợp để bổ sung cho câu trả lời của bạn, nhưng không cần thiết phải tham khảo tất cả:\n\n';
-    
+
     relevantResults.forEach((result, index) => {
       enhancedPrompt += `[Nguồn ${index + 1}]: ${result.title}\n`;
       enhancedPrompt += `${result.snippet}\n`;
       enhancedPrompt += `URL: ${result.url}\n\n`;
     });
-    
+
     enhancedPrompt += 'Hãy tổng hợp thông tin trên một cách tự nhiên vào câu trả lời của bạn, không cần liệt kê lại các nguồn. Trả lời với giọng điệu thân thiện, không quá học thuật.';
-    
+
     return enhancedPrompt;
   }
 
@@ -231,20 +231,20 @@ class NeuralNetworks {
    */
   filterRelevantResults(results, query) {
     if (results.length === 0) return [];
-    
+
     // Trích xuất từ khóa chính từ truy vấn
     const keywords = this.extractKeywords(query);
-    
+
     // Tính điểm liên quan cho mỗi kết quả
     const scoredResults = results.map(result => {
       let score = 0;
-      
+
       // Kiểm tra sự xuất hiện của từ khóa trong tiêu đề và đoạn trích
       keywords.forEach(keyword => {
         if (result.title.toLowerCase().includes(keyword.toLowerCase())) score += 2;
         if (result.snippet.toLowerCase().includes(keyword.toLowerCase())) score += 1;
       });
-      
+
       // Ưu tiên các kết quả có ngày mới hơn
       if (result.date) {
         const resultDate = new Date(result.date);
@@ -253,10 +253,10 @@ class NeuralNetworks {
         if (monthsAgo < 3) score += 2; // Trong vòng 3 tháng
         else if (monthsAgo < 12) score += 1; // Trong vòng 1 năm
       }
-      
+
       return { ...result, relevanceScore: score };
     });
-    
+
     // Sắp xếp theo điểm liên quan và chỉ lấy tối đa 3 kết quả có liên quan nhất
     return scoredResults
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
@@ -306,23 +306,23 @@ class NeuralNetworks {
       }
 
       console.log(`Đang xử lý yêu cầu chat completion cho prompt: "${prompt.substring(0, 50)}..."`);
-      
+
       // Xác định xem prompt có cần tìm kiếm web hay không
       const shouldSearchWeb = this.shouldPerformWebSearch(prompt);
       let searchResults = [];
-      
+
       if (shouldSearchWeb) {
         console.log("Prompt có vẻ cần thông tin từ web, đang thực hiện tìm kiếm...");
         searchResults = await this.performWebSearch(prompt);
       } else {
         console.log("Sử dụng kiến thức có sẵn, không cần tìm kiếm web");
       }
-      
+
       // Tạo prompt được nâng cao với kết quả tìm kiếm (nếu có)
-      const promptWithSearch = searchResults.length > 0 
+      const promptWithSearch = searchResults.length > 0
         ? this.createSearchEnhancedPrompt(prompt, searchResults)
         : prompt;
-      
+
       // Bổ sung thông tin từ trí nhớ cuộc trò chuyện
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(promptWithSearch, userId);
 
@@ -344,7 +344,7 @@ class NeuralNetworks {
       } else {
         enhancedPrompt += ` If it fits the context, feel free to sprinkle in light humor or kind encouragement.`;
       }
-      
+
       if (searchResults.length > 0) {
         enhancedPrompt += ` I've provided you with web search results. Incorporate this information naturally into your response without explicitly listing the sources. Respond in a conversational tone as Luna, not as an information aggregator.`;
       }
@@ -357,8 +357,8 @@ class NeuralNetworks {
       // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, 'user', userMessage);
 
-      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện
-      const messages = conversationManager.getHistory();
+      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện của người dùng cụ thể
+      const messages = conversationManager.getHistory(userId);
 
       // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
       const response = await axiosInstance.post('/v1/chat/completions', {
@@ -385,7 +385,7 @@ class NeuralNetworks {
       return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
     }
   }
-  
+
   /**
    * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không
    * @param {string} prompt - Prompt từ người dùng
@@ -394,23 +394,23 @@ class NeuralNetworks {
   shouldPerformWebSearch(prompt) {
     // Nếu prompt quá ngắn, không cần tìm kiếm
     if (prompt.length < 15) return false;
-    
+
     // Các từ khóa gợi ý cần thông tin cập nhật hoặc sự kiện
     const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|recent|current|latest|update|news)/i;
-    
+
     // Các từ khóa gợi ý cần dữ liệu cụ thể
     const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|how many|when|where|who is|what is)/i;
-    
+
     // Các từ khóa chỉ ý kiến cá nhân hoặc sáng tạo (không cần tìm kiếm)
     const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|what do you think|in your opinion|your thoughts)/i;
-    
+
     // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
     if (opinionKeywords.test(prompt)) return false;
-    
+
     // Nếu có từ khóa về thông tin hoặc dữ kiện cụ thể, thực hiện tìm kiếm
     return informationKeywords.test(prompt) || factsKeywords.test(prompt);
   }
-  
+
   /**
    * Xử lý và định dạng nội dung phản hồi
    * @param {string} content - Nội dung phản hồi gốc
@@ -469,7 +469,7 @@ class NeuralNetworks {
     if (searchResults && searchResults.length > 0) {
       // Chỉ thêm biểu tượng tìm kiếm nhỏ ở đầu để không làm gián đoạn cuộc trò chuyện
       content = `🔍 ${content}`;
-      
+
       // Thêm ghi chú nhỏ về nguồn thông tin ở cuối nếu có nhiều kết quả tìm kiếm
       if (searchResults.length >= 2) {
         content += `\n\n*Thông tin được tổng hợp từ ${searchResults.length} nguồn trực tuyến.*`;
@@ -817,11 +817,11 @@ class NeuralNetworks {
       // Tạo prompt đặc biệt yêu cầu mô hình hiển thị quá trình suy nghĩ
       const thinkingPrompt =
         `Hãy giải thích quá trình suy nghĩ của bạn theo từng bước trước khi đưa ra câu trả lời cuối cùng.
-         
+
          Hãy chia câu trả lời của bạn thành hai phần:
          1. [THINKING] - Quá trình suy nghĩ, phân tích và suy luận của bạn
          2. [ANSWER] - Câu trả lời cuối cùng, rõ ràng và ngắn gọn
-         
+
          Câu hỏi: ${prompt}`;
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -832,8 +832,8 @@ class NeuralNetworks {
       // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, 'user', thinkingPrompt);
 
-      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện
-      const messages = conversationManager.getHistory();
+      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện của người dùng cụ thể
+      const messages = conversationManager.getHistory(userId);
 
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.CoreModel,
@@ -862,33 +862,48 @@ class NeuralNetworks {
 
   /**
    * Nhận phản hồi mã từ API
+   * @param {string} prompt - Câu hỏi hoặc yêu cầu từ người dùng
+   * @param {object} message - Đối tượng tin nhắn (tuỳ chọn)
+   * @returns {Promise<string>} - Phản hồi mã từ API
    */
-  async getCodeCompletion(prompt) {
+  async getCodeCompletion(prompt, message = null) {
     try {
+      // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
+      const userId = message?.author?.id || 'default-user';
+
       // Kiểm tra xem có yêu cầu chế độ thinking không
       if (prompt.toLowerCase().includes('thinking') || prompt.toLowerCase().includes('giải thích từng bước')) {
-        const codingThinkingPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.Model}. 
+        const codingThinkingPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.Model}.
           Hãy giải thích quá trình suy nghĩ của bạn trước khi viết mã.
-          
+
           Sử dụng định dạng:
           [THINKING] - Phân tích vấn đề và cách tiếp cận
           [CODE] - Mã hoàn chỉnh với comment đầy đủ
           [EXPLANATION] - Giải thích chi tiết về mã
-          
+
           Câu hỏi: ${prompt}`;
+
+        // Lấy lịch sử cuộc trò chuyện hiện có
+        await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+
+        // Thêm tin nhắn người dùng vào lịch sử
+        await conversationManager.addMessage(userId, 'user', codingThinkingPrompt);
+
+        // Lấy lịch sử cuộc trò chuyện của người dùng cụ thể
+        const messages = conversationManager.getHistory(userId);
 
         const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
         const response = await axiosInstance.post('/v1/chat/completions', {
           model: this.CoreModel,
           max_tokens: 4096,
-          messages: [
-            { role: 'system', content: codingThinkingPrompt },
-            { role: 'user', content: prompt }
-          ]
+          messages: messages
         });
 
         let content = response.data.choices[0].message.content;
+
+        // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
+        await conversationManager.addMessage(userId, 'assistant', content);
 
         // Định dạng phần suy nghĩ để dễ đọc hơn
         content = content.replace('[THINKING]', '💭 **Quá trình phân tích:**\n');
@@ -900,19 +915,30 @@ class NeuralNetworks {
 
       const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.Model}. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
 
+      // Lấy lịch sử cuộc trò chuyện hiện có
+      await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+
+      // Thêm tin nhắn người dùng vào lịch sử
+      await conversationManager.addMessage(userId, 'user', prompt);
+
+      // Lấy lịch sử cuộc trò chuyện của người dùng cụ thể
+      const messages = conversationManager.getHistory(userId);
+
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.CoreModel,
         max_tokens: 4096,
-        messages: [
-          { role: 'system', content: codingSystemPrompt },
-          { role: 'user', content: prompt }
-        ]
+        messages: messages
       });
 
-      return response.data.choices[0].message.content;
+      const content = response.data.choices[0].message.content;
+
+      // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
+      await conversationManager.addMessage(userId, 'assistant', content);
+
+      return content;
     } catch (error) {
       console.error(`Lỗi khi gọi X.AI API cho mã:`, error.message);
       if (error.response) {

@@ -3,9 +3,17 @@ const storageDB = require('../services/storagedb.js');
 
 // Sử dụng closure để ngăn chặn truy cập trước khi khởi tạo
 const conversationManager = (() => {
-  // Biến lịch sử cuộc trò chuyện riêng tư
-  const conversationHistory = [];
-  
+  // Map để lưu trữ lịch sử cuộc trò chuyện riêng biệt cho từng người dùng
+  const userConversations = new Map();
+
+  // Lấy hoặc tạo mới lịch sử cuộc trò chuyện cho người dùng
+  const getUserHistory = (userId) => {
+    if (!userConversations.has(userId)) {
+      userConversations.set(userId, []);
+    }
+    return userConversations.get(userId);
+  };
+
   return {
     /**
      * Tải lịch sử cuộc trò chuyện từ bộ nhớ
@@ -16,14 +24,15 @@ const conversationManager = (() => {
      */
     async loadConversationHistory(userId, systemPrompt, modelName) {
       const history = await storageDB.getConversationHistory(userId, systemPrompt, modelName);
-      
-      // Xóa và cập nhật bộ nhớ đệm cục bộ
-      conversationHistory.length = 0;
-      history.forEach(msg => conversationHistory.push(msg));
-      
-      return [...conversationHistory];
+
+      // Xóa và cập nhật bộ nhớ đệm cục bộ cho người dùng cụ thể
+      const userHistory = getUserHistory(userId);
+      userHistory.length = 0;
+      history.forEach(msg => userHistory.push(msg));
+
+      return [...userHistory];
     },
-    
+
     /**
      * Thêm tin nhắn vào lịch sử cuộc trò chuyện
      * @param {string} userId - Định danh người dùng
@@ -32,26 +41,41 @@ const conversationManager = (() => {
      * @returns {Promise} - Kết quả của thao tác với cơ sở dữ liệu
      */
     addMessage(userId, role, content) {
-      // Thêm vào bộ nhớ đệm cục bộ
-      conversationHistory.push({ role, content });
-      
+      // Thêm vào bộ nhớ đệm cục bộ của người dùng cụ thể
+      const userHistory = getUserHistory(userId);
+      userHistory.push({ role, content });
+
       // Thêm vào cơ sở dữ liệu
       return storageDB.addMessageToConversation(userId, role, content);
     },
-    
+
     /**
-     * Lấy lịch sử cuộc trò chuyện hiện tại
+     * Lấy lịch sử cuộc trò chuyện hiện tại của người dùng
+     * @param {string} userId - Định danh người dùng (tùy chọn)
      * @returns {Array} - Bản sao của lịch sử cuộc trò chuyện
      */
-    getHistory() {
-      return [...conversationHistory];
+    getHistory(userId) {
+      if (!userId) {
+        console.warn('Cảnh báo: Đang truy cập lịch sử cuộc trò chuyện mà không cung cấp userId');
+        return [];
+      }
+      return [...getUserHistory(userId)];
     },
-    
+
     /**
-     * Xóa lịch sử cuộc trò chuyện cục bộ
+     * Xóa lịch sử cuộc trò chuyện cục bộ của người dùng
+     * @param {string} userId - Định danh người dùng
      */
-    clearLocalHistory() {
-      conversationHistory.length = 0;
+    clearLocalHistory(userId) {
+      if (userId) {
+        // Xóa lịch sử của người dùng cụ thể
+        if (userConversations.has(userId)) {
+          userConversations.get(userId).length = 0;
+        }
+      } else {
+        // Xóa tất cả lịch sử nếu không cung cấp userId
+        userConversations.clear();
+      }
     }
   };
 })();
