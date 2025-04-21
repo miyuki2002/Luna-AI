@@ -265,9 +265,85 @@ class NeuralNetworks {
   }
 
   /**
+   * Phân tích tin nhắn cho chức năng giám sát
+   * @param {string} prompt - Prompt phân tích tin nhắn
+   * @returns {Promise<string>} - Kết quả phân tích
+   */
+  async getMonitoringAnalysis(prompt) {
+    try {
+      console.log(`[MONITOR-API] Đang phân tích tin nhắn cho chức năng giám sát`);
+      console.log(`[MONITOR-API] Prompt: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`);
+
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+
+      // Tạo một ID riêng cho chức năng giám sát
+      const monitorId = `monitor-${Date.now()}`;
+
+      // Thực hiện yêu cầu API với prompt giám sát
+      const response = await axiosInstance.post('/v1/chat/completions', {
+        model: this.CoreModel,
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'system',
+            content: `Bạn là trợ lý phân tích tin nhắn. Nhiệm vụ của bạn là phân tích tin nhắn và xác định xem nó có vi phạm quy tắc nào không.
+
+QUAN TRỌNG: Hãy phân tích kỹ lưỡng và chính xác. Nếu tin nhắn có chứa chính xác nội dung bị cấm trong quy tắc, hãy trả lời "VIOLATION: Có". Nếu không, trả lời "VIOLATION: Không".
+
+Ví dụ: Nếu quy tắc là "không chat s4ory" và tin nhắn chứa "s4ory", thì đó là vi phạm.
+
+Trả lời theo định dạng chính xác sau:
+VIOLATION: Có/Không
+RULE: [Số thứ tự quy tắc hoặc "Không có"]
+SEVERITY: Thấp/Trung bình/Cao/Không có
+FAKE: Có/Không
+ACTION: Không cần hành động/Cảnh báo/Xóa tin nhắn/Mute/Kick/Ban
+REASON: [Giải thích ngắn gọn]`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      });
+
+      console.log('[MONITOR-API] Đã nhận phản hồi từ API cho chức năng giám sát');
+      const content = response.data.choices[0].message.content;
+      console.log(`[MONITOR-API] Kết quả phân tích: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`);
+
+      // Kiểm tra xem kết quả có đúng định dạng không
+      if (!content.includes('VI_PHẠM:') && !content.includes('QUY_TẮC_VI_PHẠM:')) {
+        console.log('[MONITOR-API] Kết quả không đúng định dạng, đang chuyển đổi...');
+        // Nếu không đúng định dạng, chuyển đổi sang định dạng chuẩn
+        return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Không phát hiện vi phạm`;
+      }
+
+      return content;
+    } catch (error) {
+      console.error(`[MONITOR-API] Lỗi khi gọi X.AI API cho chức năng giám sát:`, error.message);
+      if (error.response) {
+        console.error('[MONITOR-API] Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
+      }
+      return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Lỗi kết nối API: ${error.message}`;
+    }
+  }
+
+  /**
    * Nhận phản hồi trò chuyện từ API
    */
   async getCompletion(prompt, message = null) {
+    // Nếu đây là yêu cầu từ chức năng giám sát và không phải từ tin nhắn tag bot, chuyển sang phương thức riêng
+    // Chỉ chuyển sang getMonitoringAnalysis khi không có message object (không phải từ Discord)
+    if (!message && (prompt.includes('VI_PHẠM:') || prompt.includes('QUY_TẮC_VI_PHẠM:') || prompt.includes('MỨC_ĐỘ:'))) {
+      console.log('[NEURAL] Chuyển sang phương thức getMonitoringAnalysis');
+      return this.getMonitoringAnalysis(prompt);
+    }
+
+    // Nếu có message object (từ Discord), luôn xử lý như tin nhắn trò chuyện bình thường
+    if (message && message.mentions && message.mentions.has(this.client?.user)) {
+      console.log('[NEURAL] Xử lý tin nhắn tag bot như tin nhắn trò chuyện bình thường');
+    }
     try {
       // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
       const userId = message?.author?.id || 'default-user';

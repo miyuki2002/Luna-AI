@@ -12,8 +12,10 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildMembers,       // Thêm intent này để đọc thông tin thành viên
+    GatewayIntentBits.GuildMessageReactions, // Thêm intent này để đọc phản ứng tin nhắn
   ],
-  partials: [Partials.Channel]
+  partials: [Partials.Channel, Partials.Message, Partials.Reaction] // Thêm partials để xử lý tin nhắn cũ
 });
 
 // Khởi tạo các bộ sưu tập cơ bản
@@ -28,15 +30,36 @@ startbot(client, () => loadCommands(client));
 // Sử dụng getCommandsJson để lấy commands từ cache
 setupGuildHandlers(client);
 
-// Đăng ký sự kiện tin nhắn - sẽ được kích hoạt sau khi ready
+// Đăng ký sự kiện tin nhắn cho chức năng trò chuyện khi được tag
 client.on(Events.MessageCreate, async message => {
   // Bỏ qua tin nhắn từ bot
   if (message.author.bot) return;
 
-  // Kiểm tra xem bot có được nhắc đến không
+  // Chỉ xử lý tin nhắn khi bot được tag và không phải là cảnh báo từ chức năng giám sát
   if (message.mentions.has(client.user)) {
-    await handleMessage(message);
+    // Kiểm tra xem tin nhắn có phải là cảnh báo từ chức năng giám sát không
+    const isMonitorWarning = message.content.includes('**CẢNH BÁO') ||
+                            message.content.includes('**Lưu ý') ||
+                            message.content.includes('**CẢNH BÁO NGHÊM TRỌNG');
+
+    // Nếu không phải cảnh báo từ chức năng giám sát, xử lý như tin nhắn trò chuyện bình thường
+    if (!isMonitorWarning) {
+      // Ghi log để debug
+      console.log(`[CHAT] Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
+
+      try {
+        // Gọi handler cho chức năng trò chuyện
+        await handleMessage(message);
+        console.log(`[CHAT] Đã xử lý tin nhắn trò chuyện thành công`);
+      } catch (error) {
+        console.error(`[CHAT] Lỗi khi xử lý tin nhắn trò chuyện:`, error);
+      }
+    }
   }
+
+  // Lưu ý: Chức năng monitor được xử lý hoàn toàn riêng biệt trong messageMonitor.js
+  // và được khởi tạo trong events/ready.js
+  // messageMonitor sẽ đọc tất cả tin nhắn KHÔNG tag bot (tin nhắn tag bot được xử lý ở trên)
 });
 
 // Đăng ký sự kiện interaction - sẽ được kích hoạt sau khi ready
