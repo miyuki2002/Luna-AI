@@ -31,29 +31,76 @@ class StorageDB {
         // Kiểm tra các chỉ mục hiện tại
         const indexes = await db.collection('conversations').listIndexes().toArray();
         const hasConversationIdIndex = indexes.some(index => index.name === 'conversationId_1');
+        const hasUserIdMessageIndexIndex = indexes.some(index => index.name === 'userId_1_messageIndex_1');
 
+        // Xóa các chỉ mục hiện có để tránh xung đột
         if (hasConversationIdIndex) {
           console.log('Phát hiện chỉ mục conversationId_1 không cần thiết...');
-
           try {
-            // Thử xóa chỉ mục trước
             await db.collection('conversations').dropIndex('conversationId_1');
             console.log('Đã xóa chỉ mục conversationId_1');
           } catch (dropIndexError) {
-            console.error('Không thể xóa chỉ mục, sẽ xóa và tạo lại collection:', dropIndexError.message);
-
-            // Xóa toàn bộ collection và tạo lại
-            await db.collection('conversations').drop();
-            console.log('Đã xóa collection conversations để tạo lại');
+            console.error('Không thể xóa chỉ mục conversationId_1:', dropIndexError.message);
           }
         }
+
+        if (hasUserIdMessageIndexIndex) {
+          console.log('Phát hiện chỉ mục userId_1_messageIndex_1 hiện có...');
+          try {
+            await db.collection('conversations').dropIndex('userId_1_messageIndex_1');
+            console.log('Đã xóa chỉ mục userId_1_messageIndex_1');
+          } catch (dropIndexError) {
+            console.error('Không thể xóa chỉ mục userId_1_messageIndex_1:', dropIndexError.message);
+          }
+        }
+
+        // Xóa các bản ghi có userId hoặc messageIndex là null
+        const deleteResult = await db.collection('conversations').deleteMany({
+          $or: [
+            { userId: null },
+            { messageIndex: null },
+            { userId: { $exists: false } },
+            { messageIndex: { $exists: false } }
+          ]
+        });
+
+        if (deleteResult.deletedCount > 0) {
+          console.log(`Đã xóa ${deleteResult.deletedCount} bản ghi không hợp lệ (userId hoặc messageIndex là null)`);
+        }
+
       } catch (indexError) {
-        // Bỏ qua lỗi nếu collection chưa tồn tại
-        console.log('Không tìm thấy chỉ mục cần xóa hoặc collection chưa tồn tại');
+        // Nếu gặp lỗi, thử xóa và tạo lại toàn bộ collection
+        console.log('Thử xóa và tạo lại collection conversations...');
+        try {
+          await db.collection('conversations').drop();
+          console.log('Đã xóa collection conversations để tạo lại');
+        } catch (dropError) {
+          console.log('Collection conversations chưa tồn tại hoặc không thể xóa');
+        }
+      }
+
+      // Tạo lại collection nếu cần
+      try {
+        const collections = await db.listCollections({ name: 'conversations' }).toArray();
+        if (collections.length === 0) {
+          await db.createCollection('conversations');
+          console.log('Đã tạo mới collection conversations');
+        }
+      } catch (createError) {
+        console.error('Lỗi khi tạo collection conversations:', createError);
       }
 
       // Tạo các indexes cần thiết
-      await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
+      try {
+        await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
+        console.log('Đã tạo chỉ mục userId_1_messageIndex_1');
+      } catch (indexError) {
+        console.error('Lỗi khi tạo chỉ mục userId_1_messageIndex_1:', indexError);
+        // Nếu vẫn gặp lỗi, thử xóa toàn bộ collection và tạo lại từ đầu
+        await this.resetConversationsCollection();
+      }
+
+      // Tạo các chỉ mục khác
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
 
@@ -61,6 +108,50 @@ class StorageDB {
     } catch (error) {
       console.error('Lỗi khi thiết lập collections MongoDB:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Xóa hoàn toàn cơ sở dữ liệu và tạo lại từ đầu
+   * @returns {Promise<boolean>} - Trả về true nếu thành công, false nếu thất bại
+   */
+  async resetDatabase() {
+    try {
+      const db = mongoClient.getDb();
+
+      // Danh sách các collection cần xóa
+      const collectionsToReset = [
+        'conversations',
+        'conversation_meta',
+        'greetingPatterns'
+      ];
+
+      // Xóa từng collection
+      for (const collectionName of collectionsToReset) {
+        try {
+          const collections = await db.listCollections({ name: collectionName }).toArray();
+          if (collections.length > 0) {
+            await db.collection(collectionName).drop();
+            console.log(`Đã xóa collection ${collectionName}`);
+          }
+        } catch (dropError) {
+          console.log(`Collection ${collectionName} chưa tồn tại hoặc không thể xóa`);
+        }
+      }
+
+      // Thiết lập lại các collection và chỉ mục
+      await this.setupCollections();
+
+      // Khởi tạo lại các hệ thống
+      await this.initializeConversationHistory();
+      await this.initializeDefaultGreetingPatterns();
+      await this.initializeProfiles();
+
+      console.log('Đã xóa và tạo lại cơ sở dữ liệu thành công');
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi reset cơ sở dữ liệu:', error);
+      return false;
     }
   }
 
@@ -73,10 +164,25 @@ class StorageDB {
       await mongoClient.connect();
       console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
 
-      // Khởi tạo các hệ thống
-      await this.initializeConversationHistory();
-      await this.initializeDefaultGreetingPatterns();
-      await this.initializeProfiles();
+      try {
+        // Thiết lập các collections và indexes
+        await this.setupCollections();
+
+        // Khởi tạo các hệ thống
+        await this.initializeConversationHistory();
+        await this.initializeDefaultGreetingPatterns();
+        await this.initializeProfiles();
+      } catch (setupError) {
+        console.error('Lỗi khi thiết lập cơ sở dữ liệu:', setupError);
+
+        // Nếu gặp lỗi, thử reset toàn bộ cơ sở dữ liệu
+        console.log('Thử xóa và tạo lại toàn bộ cơ sở dữ liệu...');
+        const resetSuccess = await this.resetDatabase();
+
+        if (!resetSuccess) {
+          throw new Error('Không thể khắc phục lỗi bằng cách reset cơ sở dữ liệu');
+        }
+      }
     } catch (error) {
       console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
       throw error;
@@ -91,10 +197,20 @@ class StorageDB {
    */
   async addMessageToConversation(userId, role, content) {
     try {
-      // Kiểm tra userId có hợp lệ không
-      if (!userId) {
-        console.error('Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId rỗng');
+      // Kiểm tra userId và các tham số khác có hợp lệ không
+      if (!userId || userId === 'null' || userId === 'undefined') {
+        console.error('Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId không hợp lệ:', userId);
         return;
+      }
+
+      if (!role) {
+        console.error('Lỗi: Không thể thêm tin nhắn với role rỗng');
+        return;
+      }
+
+      if (!content) {
+        console.warn('Cảnh báo: Đang thêm tin nhắn với nội dung rỗng');
+        // Vẫn tiếp tục với nội dung rỗng, nhưng ghi nhận cảnh báo
       }
 
       const db = mongoClient.getDb();
@@ -432,25 +548,45 @@ class StorageDB {
 
   /**
    * Xóa và tạo lại collection conversations
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} - Trả về true nếu thành công, false nếu thất bại
    */
   async resetConversationsCollection() {
     try {
       const db = mongoClient.getDb();
 
-      // Kiểm tra xem collection có tồn tại không
-      const collections = await db.listCollections({ name: 'conversations' }).toArray();
-
-      if (collections.length > 0) {
-        // Xóa collection nếu tồn tại
-        await db.collection('conversations').drop();
-        console.log('Đã xóa collection conversations để tạo lại');
+      // Thử xóa collection nếu tồn tại
+      try {
+        const collections = await db.listCollections({ name: 'conversations' }).toArray();
+        if (collections.length > 0) {
+          await db.collection('conversations').drop();
+          console.log('Đã xóa collection conversations để tạo lại');
+        }
+      } catch (dropError) {
+        console.log('Collection conversations chưa tồn tại hoặc không thể xóa');
       }
 
-      // Tạo lại collection và các chỉ mục
-      await db.createCollection('conversations');
-      await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
-      await db.collection('conversations').createIndex({ timestamp: 1 });
+      // Tạo lại collection
+      try {
+        await db.createCollection('conversations');
+        console.log('Đã tạo mới collection conversations');
+      } catch (createError) {
+        // Bỏ qua lỗi nếu collection đã tồn tại
+        console.log('Collection conversations đã tồn tại hoặc không thể tạo mới');
+      }
+
+      // Tạo các chỉ mục
+      try {
+        // Tạo chỉ mục timestamp trước để tránh xung đột với chỉ mục unique
+        await db.collection('conversations').createIndex({ timestamp: 1 });
+        console.log('Đã tạo chỉ mục timestamp_1');
+
+        // Tạo chỉ mục unique cho userId và messageIndex
+        await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
+        console.log('Đã tạo chỉ mục userId_1_messageIndex_1');
+      } catch (indexError) {
+        console.error('Lỗi khi tạo chỉ mục cho collection conversations:', indexError);
+        return false;
+      }
 
       console.log('Đã tạo lại collection conversations với các chỉ mục đúng');
       return true;
