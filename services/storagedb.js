@@ -104,6 +104,28 @@ class StorageDB {
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
 
+      // Tạo các collection cho hệ thống giám sát và moderation
+      try {
+        await db.createCollection('monitor_settings');
+        await db.createCollection('monitor_logs');
+        await db.createCollection('mod_settings');
+        console.log('Đã tạo các collection cho hệ thống giám sát và moderation');
+      } catch (error) {
+        // Bỏ qua lỗi nếu collection đã tồn tại
+        console.log('Các collection cho hệ thống giám sát đã tồn tại hoặc không thể tạo');
+      }
+
+      // Tạo các chỉ mục cho hệ thống giám sát và moderation
+      try {
+        await db.collection('monitor_settings').createIndex({ guildId: 1 }, { unique: true });
+        await db.collection('monitor_logs').createIndex({ guildId: 1, timestamp: -1 });
+        await db.collection('monitor_logs').createIndex({ userId: 1 });
+        await db.collection('mod_settings').createIndex({ guildId: 1 }, { unique: true });
+        console.log('Đã tạo các chỉ mục cho hệ thống giám sát và moderation');
+      } catch (error) {
+        console.error('Lỗi khi tạo chỉ mục cho hệ thống giám sát:', error);
+      }
+
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
       console.error('Lỗi khi thiết lập collections MongoDB:', error);
@@ -123,7 +145,10 @@ class StorageDB {
       const collectionsToReset = [
         'conversations',
         'conversation_meta',
-        'greetingPatterns'
+        'greetingPatterns',
+        'monitor_settings',
+        'monitor_logs',
+        'mod_settings'
       ];
 
       // Xóa từng collection
