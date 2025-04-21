@@ -13,8 +13,12 @@ module.exports = {
         .setDescription('Bật chế độ giám sát chat tự động')
         .addStringOption(option =>
           option.setName('rules')
-            .setDescription('Các quy tắc cần giám sát (phân cách bằng dấu phẩy)')
-            .setRequired(true)))
+            .setDescription('Các quy tắc cần giám sát (phân cách bằng dấu chấm phẩy)')
+            .setRequired(true))
+        .addStringOption(option =>
+          option.setName('actions')
+            .setDescription('Hành động cho từng quy tắc (warn/mute/kick/ban, phân cách bằng dấu chấm phẩy)')
+            .setRequired(false)))
     .addSubcommand(subcommand =>
       subcommand
         .setName('disable')
@@ -88,11 +92,33 @@ module.exports = {
  */
 async function handleEnableMonitor(interaction, db) {
   const rules = interaction.options.getString('rules');
-  const rulesList = rules.split(',').map(rule => rule.trim());
+  const actions = interaction.options.getString('actions') || '';
+
+  // Phân tách quy tắc và hành động tương ứng
+  const rulesList = rules.split(';').map(rule => rule.trim());
+  const actionsList = actions.split(';').map(action => action.trim().toLowerCase());
+
+  // Đảm bảo mỗi quy tắc có hành động tương ứng
+  const ruleActions = [];
+  for (let i = 0; i < rulesList.length; i++) {
+    const rule = rulesList[i];
+    const action = i < actionsList.length ? actionsList[i] : 'warn'; // Mặc định là cảnh báo
+
+    // Kiểm tra hành động hợp lệ
+    let validAction = action;
+    if (!['warn', 'mute', 'kick', 'ban'].includes(action)) {
+      validAction = 'warn'; // Nếu không hợp lệ, mặc định là cảnh báo
+    }
+
+    ruleActions.push({
+      rule,
+      action: validAction
+    });
+  }
 
   // Tạo prompt mẫu để kiểm tra vi phạm
   const promptTemplate = `Đánh giá tin nhắn sau đây và xác định xem nó có vi phạm bất kỳ quy tắc nào trong số các quy tắc sau không:
-${rulesList.map((rule, index) => `${index + 1}. ${rule}`).join('\n')}
+${ruleActions.map((item, index) => `${index + 1}. ${item.rule}`).join('\n')}
 
 Tin nhắn: "{{message}}"
 
@@ -114,7 +140,7 @@ REASON: [Giải thích ngắn gọn]`;
   const monitorSettings = {
     guildId: interaction.guild.id,
     enabled: true,
-    rules: rulesList,
+    ruleActions: ruleActions,
     promptTemplate: promptTemplate,
     enabledAt: new Date(),
     enabledBy: interaction.user.id,
@@ -128,13 +154,24 @@ REASON: [Giải thích ngắn gọn]`;
     { upsert: true }
   );
 
+  // Tạo danh sách quy tắc và hành động tương ứng
+  const rulesWithActions = ruleActions.map((item, index) => {
+    const actionEmoji = {
+      'warn': '⚠️',
+      'mute': '🔇',
+      'kick': '👢',
+      'ban': '🚫'
+    };
+    return `${index + 1}. ${item.rule} ${actionEmoji[item.action]} (${item.action})`;
+  }).join('\n');
+
   // Tạo embed thông báo
   const enableEmbed = new EmbedBuilder()
     .setColor(0x00FF00)
     .setTitle('🔍 Đã bật chế độ giám sát chat tự động')
     .setDescription('Bot sẽ giám sát tất cả tin nhắn trong server để phát hiện vi phạm quy tắc và tài khoản giả mạo.')
     .addFields(
-      { name: 'Quy tắc giám sát', value: rulesList.map((rule, index) => `${index + 1}. ${rule}`).join('\n') },
+      { name: 'Quy tắc giám sát và hành động', value: rulesWithActions },
       { name: 'Người bật', value: `<@${interaction.user.id}>`, inline: true },
       { name: 'Thời gian', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true }
     )
@@ -144,7 +181,7 @@ REASON: [Giải thích ngắn gọn]`;
   // Bật giám sát tin nhắn sử dụng messageMonitor service
   messageMonitor.enableMonitoring(interaction.guild.id, {
     promptTemplate,
-    rules: rulesList,
+    ruleActions: ruleActions,
     ignoredChannels: [],
     ignoredRoles: []
   });
@@ -216,6 +253,27 @@ async function handleMonitorStatus(interaction, db) {
     isViolation: true
   });
 
+  // Tạo danh sách quy tắc và hành động tương ứng
+  let rulesWithActions = '';
+
+  if (monitorSettings.ruleActions) {
+    // Nếu có cấu trúc mới với ruleActions
+    rulesWithActions = monitorSettings.ruleActions.map((item, index) => {
+      const actionEmoji = {
+        'warn': '⚠️',
+        'mute': '🔇',
+        'kick': '👢',
+        'ban': '🚫'
+      };
+      return `${index + 1}. ${item.rule} ${actionEmoji[item.action]} (${item.action})`;
+    }).join('\n');
+  } else if (monitorSettings.rules) {
+    // Nếu có cấu trúc cũ chỉ có rules
+    rulesWithActions = monitorSettings.rules.map((rule, index) => `${index + 1}. ${rule} ⚠️ (warn)`).join('\n');
+  } else {
+    rulesWithActions = 'Không có quy tắc nào được thiết lập';
+  }
+
   // Tạo embed thông báo
   const statusEmbed = new EmbedBuilder()
     .setColor(monitorSettings.enabled ? 0x00FF00 : 0xFF0000)
@@ -224,7 +282,7 @@ async function handleMonitorStatus(interaction, db) {
       ? 'Bot đang giám sát tất cả tin nhắn trong server để phát hiện vi phạm quy tắc và tài khoản giả mạo.'
       : 'Bot hiện không giám sát tin nhắn trong server.')
     .addFields(
-      { name: 'Quy tắc giám sát', value: monitorSettings.rules.map((rule, index) => `${index + 1}. ${rule}`).join('\n') },
+      { name: 'Quy tắc giám sát và hành động', value: rulesWithActions },
       { name: 'Vi phạm đã phát hiện', value: `${violationCount}`, inline: true },
       { name: 'Trạng thái', value: monitorSettings.enabled ? '✅ Đang hoạt động' : '❌ Đã tắt', inline: true }
     )

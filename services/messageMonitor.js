@@ -434,17 +434,42 @@ class MessageMonitor {
    * @param {Object} settings - Cài đặt giám sát
    */
   enableMonitoring(guildId, settings) {
-    this.monitorSettings.set(guildId, {
+    // Lưu cài đặt giám sát
+    const monitorConfig = {
       enabled: true,
       promptTemplate: settings.promptTemplate,
-      rules: settings.rules,
       ignoredChannels: settings.ignoredChannels || [],
       ignoredRoles: settings.ignoredRoles || []
-    });
+    };
+
+    // Lưu danh sách quy tắc và hành động tương ứng
+    if (settings.ruleActions) {
+      monitorConfig.ruleActions = settings.ruleActions;
+      // Tạo danh sách rules để tương thích ngược
+      monitorConfig.rules = settings.ruleActions.map(item => item.rule);
+    } else if (settings.rules) {
+      monitorConfig.rules = settings.rules;
+      // Tạo ruleActions mặc định nếu chỉ có rules
+      monitorConfig.ruleActions = settings.rules.map(rule => ({
+        rule,
+        action: 'warn' // Mặc định là cảnh báo
+      }));
+    }
+
+    this.monitorSettings.set(guildId, monitorConfig);
 
     console.log(`Đã bật giám sát cho guild ${guildId}`);
     console.log(`Bot sẽ đọc tất cả tin nhắn trong guild ${guildId} để kiểm tra vi phạm`);
-    console.log(`Quy tắc giám sát: ${settings.rules.join(', ')}`);
+
+    // Hiển thị quy tắc và hành động
+    if (monitorConfig.ruleActions) {
+      console.log('Quy tắc giám sát và hành động:');
+      monitorConfig.ruleActions.forEach((item, index) => {
+        console.log(`${index + 1}. ${item.rule} (${item.action})`);
+      });
+    } else {
+      console.log(`Quy tắc giám sát: ${monitorConfig.rules.join(', ')}`);
+    }
   }
 
   /**
