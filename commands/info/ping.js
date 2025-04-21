@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const NeuralNetworks = require('../services/NeuralNetworks');
-const mongoClient = require('../services/mongoClient');
+const NeuralNetworks = require('../../services/NeuralNetworks');
+const mongoClient = require('../../services/mongoClient');
 
 module.exports = {
 	data: new SlashCommandBuilder()

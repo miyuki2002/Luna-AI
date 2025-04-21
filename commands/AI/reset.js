@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
-const storageDB = require('../services/storagedb.js');
-const NeuralNetworks = require('../services/NeuralNetworks.js');
+const storageDB = require('../../services/storagedb.js');
+const NeuralNetworks = require('../../services/NeuralNetworks.js');
 
 module.exports = {
   data: new SlashCommandBuilder()

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const storageDB = require('../services/storagedb.js');
+const storageDB = require('../../services/storagedb.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
