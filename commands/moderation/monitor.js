@@ -102,13 +102,13 @@ Phân tích chi tiết:
 3. Tin nhắn có dấu hiệu của tài khoản giả mạo/bot không? Nếu có, giải thích lý do.
 4. Đề xuất hành động: Không cần hành động, Cảnh báo, Xóa tin nhắn, Mute, Kick, Ban
 
-Trả lời ngắn gọn theo định dạng:
-VI_PHẠM: Có/Không
-QUY_TẮC_VI_PHẠM: [Số thứ tự quy tắc hoặc "Không có"]
-MỨC_ĐỘ: Thấp/Trung bình/Cao/Không có
-DẤU_HIỆU_GIẢ_MẠO: Có/Không
-ĐỀ_XUẤT: Không cần hành động/Cảnh báo/Xóa tin nhắn/Mute/Kick/Ban
-LÝ_DO: [Giải thích ngắn gọn]`;
+Trả lời ngắn gọn theo định dạng chính xác sau:
+VIOLATION: Có/Không
+RULE: [Số thứ tự quy tắc hoặc "Không có"]
+SEVERITY: Thấp/Trung bình/Cao/Không có
+FAKE: Có/Không
+ACTION: Không cần hành động/Cảnh báo/Xóa tin nhắn/Mute/Kick/Ban
+REASON: [Giải thích ngắn gọn]`;
 
   // Lưu cài đặt giám sát vào cơ sở dữ liệu
   const monitorSettings = {
