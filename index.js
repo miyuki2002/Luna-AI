@@ -32,7 +32,7 @@ setupGuildHandlers(client);
 client.on(Events.MessageCreate, async message => {
   // Bỏ qua tin nhắn từ bot
   if (message.author.bot) return;
-  
+
   // Kiểm tra xem bot có được nhắc đến không
   if (message.mentions.has(client.user)) {
     await handleMessage(message);

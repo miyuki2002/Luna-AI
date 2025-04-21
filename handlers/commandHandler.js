@@ -35,7 +35,7 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
 
           // Hiển thị thông tin về thư mục chứa lệnh
           const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
-          console.log(`[ĐÃ TẢI] Lệnh "${commandName}" từ danh mục "${category}"`);
+          // console.log(`[ĐÃ TẢI] Lệnh "${commandName}" từ danh mục "${category}"`); // Tắt hiển thị thông tin chi tiết (console log quá nhiều)
         } else {
           console.log(`[CẢNH BÁO] Lệnh tại ${itemPath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
         }
