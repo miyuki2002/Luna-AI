@@ -14,16 +14,16 @@ class MessageMonitor {
    */
   async initialize(client) {
     if (this.isInitialized) return;
-    
+
     this.client = client;
-    
+
     try {
       // Tải cài đặt giám sát từ cơ sở dữ liệu
       await this.loadMonitorSettings();
-      
+
       // Đăng ký sự kiện messageCreate
       client.on('messageCreate', this.handleMessage.bind(this));
-      
+
       this.isInitialized = true;
       console.log('Đã khởi tạo hệ thống giám sát tin nhắn');
     } catch (error) {
@@ -37,7 +37,7 @@ class MessageMonitor {
   async loadMonitorSettings() {
     try {
       const db = mongoClient.getDb();
-      
+
       // Tạo collection nếu chưa tồn tại
       try {
         await db.createCollection('monitor_settings');
@@ -45,10 +45,10 @@ class MessageMonitor {
       } catch (error) {
         // Bỏ qua lỗi nếu collection đã tồn tại
       }
-      
+
       // Lấy tất cả cài đặt giám sát
       const settings = await db.collection('monitor_settings').find({ enabled: true }).toArray();
-      
+
       // Lưu vào Map
       for (const setting of settings) {
         this.monitorSettings.set(setting.guildId, {
@@ -59,7 +59,7 @@ class MessageMonitor {
           ignoredRoles: setting.ignoredRoles || []
         });
       }
-      
+
       console.log(`Đã tải ${settings.length} cài đặt giám sát từ cơ sở dữ liệu`);
     } catch (error) {
       console.error('Lỗi khi tải cài đặt giám sát:', error);
@@ -73,18 +73,18 @@ class MessageMonitor {
   async handleMessage(message) {
     // Bỏ qua tin nhắn từ bot và tin nhắn không phải từ guild
     if (message.author.bot || !message.guild) return;
-    
+
     // Kiểm tra xem guild có bật giám sát không
     const settings = this.monitorSettings.get(message.guild.id);
     if (!settings || !settings.enabled) return;
-    
+
     // Kiểm tra xem kênh có bị bỏ qua không
     if (settings.ignoredChannels.includes(message.channel.id)) return;
-    
+
     // Kiểm tra xem người dùng có vai trò được bỏ qua không
     const member = message.member;
     if (member && settings.ignoredRoles.some(roleId => member.roles.cache.has(roleId))) return;
-    
+
     try {
       // Phân tích tin nhắn bằng NeuralNetworks
       await this.analyzeMessage(message, settings.promptTemplate);
@@ -101,19 +101,19 @@ class MessageMonitor {
   async analyzeMessage(message, promptTemplate) {
     try {
       const db = mongoClient.getDb();
-      
+
       // Bỏ qua tin nhắn quá ngắn
       if (message.content.length < 5) return;
-      
+
       // Thay thế placeholder trong template
       const prompt = promptTemplate.replace('{{message}}', message.content);
-      
+
       // Gọi NeuralNetworks để phân tích
       const analysis = await NeuralNetworks.getCompletion(prompt);
-      
+
       // Phân tích kết quả
       const results = this.parseAnalysisResults(analysis);
-      
+
       // Lưu kết quả vào cơ sở dữ liệu
       const logEntry = {
         guildId: message.guild.id,
@@ -130,14 +130,14 @@ class MessageMonitor {
         reason: results.reason,
         rawAnalysis: analysis
       };
-      
+
       await db.collection('monitor_logs').insertOne(logEntry);
-      
+
       // Nếu phát hiện vi phạm, thông báo cho các kênh mod
       if (results.isViolation) {
         await this.handleViolation(message, results);
       }
-      
+
     } catch (error) {
       console.error('Lỗi khi phân tích tin nhắn:', error);
     }
@@ -158,7 +158,7 @@ class MessageMonitor {
       recommendation: 'Không cần hành động',
       reason: 'Không có vi phạm'
     };
-    
+
     try {
       // Tìm các trường trong phân tích
       const violationMatch = analysis.match(/VI_PHẠM:\s*(Có|Không)/i);
@@ -167,13 +167,13 @@ class MessageMonitor {
       const fakeMatch = analysis.match(/DẤU_HIỆU_GIẢ_MẠO:\s*(Có|Không)/i);
       const recommendationMatch = analysis.match(/ĐỀ_XUẤT:\s*(.+?)(?=\n|$)/i);
       const reasonMatch = analysis.match(/LÝ_DO:\s*(.+?)(?=\n|$)/i);
-      
+
       // Xác định có vi phạm không
       const isViolation = violationMatch && violationMatch[1].toLowerCase() === 'có';
-      
+
       // Nếu không vi phạm, trả về kết quả mặc định
       if (!isViolation) return defaultResults;
-      
+
       // Trả về kết quả phân tích
       return {
         isViolation,
@@ -216,19 +216,39 @@ class MessageMonitor {
         )
         .setFooter({ text: `Message ID: ${message.id}` })
         .setTimestamp();
-      
-      // Tìm kênh mod-logs hoặc mod-chat để gửi thông báo
-      const modChannel = message.guild.channels.cache.find(
-        channel => channel.name.includes('mod-logs') || 
-                  channel.name.includes('mod-chat') || 
-                  channel.name.includes('admin') ||
-                  channel.name.includes('bot-logs')
-      );
-      
-      if (modChannel && modChannel.isTextBased()) {
-        await modChannel.send({ embeds: [violationEmbed] });
+
+      // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
+      const db = mongoClient.getDb();
+      const logSettings = await db.collection('mod_settings').findOne({
+        guildId: message.guild.id
+      });
+
+      let logChannel = null;
+
+      // Nếu có cài đặt kênh log và monitorLogs được bật
+      if (logSettings && logSettings.logChannelId && logSettings.monitorLogs !== false) {
+        try {
+          logChannel = await message.guild.channels.fetch(logSettings.logChannelId);
+        } catch (error) {
+          console.error(`Không thể tìm thấy kênh log ${logSettings.logChannelId}:`, error);
+        }
       }
-      
+
+      // Nếu không có kênh log được cài đặt, tìm kênh mặc định
+      if (!logChannel) {
+        logChannel = message.guild.channels.cache.find(
+          channel => channel.name.includes('mod-logs') ||
+                    channel.name.includes('mod-chat') ||
+                    channel.name.includes('admin') ||
+                    channel.name.includes('bot-logs')
+        );
+      }
+
+      // Gửi thông báo đến kênh log
+      if (logChannel && logChannel.isTextBased()) {
+        await logChannel.send({ embeds: [violationEmbed] });
+      }
+
       // Thực hiện hành động tự động dựa trên đề xuất (nếu cần)
       if (results.severity === 'Cao' && results.recommendation.includes('Xóa tin nhắn')) {
         try {
@@ -238,7 +258,7 @@ class MessageMonitor {
           console.error('Không thể xóa tin nhắn:', error);
         }
       }
-      
+
     } catch (error) {
       console.error('Lỗi khi xử lý vi phạm:', error);
     }
@@ -257,7 +277,7 @@ class MessageMonitor {
       ignoredChannels: settings.ignoredChannels || [],
       ignoredRoles: settings.ignoredRoles || []
     });
-    
+
     console.log(`Đã bật giám sát cho guild ${guildId}`);
   }
 

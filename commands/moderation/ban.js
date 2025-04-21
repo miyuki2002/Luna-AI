@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const NeuralNetworks = require('../../services/NeuralNetworks.js');
 const { logModAction } = require('../../utils/modUtils.js');
+const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -84,6 +85,24 @@ module.exports = {
 
       // Gửi thông báo
       await interaction.editReply({ embeds: [banEmbed] });
+
+      // Gửi log đến kênh log moderation
+      const logEmbed = createModActionEmbed({
+        title: `🔨 Thành viên đã bị ban`,
+        description: `${targetUser.tag} đã bị ban khỏi server.`,
+        color: 0xFF0000,
+        fields: [
+          { name: 'Thành viên', value: `${targetUser.tag}`, inline: true },
+          { name: 'ID', value: targetUser.id, inline: true },
+          { name: 'Người ban', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true },
+          { name: 'Lý do', value: reason, inline: false },
+          { name: 'Xóa tin nhắn', value: `${deleteMessageDays} ngày`, inline: true },
+          { name: 'Thời gian', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
+        ],
+        footer: `Server: ${interaction.guild.name}`
+      });
+
+      await sendModLog(interaction.guild, logEmbed, true);
 
       // Gửi DM cho người bị ban (nếu có thể)
       try {

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const NeuralNetworks = require('../../services/NeuralNetworks.js');
 const { logModAction, formatDuration } = require('../../utils/modUtils.js');
+const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -99,6 +100,24 @@ module.exports = {
 
       // Gửi thông báo
       await interaction.editReply({ embeds: [muteEmbed] });
+
+      // Gửi log đến kênh log moderation
+      const logEmbed = createModActionEmbed({
+        title: `🔇 Thành viên đã bị mute`,
+        description: `${targetUser.tag} đã bị mute trong ${formattedDuration}.`,
+        color: 0xFFA500,
+        fields: [
+          { name: 'Thành viên', value: `${targetUser.tag} (<@${targetUser.id}>)`, inline: true },
+          { name: 'ID', value: targetUser.id, inline: true },
+          { name: 'Người mute', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true },
+          { name: 'Thời gian mute', value: formattedDuration, inline: true },
+          { name: 'Kết thúc lúc', value: `<t:${Math.floor(endTime.getTime() / 1000)}:F>`, inline: true },
+          { name: 'Lý do', value: reason, inline: false }
+        ],
+        footer: `Server: ${interaction.guild.name}`
+      });
+
+      await sendModLog(interaction.guild, logEmbed, true);
 
       // Gửi DM cho người bị mute (nếu có thể)
       try {
