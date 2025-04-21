@@ -7,7 +7,7 @@ class MongoDBClient {
     if (!this.uri) {
       throw new Error('MONGODB_URI không được đặt trong biến môi trường');
     }
-    
+
     this.client = new MongoClient(this.uri);
     this.db = null;
     this.isConnecting = false;
@@ -20,7 +20,7 @@ class MongoDBClient {
         console.log('Đã kết nối đến MongoDB rồi.');
         return this.db;
       }
-      
+
       if (this.isConnecting) {
         console.log('Đang trong quá trình kết nối đến MongoDB...');
         // Đợi kết nối hoàn thành
@@ -29,23 +29,22 @@ class MongoDBClient {
         }
         return this.db;
       }
-      
+
       this.isConnecting = true;
       await this.client.connect();
       this.db = this.client.db();
       this.isConnecting = false;
       console.log('Đã kết nối thành công đến MongoDB');
-      
-      // Tạo các indexes cần thiết
-      await this.db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
-      await this.db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
-      
+
+      // Chú ý: Các indexes sẽ được tạo trong storageDB.setupCollections()
+      // Để tránh xung đột, không tạo indexes ở đây
+
       // REMOVE THIS - THIS IS CAUSING THE CIRCULAR DEPENDENCY
       // if (!initSystem.getStatus().services.mongodb) {
       //   console.log('MongoDB đang đợi trong hàng đợi khởi tạo...');
       //   await initSystem.waitForReady();
       // }
-      
+
       return this.db;
     } catch (error) {
       this.isConnecting = false;

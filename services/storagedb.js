@@ -26,11 +26,36 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
 
+      // Kiểm tra và xóa collection conversations nếu có vấn đề với chỉ mục
+      try {
+        // Kiểm tra các chỉ mục hiện tại
+        const indexes = await db.collection('conversations').listIndexes().toArray();
+        const hasConversationIdIndex = indexes.some(index => index.name === 'conversationId_1');
+
+        if (hasConversationIdIndex) {
+          console.log('Phát hiện chỉ mục conversationId_1 không cần thiết...');
+
+          try {
+            // Thử xóa chỉ mục trước
+            await db.collection('conversations').dropIndex('conversationId_1');
+            console.log('Đã xóa chỉ mục conversationId_1');
+          } catch (dropIndexError) {
+            console.error('Không thể xóa chỉ mục, sẽ xóa và tạo lại collection:', dropIndexError.message);
+
+            // Xóa toàn bộ collection và tạo lại
+            await db.collection('conversations').drop();
+            console.log('Đã xóa collection conversations để tạo lại');
+          }
+        }
+      } catch (indexError) {
+        // Bỏ qua lỗi nếu collection chưa tồn tại
+        console.log('Không tìm thấy chỉ mục cần xóa hoặc collection chưa tồn tại');
+      }
+
       // Tạo các indexes cần thiết
       await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
       await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
-
 
       console.log('Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
@@ -50,7 +75,7 @@ class StorageDB {
 
       // Khởi tạo các hệ thống
       await this.initializeConversationHistory();
-      await this.initializeGreetingPatterns();
+      await this.initializeDefaultGreetingPatterns();
       await this.initializeProfiles();
     } catch (error) {
       console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
@@ -66,19 +91,70 @@ class StorageDB {
    */
   async addMessageToConversation(userId, role, content) {
     try {
+      // Kiểm tra userId có hợp lệ không
+      if (!userId) {
+        console.error('Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId rỗng');
+        return;
+      }
+
       const db = mongoClient.getDb();
 
       // Lấy số lượng tin nhắn hiện tại của người dùng
       const count = await db.collection('conversations').countDocuments({ userId });
 
-      // Thêm tin nhắn mới
-      await db.collection('conversations').insertOne({
-        userId,
-        messageIndex: count,
-        role,
-        content,
-        timestamp: Date.now()
-      });
+      try {
+        // Thêm tin nhắn mới
+        await db.collection('conversations').insertOne({
+          userId,
+          messageIndex: count,
+          role,
+          content,
+          timestamp: Date.now()
+        });
+      } catch (insertError) {
+        // Xử lý lỗi trùng lặp khóa
+        if (insertError.code === 11000) {
+          console.warn(`Phát hiện lỗi trùng lặp khóa cho userId ${userId}, đang thử sửa chữa...`);
+
+          // Kiểm tra xem lỗi có liên quan đến conversationId không
+          if (insertError.keyValue && insertError.keyValue.conversationId === null) {
+            // Reset collection và thử lại
+            await this.resetConversationsCollection();
+
+            // Thêm lại tin nhắn sau khi reset
+            await db.collection('conversations').insertOne({
+              userId,
+              messageIndex: 0, // Bắt đầu lại từ 0 sau khi reset
+              role,
+              content,
+              timestamp: Date.now()
+            });
+
+            console.log(`Đã khắc phục lỗi trùng lặp khóa bằng cách reset collection`);
+          } else {
+            // Lỗi trùng lặp khóa userId + messageIndex
+            // Tìm messageIndex cao nhất hiện tại
+            const highestMsg = await db.collection('conversations')
+              .findOne({ userId }, { sort: { messageIndex: -1 } });
+
+            const nextIndex = highestMsg ? highestMsg.messageIndex + 1 : 0;
+
+            // Thử lại với messageIndex mới
+            await db.collection('conversations').insertOne({
+              userId,
+              messageIndex: nextIndex,
+              role,
+              content,
+              timestamp: Date.now()
+            });
+
+            console.log(`Đã khắc phục lỗi trùng lặp khóa bằng cách sử dụng messageIndex mới: ${nextIndex}`);
+          }
+        } else {
+          // Nếu không phải lỗi trùng lặp khóa, ném lại lỗi
+          throw insertError;
+        }
+      }
 
       // Cập nhật timestamp trong bảng meta
       await db.collection('conversation_meta').updateOne(
@@ -355,6 +431,36 @@ class StorageDB {
   }
 
   /**
+   * Xóa và tạo lại collection conversations
+   * @returns {Promise<void>}
+   */
+  async resetConversationsCollection() {
+    try {
+      const db = mongoClient.getDb();
+
+      // Kiểm tra xem collection có tồn tại không
+      const collections = await db.listCollections({ name: 'conversations' }).toArray();
+
+      if (collections.length > 0) {
+        // Xóa collection nếu tồn tại
+        await db.collection('conversations').drop();
+        console.log('Đã xóa collection conversations để tạo lại');
+      }
+
+      // Tạo lại collection và các chỉ mục
+      await db.createCollection('conversations');
+      await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
+      await db.collection('conversations').createIndex({ timestamp: 1 });
+
+      console.log('Đã tạo lại collection conversations với các chỉ mục đúng');
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi reset collection conversations:', error);
+      return false;
+    }
+  }
+
+  /**
    * Khởi tạo các cài đặt và cấu trúc cho lịch sử cuộc trò chuyện
    * @returns {Promise<void>}
    */
@@ -362,14 +468,27 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
 
-      // Kiểm tra và tạo indexes cho collection conversations nếu chưa có
-      const existingIndexes = await db.collection('conversations').listIndexes().toArray();
-      const hasTimeIndex = existingIndexes.some(index => index.name === 'timestamp_1');
+      // Kiểm tra xem có vấn đề với chỉ mục conversationId_1 không
+      try {
+        const indexes = await db.collection('conversations').listIndexes().toArray();
+        const hasConversationIdIndex = indexes.some(index => index.name === 'conversationId_1');
 
-      if (!hasTimeIndex) {
-        // Tạo index theo timestamp để tối ưu hóa truy vấn theo thời gian
-        await db.collection('conversations').createIndex({ timestamp: 1 });
-        console.log('Đã tạo index timestamp cho collection conversations');
+        if (hasConversationIdIndex) {
+          // Nếu có vấn đề với chỉ mục, reset toàn bộ collection
+          await this.resetConversationsCollection();
+        } else {
+          // Kiểm tra và tạo indexes cho collection conversations nếu chưa có
+          const hasTimeIndex = indexes.some(index => index.name === 'timestamp_1');
+
+          if (!hasTimeIndex) {
+            // Tạo index theo timestamp để tối ưu hóa truy vấn theo thời gian
+            await db.collection('conversations').createIndex({ timestamp: 1 });
+            console.log('Đã tạo index timestamp cho collection conversations');
+          }
+        }
+      } catch (indexError) {
+        // Nếu collection chưa tồn tại, tạo mới
+        await this.resetConversationsCollection();
       }
 
       // Kiểm tra xem có cần cập nhật cấu trúc dữ liệu lịch sử cuộc trò chuyện không
