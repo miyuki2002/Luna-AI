@@ -1,6 +1,6 @@
-const { EmbedBuilder } = require('discord.js');
 const NeuralNetworks = require('./NeuralNetworks.js');
 const mongoClient = require('./mongoClient.js');
+const { handleViolation } = require('./violationHandler.js');
 
 class MessageMonitor {
   constructor() {
@@ -335,97 +335,8 @@ class MessageMonitor {
    * @param {Object} results - Kết quả phân tích
    */
   async handleViolation(message, results) {
-    try {
-      // Tạo embed thông báo vi phạm cho kênh log
-      const violationEmbed = new EmbedBuilder()
-        .setColor(
-          results.severity === 'Cao' ? 0xFF0000 :
-          results.severity === 'Trung bình' ? 0xFFA500 : 0xFFFF00
-        )
-        .setTitle(`🚨 Phát hiện vi phạm ${results.isFakeAccount ? '(Có dấu hiệu tài khoản giả mạo)' : ''}`)
-        .setDescription(`Bot đã phát hiện một tin nhắn vi phạm quy tắc server.`)
-        .addFields(
-          { name: 'Người dùng', value: `<@${message.author.id}> (${message.author.tag})`, inline: true },
-          { name: 'Kênh', value: `<#${message.channel.id}>`, inline: true },
-          { name: 'Thời gian', value: `<t:${Math.floor(message.createdTimestamp / 1000)}:F>`, inline: true },
-          { name: 'Quy tắc vi phạm', value: results.violatedRule, inline: true },
-          { name: 'Mức độ', value: results.severity, inline: true },
-          { name: 'Đề xuất', value: results.recommendation, inline: true },
-          { name: 'Lý do', value: results.reason },
-          { name: 'Nội dung tin nhắn', value: message.content.length > 1024 ? message.content.substring(0, 1021) + '...' : message.content }
-        )
-        .setFooter({ text: `Message ID: ${message.id}` })
-        .setTimestamp();
-
-      // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
-      const db = mongoClient.getDb();
-      const logSettings = await db.collection('mod_settings').findOne({
-        guildId: message.guild.id
-      });
-
-      let logChannel = null;
-
-      // Nếu có cài đặt kênh log và monitorLogs được bật
-      if (logSettings && logSettings.logChannelId && logSettings.monitorLogs !== false) {
-        try {
-          logChannel = await message.guild.channels.fetch(logSettings.logChannelId);
-        } catch (error) {
-          console.error(`Không thể tìm thấy kênh log ${logSettings.logChannelId}:`, error);
-        }
-      }
-
-      // Nếu không có kênh log được cài đặt, tìm kênh mặc định
-      if (!logChannel) {
-        logChannel = message.guild.channels.cache.find(
-          channel => channel.name.includes('mod-logs') ||
-                    channel.name.includes('mod-chat') ||
-                    channel.name.includes('admin') ||
-                    channel.name.includes('bot-logs')
-        );
-      }
-
-      // Gửi thông báo đến kênh log
-      if (logChannel && logChannel.isTextBased()) {
-        await logChannel.send({ embeds: [violationEmbed] });
-      }
-
-      // Tạo tin nhắn cảnh báo trực tiếp cho người vi phạm
-      let warningMessage = `<@${message.author.id}> `;
-
-      // Tạo nội dung cảnh báo dựa trên mức độ nghiêm trọng
-      if (results.severity === 'Cao') {
-        warningMessage += `**CẢNH BÁO NGHIÊM TRỌNG**: ${results.reason}. `;
-        warningMessage += `Vi phạm quy tắc: ${results.violatedRule}. `;
-        warningMessage += `Hành vi này có thể dẫn đến việc bị mute hoặc ban.`;
-      } else if (results.severity === 'Trung bình') {
-        warningMessage += `**CẢNH BÁO**: ${results.reason}. `;
-        warningMessage += `Vi phạm quy tắc: ${results.violatedRule}. `;
-        warningMessage += `Vui lòng tuân thủ quy tắc của server.`;
-      } else {
-        warningMessage += `**Lưu ý**: ${results.reason}. `;
-        warningMessage += `Hãy chú ý đến quy tắc: ${results.violatedRule}.`;
-      }
-
-      // Gửi cảnh báo trực tiếp vào kênh
-      try {
-        await message.channel.send(warningMessage);
-      } catch (error) {
-        console.error('Không thể gửi cảnh báo trực tiếp:', error);
-      }
-
-      // Thực hiện hành động tự động dựa trên đề xuất (nếu cần)
-      if (results.severity === 'Cao' && results.recommendation.includes('Xóa tin nhắn')) {
-        try {
-          await message.delete();
-          console.log(`Đã xóa tin nhắn vi phạm từ ${message.author.tag}`);
-        } catch (error) {
-          console.error('Không thể xóa tin nhắn:', error);
-        }
-      }
-
-    } catch (error) {
-      console.error('Lỗi khi xử lý vi phạm:', error);
-    }
+    // Gọi hàm xử lý vi phạm từ module riêng biệt
+    return handleViolation(message, results);
   }
 
   /**
