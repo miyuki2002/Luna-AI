@@ -1,6 +1,7 @@
 const NeuralNetworks = require('./NeuralNetworks.js');
 const mongoClient = require('./mongoClient.js');
 const { handleViolation } = require('./violationHandler.js');
+const logger = require('../utils/logger.js');
 
 class MessageMonitor {
   constructor() {
