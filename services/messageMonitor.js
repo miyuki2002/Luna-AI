@@ -120,6 +120,12 @@ class MessageMonitor {
       return;
     }
 
+    // Bỏ qua tin nhắn có mention @everyone hoặc @role
+    if (message.mentions.everyone || message.mentions.roles.size > 0) {
+      logger.debug('MONITOR', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
+      return;
+    }
+
     // Kiểm tra nội dung tin nhắn có chứa quy tắc cấm không
     if (settings && settings.rules) {
       // Kiểm tra trực tiếp nội dung tin nhắn có chứa quy tắc cấm không
