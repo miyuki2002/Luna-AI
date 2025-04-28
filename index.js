@@ -4,6 +4,7 @@ const { handleMessage } = require('./handlers/messageHandler');
 const { handleCommand, loadCommands, getCommandsJson } = require('./handlers/commandHandler');
 const { startbot } = require('./events/ready');
 const { setupGuildHandlers } = require('./handlers/guildHandler');
+const logger = require('./utils/logger.js');
 
 // Tạo một Discord client mới
 const client = new Client({
@@ -45,14 +46,14 @@ client.on(Events.MessageCreate, async message => {
     // Nếu không phải cảnh báo từ chức năng giám sát, xử lý như tin nhắn trò chuyện bình thường
     if (!isMonitorWarning) {
       // Ghi log để debug
-      console.log(`[CHAT] Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
+      logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
 
       try {
         // Gọi handler cho chức năng trò chuyện
         await handleMessage(message);
-        console.log(`[CHAT] Đã xử lý tin nhắn trò chuyện thành công`);
+        logger.info('CHAT', `Đã xử lý tin nhắn trò chuyện thành công`);
       } catch (error) {
-        console.error(`[CHAT] Lỗi khi xử lý tin nhắn trò chuyện:`, error);
+        logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện:`, error);
       }
     }
   }
@@ -70,7 +71,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // Xử lý lỗi và thoát
 process.on('unhandledRejection', (error) => {
-  console.error('Lỗi không được xử lý:', error);
+  logger.error('SYSTEM', 'Lỗi không được xử lý:', error);
 });
 
 // Đăng nhập vào Discord bằng token của ứng dụng
