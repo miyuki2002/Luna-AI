@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const logger = require('../utils/logger.js');
 
 // Cache cho commands JSON
 let commandsJsonCache = null;
@@ -26,7 +27,7 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
 
           // Kiểm tra xem lệnh đã tồn tại chưa
           if (client.commands.has(commandName)) {
-            console.log(`[CẢNH BÁO] Lệnh "${commandName}" đã tồn tại và sẽ bị ghi đè bởi ${itemPath}`);
+            logger.warn('COMMAND', `Lệnh "${commandName}" đã tồn tại và sẽ bị ghi đè bởi ${itemPath}`);
           }
 
           // Thêm lệnh vào collection
@@ -35,12 +36,12 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
 
           // Hiển thị thông tin về thư mục chứa lệnh
           const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
-          // console.log(`[ĐÃ TẢI] Lệnh "${commandName}" từ danh mục "${category}"`); // Tắt hiển thị thông tin chi tiết (console log quá nhiều)
+          // logger.debug('COMMAND', `Đã tải lệnh "${commandName}" từ danh mục "${category}"`); // Tắt hiển thị thông tin chi tiết (log quá nhiều)
         } else {
-          console.log(`[CẢNH BÁO] Lệnh tại ${itemPath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
+          logger.warn('COMMAND', `Lệnh tại ${itemPath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
         }
       } catch (error) {
-        console.error(`[LỖI] Không thể tải lệnh từ ${itemPath}:`, error);
+        logger.error('COMMAND', `Không thể tải lệnh từ ${itemPath}:`, error);
       }
     }
   }
@@ -61,7 +62,7 @@ const loadCommands = (client) => {
   commandsJsonCache = commandsJson;
 
   // Hiển thị thông tin tổng quan
-  console.log(`Đã tải tổng cộng ${client.commands.size} lệnh từ tất cả các danh mục.`);
+  logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh từ tất cả các danh mục.`);
 
   return client.commands.size;
 };
@@ -83,15 +84,15 @@ const handleCommand = async (interaction, client) => {
   const command = client.commands.get(interaction.commandName);
 
   if (!command) {
-    console.error(`Không tìm thấy lệnh nào khớp với ${interaction.commandName}.`);
+    logger.error('COMMAND', `Không tìm thấy lệnh nào khớp với ${interaction.commandName}.`);
     return;
   }
 
   try {
     await command.execute(interaction);
-    console.log(`Người dùng ${interaction.user.tag} đã sử dụng lệnh /${interaction.commandName}`);
+    logger.info('COMMAND', `Người dùng ${interaction.user.tag} đã sử dụng lệnh /${interaction.commandName}`);
   } catch (error) {
-    console.error(`Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
+    logger.error('COMMAND', `Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
     } else {

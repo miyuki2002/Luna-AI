@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const logger = require('../utils/logger.js');
 
 class InitSystem extends EventEmitter {
   constructor() {
@@ -11,24 +12,24 @@ class InitSystem extends EventEmitter {
       api: false,
       profiles: false,
       conversationHistory: false,
-      guildProfiles: false,  
-      messageMonitor: false 
+      guildProfiles: false,
+      messageMonitor: false
     };
   }
 
   markReady(service) {
     if (!this.services.hasOwnProperty(service)) {
-      console.warn(`Không nhận dạng được service: ${service}`);
+      logger.warn('SYSTEM', `Không nhận dạng được service: ${service}`);
       return;
     }
 
     this.services[service] = true;
-    console.log(`✓ Service ${service} đã sẵn sàng`);
+    logger.info('SYSTEM', `✓ Service ${service} đã sẵn sàng`);
 
     // Kiểm tra xem tất cả services đã sẵn sàng chưa
     if (Object.values(this.services).every(status => status)) {
       this.initialized = true;
-      console.log('🚀 Tất cả services đã sẵn sàng, hệ thống đang khởi động...');
+      logger.info('SYSTEM', '🚀 Tất cả services đã sẵn sàng, hệ thống đang khởi động...');
       this.emit('ready');
     }
   }

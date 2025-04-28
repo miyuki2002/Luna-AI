@@ -5,6 +5,7 @@ const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 // Import the conversationManager module
 const conversationManager = require('../handlers/conversationManager.js');
+const logger = require('../utils/logger.js');
 
 class NeuralNetworks {
   constructor() {
@@ -38,8 +39,8 @@ class NeuralNetworks {
     // Khởi tạo mảng rỗng để sử dụng trước khi có dữ liệu từ MongoDB
     this.greetingPatterns = [];
 
-    console.log(`Model chat: ${this.CoreModel} & ${this.Model}`);
-    console.log(`Model tạo hình ảnh: ${this.imageModel}`);
+    logger.info('NEURAL', `Model chat: ${this.CoreModel} & ${this.Model}`);
+    logger.info('NEURAL', `Model tạo hình ảnh: ${this.imageModel}`);
   }
 
   /**
@@ -52,9 +53,9 @@ class NeuralNetworks {
 
       // Tải mẫu lời chào từ cơ sở dữ liệu
       this.greetingPatterns = await storageDB.getGreetingPatterns();
-      console.log(`Đã tải ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
+      logger.info('NEURAL', `Đã tải ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
     } catch (error) {
-      console.error('Lỗi khi khởi tạo mẫu lời chào:', error);
+      logger.error('NEURAL', 'Lỗi khi khởi tạo mẫu lời chào:', error);
       this.greetingPatterns = [];
     }
   }
@@ -65,9 +66,9 @@ class NeuralNetworks {
   async refreshGreetingPatterns() {
     try {
       this.greetingPatterns = await storageDB.getGreetingPatterns();
-      console.log(`Đã cập nhật ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
+      logger.info('NEURAL', `Đã cập nhật ${this.greetingPatterns.length} mẫu lời chào từ cơ sở dữ liệu`);
     } catch (error) {
-      console.error('Lỗi khi cập nhật mẫu lời chào:', error);
+      logger.error('NEURAL', 'Lỗi khi cập nhật mẫu lời chào:', error);
     }
   }
 
@@ -76,11 +77,11 @@ class NeuralNetworks {
    */
   checkTLSSecurity() {
     if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
-      console.warn('\x1b[31m%s\x1b[0m', '⚠️ CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0 ⚠️');
-      console.warn('\x1b[33m%s\x1b[0m', 'Cài đặt này làm vô hiệu hóa xác minh chứng chỉ SSL/TLS, khiến tất cả kết nối HTTPS không an toàn!');
-      console.warn('\x1b[33m%s\x1b[0m', 'Điều này chỉ nên được sử dụng trong môi trường phát triển, KHÔNG BAO GIỜ trong sản xuất.');
-      console.warn('\x1b[36m%s\x1b[0m', 'Để khắc phục, hãy xóa biến môi trường NODE_TLS_REJECT_UNAUTHORIZED=0 hoặc sử dụng giải pháp bảo mật hơn.');
-      console.warn('\x1b[36m%s\x1b[0m', 'Nếu bạn đang gặp vấn đề với chứng chỉ tự ký, hãy cấu hình đường dẫn chứng chỉ CA trong thiết lập axios.');
+      logger.warn('SYSTEM', '⚠️ CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0 ⚠️');
+      logger.warn('SYSTEM', 'Cài đặt này làm vô hiệu hóa xác minh chứng chỉ SSL/TLS, khiến tất cả kết nối HTTPS không an toàn!');
+      logger.warn('SYSTEM', 'Điều này chỉ nên được sử dụng trong môi trường phát triển, KHÔNG BAO GIỜ trong sản xuất.');
+      logger.warn('SYSTEM', 'Để khắc phục, hãy xóa biến môi trường NODE_TLS_REJECT_UNAUTHORIZED=0 hoặc sử dụng giải pháp bảo mật hơn.');
+      logger.warn('SYSTEM', 'Nếu bạn đang gặp vấn đề với chứng chỉ tự ký, hãy cấu hình đường dẫn chứng chỉ CA trong thiết lập axios.');
     }
   }
 
@@ -103,7 +104,7 @@ class NeuralNetworks {
     if (certPath && fs.existsSync(certPath)) {
       const ca = fs.readFileSync(certPath);
       options.httpsAgent = new require('https').Agent({ ca });
-      console.log(`Đang sử dụng chứng chỉ CA tùy chỉnh từ: ${certPath}`);
+      logger.info('SYSTEM', `Đang sử dụng chứng chỉ CA tùy chỉnh từ: ${certPath}`);
     }
 
     return axios.create(options);
@@ -120,14 +121,14 @@ class NeuralNetworks {
       const googleCseId = process.env.GOOGLE_CSE_ID;
 
       if (!googleApiKey || !googleCseId) {
-        console.log('Thiếu GOOGLE_API_KEY hoặc GOOGLE_CSE_ID trong biến môi trường. Bỏ qua tìm kiếm web.');
+        logger.warn('API', 'Thiếu GOOGLE_API_KEY hoặc GOOGLE_CSE_ID trong biến môi trường. Bỏ qua tìm kiếm web.');
         return [];
       }
 
       // Tối ưu truy vấn tìm kiếm
       const optimizedQuery = this.optimizeSearchQuery(query);
 
-      console.log(`Đang thực hiện tìm kiếm web cho: "${optimizedQuery}"`);
+      logger.info('API', `Đang thực hiện tìm kiếm web cho: "${optimizedQuery}"`);
 
       const axiosInstance = axios.create({
         baseURL: 'https://www.googleapis.com',
@@ -157,10 +158,10 @@ class NeuralNetworks {
           }))
         : [];
 
-      console.log(`Đã tìm thấy ${results.length} kết quả cho truy vấn: ${optimizedQuery}`);
+      logger.info('API', `Đã tìm thấy ${results.length} kết quả cho truy vấn: ${optimizedQuery}`);
       return results;
     } catch (error) {
-      console.error('Lỗi khi thực hiện tìm kiếm web:', error.message);
+      logger.error('API', 'Lỗi khi thực hiện tìm kiếm web:', error.message);
       return [];
     }
   }
@@ -267,8 +268,8 @@ class NeuralNetworks {
    */
   async getMonitoringAnalysis(prompt) {
     try {
-      console.log(`[MONITOR-API] Đang phân tích tin nhắn cho chức năng giám sát`);
-      console.log(`[MONITOR-API] Prompt: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`);
+      logger.debug('MONITOR', `Đang phân tích tin nhắn cho chức năng giám sát`);
+      logger.debug('MONITOR', `Prompt: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`);
 
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -304,22 +305,22 @@ REASON: [Giải thích ngắn gọn]`
         ]
       });
 
-      console.log('[MONITOR-API] Đã nhận phản hồi từ API cho chức năng giám sát');
+      logger.debug('MONITOR', 'Đã nhận phản hồi từ API cho chức năng giám sát');
       const content = response.data.choices[0].message.content;
-      console.log(`[MONITOR-API] Kết quả phân tích: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`);
+      logger.debug('MONITOR', `Kết quả phân tích: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`);
 
       // Kiểm tra xem kết quả có đúng định dạng không
       if (!content.includes('VI_PHẠM:') && !content.includes('QUY_TẮC_VI_PHẠM:')) {
-        console.log('[MONITOR-API] Kết quả không đúng định dạng, đang chuyển đổi...');
+        logger.debug('MONITOR', 'Kết quả không đúng định dạng, đang chuyển đổi...');
         // Nếu không đúng định dạng, chuyển đổi sang định dạng chuẩn
         return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Không phát hiện vi phạm`;
       }
 
       return content;
     } catch (error) {
-      console.error(`[MONITOR-API] Lỗi khi gọi X.AI API cho chức năng giám sát:`, error.message);
+      logger.error('MONITOR', `Lỗi khi gọi X.AI API cho chức năng giám sát:`, error.message);
       if (error.response) {
-        console.error('[MONITOR-API] Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
+        logger.error('MONITOR', 'Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
       }
       return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Lỗi kết nối API: ${error.message}`;
     }
@@ -332,13 +333,13 @@ REASON: [Giải thích ngắn gọn]`
     // Nếu đây là yêu cầu từ chức năng giám sát và không phải từ tin nhắn tag bot, chuyển sang phương thức riêng
     // Chỉ chuyển sang getMonitoringAnalysis khi không có message object (không phải từ Discord)
     if (!message && (prompt.includes('VI_PHẠM:') || prompt.includes('QUY_TẮC_VI_PHẠM:') || prompt.includes('MỨC_ĐỘ:'))) {
-      console.log('[NEURAL] Chuyển sang phương thức getMonitoringAnalysis');
+      logger.debug('NEURAL', 'Chuyển sang phương thức getMonitoringAnalysis');
       return this.getMonitoringAnalysis(prompt);
     }
 
     // Nếu có message object (từ Discord), luôn xử lý như tin nhắn trò chuyện bình thường
     if (message && message.mentions && message.mentions.has(this.client?.user)) {
-      console.log('[NEURAL] Xử lý tin nhắn tag bot như tin nhắn trò chuyện bình thường');
+      logger.debug('NEURAL', 'Xử lý tin nhắn tag bot như tin nhắn trò chuyện bình thường');
     }
     try {
       // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
@@ -352,7 +353,7 @@ REASON: [Giải thích ngắn gọn]`
         // Trích xuất mô tả hình ảnh (bây giờ trong nhóm 2)
         const imagePrompt = imageMatch[2];
         const commandUsed = imageMatch[1];
-        console.log(`Phát hiện lệnh tạo hình ảnh "${commandUsed}". Prompt: ${imagePrompt}`);
+        logger.info('NEURAL', `Phát hiện lệnh tạo hình ảnh "${commandUsed}". Prompt: ${imagePrompt}`);
 
         // Nếu có message object (từ Discord), sử dụng messageHandler
         if (message) {
@@ -377,17 +378,17 @@ REASON: [Giải thích ngắn gọn]`
         return await this.getMemoryAnalysis(userId, memoryRequest);
       }
 
-      console.log(`Đang xử lý yêu cầu chat completion cho prompt: "${prompt.substring(0, 50)}..."`);
+      logger.info('NEURAL', `Đang xử lý yêu cầu chat completion cho prompt: "${prompt.substring(0, 50)}..."`);
 
       // Xác định xem prompt có cần tìm kiếm web hay không
       const shouldSearchWeb = this.shouldPerformWebSearch(prompt);
       let searchResults = [];
 
       if (shouldSearchWeb) {
-        console.log("Prompt có vẻ cần thông tin từ web, đang thực hiện tìm kiếm...");
+        logger.info('NEURAL', "Prompt có vẻ cần thông tin từ web, đang thực hiện tìm kiếm...");
         searchResults = await this.performWebSearch(prompt);
       } else {
-        console.log("Sử dụng kiến thức có sẵn, không cần tìm kiếm web");
+        logger.info('NEURAL', "Sử dụng kiến thức có sẵn, không cần tìm kiếm web");
       }
 
       // Tạo prompt được nâng cao với kết quả tìm kiếm (nếu có)
@@ -439,7 +440,7 @@ REASON: [Giải thích ngắn gọn]`
         messages: messages
       });
 
-      console.log('Đã nhận phản hồi từ API');
+      logger.info('NEURAL', 'Đã nhận phản hồi từ API');
       let content = response.data.choices[0].message.content;
 
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
@@ -450,9 +451,9 @@ REASON: [Giải thích ngắn gọn]`
 
       return content;
     } catch (error) {
-      console.error(`Lỗi khi gọi X.AI API:`, error.message);
+      logger.error('NEURAL', `Lỗi khi gọi X.AI API:`, error.message);
       if (error.response) {
-        console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
+        logger.error('NEURAL', 'Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
       }
       return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
     }
