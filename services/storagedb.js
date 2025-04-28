@@ -1,5 +1,6 @@
 const mongoClient = require('./mongoClient.js');
 const Profile = require('./profiledb.js');
+const logger = require('../utils/logger.js');
 
 /**
  * Class để xử lý tất cả các hoạt động lưu trữ liên quan đến cuộc trò chuyện
@@ -35,22 +36,22 @@ class StorageDB {
 
         // Xóa các chỉ mục hiện có để tránh xung đột
         if (hasConversationIdIndex) {
-          console.log('Phát hiện chỉ mục conversationId_1 không cần thiết...');
+          logger.info('DATABASE', 'Phát hiện chỉ mục conversationId_1 không cần thiết...');
           try {
             await db.collection('conversations').dropIndex('conversationId_1');
-            console.log('Đã xóa chỉ mục conversationId_1');
+            logger.info('DATABASE', 'Đã xóa chỉ mục conversationId_1');
           } catch (dropIndexError) {
-            console.error('Không thể xóa chỉ mục conversationId_1:', dropIndexError.message);
+            logger.error('DATABASE', 'Không thể xóa chỉ mục conversationId_1:', dropIndexError.message);
           }
         }
 
         if (hasUserIdMessageIndexIndex) {
-          console.log('Phát hiện chỉ mục userId_1_messageIndex_1 hiện có...');
+          logger.info('DATABASE', 'Phát hiện chỉ mục userId_1_messageIndex_1 hiện có...');
           try {
             await db.collection('conversations').dropIndex('userId_1_messageIndex_1');
-            console.log('Đã xóa chỉ mục userId_1_messageIndex_1');
+            logger.info('DATABASE', 'Đã xóa chỉ mục userId_1_messageIndex_1');
           } catch (dropIndexError) {
-            console.error('Không thể xóa chỉ mục userId_1_messageIndex_1:', dropIndexError.message);
+            logger.error('DATABASE', 'Không thể xóa chỉ mục userId_1_messageIndex_1:', dropIndexError.message);
           }
         }
 
@@ -65,17 +66,17 @@ class StorageDB {
         });
 
         if (deleteResult.deletedCount > 0) {
-          console.log(`Đã xóa ${deleteResult.deletedCount} bản ghi không hợp lệ (userId hoặc messageIndex là null)`);
+          logger.info('DATABASE', `Đã xóa ${deleteResult.deletedCount} bản ghi không hợp lệ (userId hoặc messageIndex là null)`);
         }
 
       } catch (indexError) {
         // Nếu gặp lỗi, thử xóa và tạo lại toàn bộ collection
-        console.log('Thử xóa và tạo lại collection conversations...');
+        logger.info('DATABASE', 'Thử xóa và tạo lại collection conversations...');
         try {
           await db.collection('conversations').drop();
-          console.log('Đã xóa collection conversations để tạo lại');
+          logger.info('DATABASE', 'Đã xóa collection conversations để tạo lại');
         } catch (dropError) {
-          console.log('Collection conversations chưa tồn tại hoặc không thể xóa');
+          logger.info('DATABASE', 'Collection conversations chưa tồn tại hoặc không thể xóa');
         }
       }
 
@@ -84,18 +85,18 @@ class StorageDB {
         const collections = await db.listCollections({ name: 'conversations' }).toArray();
         if (collections.length === 0) {
           await db.createCollection('conversations');
-          console.log('Đã tạo mới collection conversations');
+          logger.info('DATABASE', 'Đã tạo mới collection conversations');
         }
       } catch (createError) {
-        console.error('Lỗi khi tạo collection conversations:', createError);
+        logger.error('DATABASE', 'Lỗi khi tạo collection conversations:', createError);
       }
 
       // Tạo các indexes cần thiết
       try {
         await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
-        console.log('Đã tạo chỉ mục userId_1_messageIndex_1');
+        logger.info('DATABASE', 'Đã tạo chỉ mục userId_1_messageIndex_1');
       } catch (indexError) {
-        console.error('Lỗi khi tạo chỉ mục userId_1_messageIndex_1:', indexError);
+        logger.error('DATABASE', 'Lỗi khi tạo chỉ mục userId_1_messageIndex_1:', indexError);
         // Nếu vẫn gặp lỗi, thử xóa toàn bộ collection và tạo lại từ đầu
         await this.resetConversationsCollection();
       }
@@ -109,10 +110,10 @@ class StorageDB {
         await db.createCollection('monitor_settings');
         await db.createCollection('monitor_logs');
         await db.createCollection('mod_settings');
-        console.log('Đã tạo các collection cho hệ thống giám sát và moderation');
+        logger.info('DATABASE', 'Đã tạo các collection cho hệ thống giám sát và moderation');
       } catch (error) {
         // Bỏ qua lỗi nếu collection đã tồn tại
-        console.log('Các collection cho hệ thống giám sát đã tồn tại hoặc không thể tạo');
+        logger.info('DATABASE', 'Các collection cho hệ thống giám sát đã tồn tại hoặc không thể tạo');
       }
 
       // Tạo các chỉ mục cho hệ thống giám sát và moderation
@@ -121,14 +122,14 @@ class StorageDB {
         await db.collection('monitor_logs').createIndex({ guildId: 1, timestamp: -1 });
         await db.collection('monitor_logs').createIndex({ userId: 1 });
         await db.collection('mod_settings').createIndex({ guildId: 1 }, { unique: true });
-        console.log('Đã tạo các chỉ mục cho hệ thống giám sát và moderation');
+        logger.info('DATABASE', 'Đã tạo các chỉ mục cho hệ thống giám sát và moderation');
       } catch (error) {
-        console.error('Lỗi khi tạo chỉ mục cho hệ thống giám sát:', error);
+        logger.error('DATABASE', 'Lỗi khi tạo chỉ mục cho hệ thống giám sát:', error);
       }
 
-      console.log('Đã thiết lập collections và indexes MongoDB');
+      logger.info('DATABASE', 'Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
-      console.error('Lỗi khi thiết lập collections MongoDB:', error);
+      logger.error('DATABASE', 'Lỗi khi thiết lập collections MongoDB:', error);
       throw error;
     }
   }
@@ -157,10 +158,10 @@ class StorageDB {
           const collections = await db.listCollections({ name: collectionName }).toArray();
           if (collections.length > 0) {
             await db.collection(collectionName).drop();
-            console.log(`Đã xóa collection ${collectionName}`);
+            logger.info('DATABASE', `Đã xóa collection ${collectionName}`);
           }
         } catch (dropError) {
-          console.log(`Collection ${collectionName} chưa tồn tại hoặc không thể xóa`);
+          logger.info('DATABASE', `Collection ${collectionName} chưa tồn tại hoặc không thể xóa`);
         }
       }
 
@@ -172,10 +173,10 @@ class StorageDB {
       await this.initializeDefaultGreetingPatterns();
       await this.initializeProfiles();
 
-      console.log('Đã xóa và tạo lại cơ sở dữ liệu thành công');
+      logger.info('DATABASE', 'Đã xóa và tạo lại cơ sở dữ liệu thành công');
       return true;
     } catch (error) {
-      console.error('Lỗi khi reset cơ sở dữ liệu:', error);
+      logger.error('DATABASE', 'Lỗi khi reset cơ sở dữ liệu:', error);
       return false;
     }
   }
@@ -187,7 +188,7 @@ class StorageDB {
     try {
       // Kết nối tới MongoDB
       await mongoClient.connect();
-      console.log('Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
+      logger.info('DATABASE', 'Đã khởi tạo kết nối MongoDB thành công, lịch sử trò chuyện sẽ được lưu trữ ở đây.');
 
       try {
         // Thiết lập các collections và indexes
@@ -198,10 +199,10 @@ class StorageDB {
         await this.initializeDefaultGreetingPatterns();
         await this.initializeProfiles();
       } catch (setupError) {
-        console.error('Lỗi khi thiết lập cơ sở dữ liệu:', setupError);
+        logger.error('DATABASE', 'Lỗi khi thiết lập cơ sở dữ liệu:', setupError);
 
         // Nếu gặp lỗi, thử reset toàn bộ cơ sở dữ liệu
-        console.log('Thử xóa và tạo lại toàn bộ cơ sở dữ liệu...');
+        logger.info('DATABASE', 'Thử xóa và tạo lại toàn bộ cơ sở dữ liệu...');
         const resetSuccess = await this.resetDatabase();
 
         if (!resetSuccess) {
@@ -209,7 +210,7 @@ class StorageDB {
         }
       }
     } catch (error) {
-      console.error('Lỗi khi khởi tạo kết nối MongoDB:', error);
+      logger.error('DATABASE', 'Lỗi khi khởi tạo kết nối MongoDB:', error);
       throw error;
     }
   }
@@ -224,17 +225,17 @@ class StorageDB {
     try {
       // Kiểm tra userId và các tham số khác có hợp lệ không
       if (!userId || userId === 'null' || userId === 'undefined') {
-        console.error('Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId không hợp lệ:', userId);
+        logger.error('DATABASE', 'Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId không hợp lệ:', userId);
         return;
       }
 
       if (!role) {
-        console.error('Lỗi: Không thể thêm tin nhắn với role rỗng');
+        logger.error('DATABASE', 'Lỗi: Không thể thêm tin nhắn với role rỗng');
         return;
       }
 
       if (!content) {
-        console.warn('Cảnh báo: Đang thêm tin nhắn với nội dung rỗng');
+        logger.warn('DATABASE', 'Cảnh báo: Đang thêm tin nhắn với nội dung rỗng');
         // Vẫn tiếp tục với nội dung rỗng, nhưng ghi nhận cảnh báo
       }
 
@@ -255,7 +256,7 @@ class StorageDB {
       } catch (insertError) {
         // Xử lý lỗi trùng lặp khóa
         if (insertError.code === 11000) {
-          console.warn(`Phát hiện lỗi trùng lặp khóa cho userId ${userId}, đang thử sửa chữa...`);
+          logger.warn('DATABASE', `Phát hiện lỗi trùng lặp khóa cho userId ${userId}, đang thử sửa chữa...`);
 
           // Kiểm tra xem lỗi có liên quan đến conversationId không
           if (insertError.keyValue && insertError.keyValue.conversationId === null) {
@@ -271,7 +272,7 @@ class StorageDB {
               timestamp: Date.now()
             });
 
-            console.log(`Đã khắc phục lỗi trùng lặp khóa bằng cách reset collection`);
+            logger.info('DATABASE', `Đã khắc phục lỗi trùng lặp khóa bằng cách reset collection`);
           } else {
             // Lỗi trùng lặp khóa userId + messageIndex
             // Tìm messageIndex cao nhất hiện tại
@@ -289,7 +290,7 @@ class StorageDB {
               timestamp: Date.now()
             });
 
-            console.log(`Đã khắc phục lỗi trùng lặp khóa bằng cách sử dụng messageIndex mới: ${nextIndex}`);
+            logger.info('DATABASE', `Đã khắc phục lỗi trùng lặp khóa bằng cách sử dụng messageIndex mới: ${nextIndex}`);
           }
         } else {
           // Nếu không phải lỗi trùng lặp khóa, ném lại lỗi
@@ -328,9 +329,9 @@ class StorageDB {
         }
       }
 
-      // console.log(`Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, số lượng tin nhắn: ${count + 1}`);
+      // logger.debug('DATABASE', `Đã cập nhật cuộc trò chuyện cho người dùng ${userId}, số lượng tin nhắn: ${count + 1}`);
     } catch (error) {
-      console.error('Lỗi khi thêm tin nhắn vào MongoDB:', error);
+      logger.error('DATABASE', 'Lỗi khi thêm tin nhắn vào MongoDB:', error);
     }
   }
 
@@ -373,7 +374,7 @@ class StorageDB {
         return messages;
       }
     } catch (error) {
-      console.error('Lỗi khi lấy lịch sử cuộc trò chuyện:', error);
+      logger.error('DATABASE', 'Lỗi khi lấy lịch sử cuộc trò chuyện:', error);
       // Trả về lời nhắc hệ thống mặc định nếu có lỗi
       return [{
         role: 'system',
@@ -409,9 +410,9 @@ class StorageDB {
         { upsert: true }
       );
 
-      console.log(`Đã xóa cuộc trò chuyện của người dùng ${userId}`);
+      logger.info('DATABASE', `Đã xóa cuộc trò chuyện của người dùng ${userId}`);
     } catch (error) {
-      console.error('Lỗi khi xóa lịch sử cuộc trò chuyện:', error);
+      logger.error('DATABASE', 'Lỗi khi xóa lịch sử cuộc trò chuyện:', error);
     }
   }
 
@@ -436,10 +437,10 @@ class StorageDB {
         await db.collection('conversations').deleteMany({ userId: { $in: userIds } });
         await db.collection('conversation_meta').deleteMany({ userId: { $in: userIds } });
 
-        console.log(`Đã dọn dẹp ${oldUsers.length} cuộc trò chuyện cũ`);
+        logger.info('DATABASE', `Đã dọn dẹp ${oldUsers.length} cuộc trò chuyện cũ`);
       }
     } catch (error) {
-      console.error('Lỗi khi dọn dẹp cuộc trò chuyện cũ:', error);
+      logger.error('DATABASE', 'Lỗi khi dọn dẹp cuộc trò chuyện cũ:', error);
     }
   }
 
@@ -474,7 +475,7 @@ class StorageDB {
       // Chuyển đổi các mẫu chuỗi thành đối tượng RegExp
       return patterns.map(item => new RegExp(item.pattern, item.flags));
     } catch (error) {
-      console.error('Lỗi khi lấy mẫu lời chào từ DB:', error);
+      logger.error('DATABASE', 'Lỗi khi lấy mẫu lời chào từ DB:', error);
       return []; // Trả về mảng rỗng nếu có lỗi
     }
   }
@@ -507,7 +508,7 @@ class StorageDB {
 
       return true;
     } catch (error) {
-      console.error('Lỗi khi thêm mẫu lời chào:', error);
+      logger.error('DATABASE', 'Lỗi khi thêm mẫu lời chào:', error);
       return false;
     }
   }
@@ -525,7 +526,7 @@ class StorageDB {
       const result = await collection.deleteOne({ pattern });
       return result.deletedCount > 0;
     } catch (error) {
-      console.error('Lỗi khi xóa mẫu lời chào:', error);
+      logger.error('DATABASE', 'Lỗi khi xóa mẫu lời chào:', error);
       return false;
     }
   }
@@ -565,9 +566,9 @@ class StorageDB {
 
       // Thêm các mẫu
       await collection.insertMany(defaultPatterns);
-      console.log('Đã khởi tạo các mẫu lời chào mặc định');
+      logger.info('DATABASE', 'Đã khởi tạo các mẫu lời chào mặc định');
     } catch (error) {
-      console.error('Lỗi khi khởi tạo mẫu lời chào mặc định:', error);
+      logger.error('DATABASE', 'Lỗi khi khởi tạo mẫu lời chào mặc định:', error);
     }
   }
 
@@ -584,39 +585,39 @@ class StorageDB {
         const collections = await db.listCollections({ name: 'conversations' }).toArray();
         if (collections.length > 0) {
           await db.collection('conversations').drop();
-          console.log('Đã xóa collection conversations để tạo lại');
+          logger.info('DATABASE', 'Đã xóa collection conversations để tạo lại');
         }
       } catch (dropError) {
-        console.log('Collection conversations chưa tồn tại hoặc không thể xóa');
+        logger.info('DATABASE', 'Collection conversations chưa tồn tại hoặc không thể xóa');
       }
 
       // Tạo lại collection
       try {
         await db.createCollection('conversations');
-        console.log('Đã tạo mới collection conversations');
+        logger.info('DATABASE', 'Đã tạo mới collection conversations');
       } catch (createError) {
         // Bỏ qua lỗi nếu collection đã tồn tại
-        console.log('Collection conversations đã tồn tại hoặc không thể tạo mới');
+        logger.info('DATABASE', 'Collection conversations đã tồn tại hoặc không thể tạo mới');
       }
 
       // Tạo các chỉ mục
       try {
         // Tạo chỉ mục timestamp trước để tránh xung đột với chỉ mục unique
         await db.collection('conversations').createIndex({ timestamp: 1 });
-        console.log('Đã tạo chỉ mục timestamp_1');
+        logger.info('DATABASE', 'Đã tạo chỉ mục timestamp_1');
 
         // Tạo chỉ mục unique cho userId và messageIndex
         await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
-        console.log('Đã tạo chỉ mục userId_1_messageIndex_1');
+        logger.info('DATABASE', 'Đã tạo chỉ mục userId_1_messageIndex_1');
       } catch (indexError) {
-        console.error('Lỗi khi tạo chỉ mục cho collection conversations:', indexError);
+        logger.error('DATABASE', 'Lỗi khi tạo chỉ mục cho collection conversations:', indexError);
         return false;
       }
 
-      console.log('Đã tạo lại collection conversations với các chỉ mục đúng');
+      logger.info('DATABASE', 'Đã tạo lại collection conversations với các chỉ mục đúng');
       return true;
     } catch (error) {
-      console.error('Lỗi khi reset collection conversations:', error);
+      logger.error('DATABASE', 'Lỗi khi reset collection conversations:', error);
       return false;
     }
   }
@@ -644,7 +645,7 @@ class StorageDB {
           if (!hasTimeIndex) {
             // Tạo index theo timestamp để tối ưu hóa truy vấn theo thời gian
             await db.collection('conversations').createIndex({ timestamp: 1 });
-            console.log('Đã tạo index timestamp cho collection conversations');
+            logger.info('DATABASE', 'Đã tạo index timestamp cho collection conversations');
           }
         }
       } catch (indexError) {
@@ -667,7 +668,7 @@ class StorageDB {
             maxConversationAge: this.maxConversationAge
           }
         });
-        console.log('Đã khởi tạo cấu hình lịch sử cuộc trò chuyện');
+        logger.info('DATABASE', 'Đã khởi tạo cấu hình lịch sử cuộc trò chuyện');
       } else {
         // Cập nhật cấu hình nếu cần
         await db.collection('conversation_meta').updateOne(
@@ -684,9 +685,9 @@ class StorageDB {
       // Thực hiện dọn dẹp ban đầu cho dữ liệu cũ
       await this.cleanupOldConversations();
 
-      console.log('Hệ thống lịch sử cuộc trò chuyện đã sẵn sàng');
+      logger.info('DATABASE', 'Hệ thống lịch sử cuộc trò chuyện đã sẵn sàng');
     } catch (error) {
-      console.error('Lỗi khi khởi tạo lịch sử cuộc trò chuyện:', error);
+      logger.error('DATABASE', 'Lỗi khi khởi tạo lịch sử cuộc trò chuyện:', error);
     }
   }
 
@@ -707,12 +708,12 @@ class StorageDB {
       if (!profile) {
         profile = Profile.createDefaultProfile(userId);
         await profiles.insertOne(profile);
-        console.log(`Đã tạo profile mới cho người dùng ${userId}`);
+        logger.info('DATABASE', `Đã tạo profile mới cho người dùng ${userId}`);
       }
 
       return profile;
     } catch (error) {
-      console.error('Lỗi khi lấy thông tin profile:', error);
+      logger.error('DATABASE', 'Lỗi khi lấy thông tin profile:', error);
       throw error;
     }
   }
@@ -737,7 +738,7 @@ class StorageDB {
 
       return result.acknowledged;
     } catch (error) {
-      console.error('Lỗi khi cập nhật profile:', error);
+      logger.error('DATABASE', 'Lỗi khi cập nhật profile:', error);
       return false;
     }
   }
@@ -776,7 +777,7 @@ class StorageDB {
 
       return updatedProfile?.data?.economy || null;
     } catch (error) {
-      console.error('Lỗi khi cập nhật economy của người dùng:', error);
+      logger.error('DATABASE', 'Lỗi khi cập nhật economy của người dùng:', error);
       return null;
     }
   }
@@ -793,7 +794,7 @@ class StorageDB {
       const collections = await db.listCollections({ name: 'user_profiles' }).toArray();
       if (collections.length === 0) {
         await db.createCollection('user_profiles');
-        console.log('Đã tạo collection user_profiles');
+        logger.info('DATABASE', 'Đã tạo collection user_profiles');
       }
 
       // Xóa index cũ nếu tồn tại để tránh xung đột
@@ -805,15 +806,15 @@ class StorageDB {
         if (hasUserIdIndex) {
           // Nếu tồn tại, xóa index này
           await db.collection('user_profiles').dropIndex('userId_1');
-          console.log('Đã xóa index userId_1 cũ từ collection user_profiles');
+          logger.info('DATABASE', 'Đã xóa index userId_1 cũ từ collection user_profiles');
         }
       } catch (indexError) {
-        console.warn('Cảnh báo khi xóa index cũ:', indexError.message);
+        logger.warn('DATABASE', 'Cảnh báo khi xóa index cũ:', indexError.message);
       }
 
-      console.log('Hệ thống profile người dùng đã sẵn sàng');
+      logger.info('DATABASE', 'Hệ thống profile người dùng đã sẵn sàng');
     } catch (error) {
-      console.error('Lỗi khi khởi tạo hệ thống profile:', error);
+      logger.error('DATABASE', 'Lỗi khi khởi tạo hệ thống profile:', error);
     }
   }
 
@@ -866,7 +867,7 @@ class StorageDB {
         }
       };
     } catch (error) {
-      console.error('Lỗi khi lấy dữ liệu profile card:', error);
+      logger.error('DATABASE', 'Lỗi khi lấy dữ liệu profile card:', error);
       throw error;
     }
   }
@@ -887,7 +888,7 @@ class StorageDB {
 
       return cardBuffer;
     } catch (error) {
-      console.error('Lỗi khi tạo profile card:', error);
+      logger.error('DATABASE', 'Lỗi khi tạo profile card:', error);
       throw error;
     }
   }

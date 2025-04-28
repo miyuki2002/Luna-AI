@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const NeuralNetworks = require('../services/NeuralNetworks');
 const experience = require('../utils/xp');
+const logger = require('../utils/logger.js');
 
 /**
  * Xử lý tin nhắn Discord đề cập đến bot
@@ -43,7 +44,7 @@ async function handleMessage(message) {
     // Xử lý XP sau khi xử lý tin nhắn
     processXp(message, commandExecuted, true);
   } catch (error) {
-    console.error('Lỗi khi xử lý tin nhắn:', error);
+    logger.error('MESSAGE', 'Lỗi khi xử lý tin nhắn:', error);
     await message.reply('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn.');
 
     // Xử lý XP với thông tin rằng có lỗi xảy ra
@@ -76,20 +77,20 @@ async function processXp(message, commandExecuted, execute) {
       if (message.client.logs) {
         message.client.logs.push(`Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
       } else {
-        console.error(`Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
+        logger.error('XP', `Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
       }
     }
 
     // Nếu người dùng lên cấp, có thể hiển thị thông báo
     if (response.xpAdded && response.level && response.previousLevel && response.level > response.previousLevel) {
       // Tùy chọn: Thông báo người dùng đã lên cấp
-      console.log(`${message.author.tag} đã lên cấp ${response.level} trong server ${message.guild.name}`);
+      logger.info('XP', `${message.author.tag} đã lên cấp ${response.level} trong server ${message.guild.name}`);
 
       // Tùy chọn: Gửi thông báo lên cấp trong kênh
       // await message.channel.send(`🎉 Chúc mừng ${message.author}! Bạn đã đạt cấp độ ${response.level}!`);
     }
   } catch (error) {
-    console.error('Lỗi khi xử lý XP:', error);
+    logger.error('XP', 'Lỗi khi xử lý XP:', error);
   }
 }
 
@@ -114,7 +115,7 @@ async function handleChatRequest(message, content) {
       await message.reply(response);
     }
   } catch (error) {
-    console.error('Lỗi khi nhận phản hồi trò chuyện:', error);
+    logger.error('MESSAGE', 'Lỗi khi nhận phản hồi trò chuyện:', error);
 
     // Thông báo chi tiết hơn về lỗi
     if (error.code === 'EPROTO' || error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
@@ -156,7 +157,7 @@ async function handleImageGeneration(message, prompt) {
 
     await message.reply({ embeds: [embed] });
   } catch (error) {
-    console.error('Lỗi khi tạo hình ảnh:', error);
+    logger.error('IMAGE', 'Lỗi khi tạo hình ảnh:', error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');
   }
 }
@@ -188,7 +189,7 @@ async function handleCodeRequest(message, prompt) {
       await message.reply(formattedResponse);
     }
   } catch (error) {
-    console.error('Lỗi khi nhận mã:', error);
+    logger.error('CODE', 'Lỗi khi nhận mã:', error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo mã đó.');
   }
 }

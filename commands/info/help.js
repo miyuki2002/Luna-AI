@@ -13,6 +13,8 @@ module.exports = {
         .addChoices(
           { name: 'Moderation', value: 'moderation' },
           { name: 'Info', value: 'info' },
+          { name: 'AI', value: 'ai' },
+          { name: 'Setting', value: 'setting' },
           { name: 'Tất cả', value: 'all' }
         )),
 
