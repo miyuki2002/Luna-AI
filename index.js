@@ -13,13 +13,12 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMembers,       // Thêm intent này để đọc thông tin thành viên
-    GatewayIntentBits.GuildMessageReactions, // Thêm intent này để đọc phản ứng tin nhắn
+    GatewayIntentBits.GuildMembers,       
+    GatewayIntentBits.GuildMessageReactions, 
   ],
   partials: [Partials.Channel, Partials.Message, Partials.Reaction] // Thêm partials để xử lý tin nhắn cũ
 });
 
-// Khởi tạo các bộ sưu tập cơ bản
 client.commands = new Collection();
 client.features = ['EXPERIENCE_POINTS']; // Kích hoạt tính năng XP
 client.logs = []; // Mảng để lưu các log
