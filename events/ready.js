@@ -5,10 +5,11 @@ const initSystem = require('../services/initSystem.js');
 const ProfileDB = require('../services/profiledb.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
 const messageMonitor = require('../services/messageMonitor.js');
+const logger = require('../utils/logger.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
-    console.log('\x1b[35m%s\x1b[0m', `
+    logger.info('SYSTEM', `
     ██╗     ██╗   ██╗███╗   ██╗ █████╗
     ██║     ██║   ██║██╔██╗ ██║███████║
     ██║     ██║   ██║██║╚██╗██║██╔══██║
@@ -18,7 +19,7 @@ async function startbot(client, loadCommands) {
 
     try {
       // Kết nối MongoDB khi bot sẵn sàng
-      console.log(`🔄 Đang kết nối đến MongoDB...`);
+      logger.info('SYSTEM', `🔄 Đang kết nối đến MongoDB...`);
       await mongoClient.connect();
 
       // Khởi tạo cài đặt cho StorageDB sau khi kết nối
@@ -27,32 +28,32 @@ async function startbot(client, loadCommands) {
       // Đánh dấu MongoDB đã sẵn sàng
       initSystem.markReady('mongodb');
 
-      console.log(`✅ Đã kết nối thành công đến MongoDB!`);
+      logger.info('SYSTEM', `✅ Đã kết nối thành công đến MongoDB!`);
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo kết nối MongoDB:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo kết nối MongoDB:', error);
       // Force mark MongoDB as ready even with error
       initSystem.markReady('mongodb');
-      console.warn('⚠️ Bot sẽ hoạt động mà không có khả năng lưu trữ lâu dài. Một số tính năng có thể không hoạt động chính xác.');
+      logger.warn('SYSTEM', '⚠️ Bot sẽ hoạt động mà không có khả năng lưu trữ lâu dài. Một số tính năng có thể không hoạt động chính xác.');
     }
 
     try {
       // Khởi tạo cấu trúc lịch sử cuộc trò chuyện
       await storageDB.initializeConversationHistory();
-      console.log('✅ Đã khởi tạo cấu trúc lịch sử cuộc trò chuyện');
+      logger.info('SYSTEM', '✅ Đã khởi tạo cấu trúc lịch sử cuộc trò chuyện');
       initSystem.markReady('conversationHistory');
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
       initSystem.markReady('conversationHistory'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
     try {
       // Khởi tạo profile system
-      console.log('🔄 Đang khởi tạo hệ thống profile người dùng...');
+      logger.info('SYSTEM', '🔄 Đang khởi tạo hệ thống profile người dùng...');
       await storageDB.initializeProfiles();
 
       // Kiểm tra truy cập đến profile collection
       const profileCollection = await ProfileDB.getProfileCollection();
-      console.log('✅ Đã thiết lập collection user_profiles và cấu trúc dữ liệu');
+      logger.info('SYSTEM', '✅ Đã thiết lập collection user_profiles và cấu trúc dữ liệu');
 
       // Tạo thêm index cho các trường thường xuyên truy vấn
       const db = mongoClient.getDb();
@@ -60,11 +61,11 @@ async function startbot(client, loadCommands) {
       await db.collection('user_profiles').createIndex({ 'data.global_xp': -1 });
       // Tạo index cho trường xp.id để tìm kiếm nhanh theo guild
       await db.collection('user_profiles').createIndex({ 'data.xp.id': 1 });
-      console.log('✅ Đã khởi tạo các index cho collection user_profiles');
+      logger.info('SYSTEM', '✅ Đã khởi tạo các index cho collection user_profiles');
 
       initSystem.markReady('profiles');
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo hệ thống profile người dùng:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống profile người dùng:', error);
       initSystem.markReady('profiles'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
