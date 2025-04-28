@@ -82,7 +82,7 @@ class MessageMonitor {
           ignoredRoles: setting.ignoredRoles || []
         });
         logger.debug('MONITOR', `Đã tải cài đặt cho guild ${setting.guildId} thành công`);
-        logger.debug('MONITOR', `Số quy tắc: ${setting.rules.length}, Số kênh bỏ qua: ${(setting.ignoredChannels || []).length}, Số vai trò bỏ qua: ${(setting.ignoredRoles || []).length}`);
+        // logger.debug('MONITOR', `Số quy tắc: ${setting.rules.length}, Số kênh bỏ qua: ${(setting.ignoredChannels || []).length}, Số vai trò bỏ qua: ${(setting.ignoredRoles || []).length}`);
       }
 
       logger.info('MONITOR', `✅ Đã tải ${settings.length} cài đặt giám sát từ cơ sở dữ liệu thành công`);
