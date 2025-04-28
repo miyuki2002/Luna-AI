@@ -2,6 +2,7 @@ const { REST, Routes } = require('discord.js');
 const mongoClient = require('../services/mongoClient.js');
 const initSystem = require('../services/initSystem.js');
 const { getCommandsJson, loadCommands } = require('./commandHandler');
+const logger = require('../utils/logger.js');
 
 /**
  * Lưu thông tin guild vào MongoDB
@@ -43,12 +44,12 @@ async function storeGuildInDB(guild) {
       guild.client.guildProfiles.set(guild.id, {
         xp: guildData.xp
       });
-      console.log(`Đã lưu cấu hình XP cho guild ${guild.name} vào bộ nhớ`);
+      logger.info('GUILD', `Đã lưu cấu hình XP cho guild ${guild.name} vào bộ nhớ`);
     }
 
-    console.log(`\x1b[32m%s\x1b[0m`, `Đã lưu thông tin server ${guild.name} vào MongoDB`);
+    logger.info('GUILD', `Đã lưu thông tin server ${guild.name} vào MongoDB`);
   } catch (error) {
-    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi lưu thông tin guild vào MongoDB:`, error);
+    logger.error('GUILD', `Lỗi khi lưu thông tin guild vào MongoDB:`, error);
   }
 }
 
@@ -62,9 +63,9 @@ async function removeGuildFromDB(guildId) {
 
     // Xóa thông tin guild từ cơ sở dữ liệu
     await db.collection('guilds').deleteOne({ guildId: guildId });
-    console.log(`\x1b[33m%s\x1b[0m`, `Đã xóa thông tin server ID: ${guildId} khỏi MongoDB`);
+    logger.info('GUILD', `Đã xóa thông tin server ID: ${guildId} khỏi MongoDB`);
   } catch (error) {
-    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi xóa guild từ MongoDB:`, error);
+    logger.error('GUILD', `Lỗi khi xóa guild từ MongoDB:`, error);
   }
 }
 
@@ -81,7 +82,7 @@ async function getGuildFromDB(guildId) {
 
     return guildData;
   } catch (error) {
-    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi lấy thông tin guild từ MongoDB:`, error);
+    logger.error('GUILD', `Lỗi khi lấy thông tin guild từ MongoDB:`, error);
     return null;
   }
 }
@@ -101,10 +102,10 @@ async function updateGuildSettings(guildId, settings) {
       { $set: { settings: settings } }
     );
 
-    console.log(`\x1b[32m%s\x1b[0m`, `Đã cập nhật cài đặt cho server ID: ${guildId}`);
+    logger.info('GUILD', `Đã cập nhật cài đặt cho server ID: ${guildId}`);
     return true;
   } catch (error) {
-    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi cập nhật cài đặt guild:`, error);
+    logger.error('GUILD', `Lỗi khi cập nhật cài đặt guild:`, error);
     return false;
   }
 }
@@ -114,8 +115,8 @@ async function updateGuildSettings(guildId, settings) {
  * @param {Discord.Guild} guild - Guild mới mà bot vừa tham gia
  */
 async function handleGuildJoin(guild, commands) {
-  console.log(`\x1b[32m%s\x1b[0m`, `Bot đã được thêm vào server mới: ${guild.name} (id: ${guild.id})`);
-  console.log(`\x1b[33m%s\x1b[0m`, `Server hiện có ${guild.memberCount} thành viên`);
+  logger.info('GUILD', `Bot đã được thêm vào server mới: ${guild.name} (id: ${guild.id})`);
+  logger.info('GUILD', `Server hiện có ${guild.memberCount} thành viên`);
 
   try {
     // Lưu thông tin guild vào MongoDB
@@ -129,14 +130,14 @@ async function handleGuildJoin(guild, commands) {
 
       // Nếu vẫn không có lệnh, hiển thị cảnh báo
       if (!commandsToRegister || !commandsToRegister.length) {
-        console.warn(`\x1b[33m%s\x1b[0m`, `Không có lệnh nào được tải để triển khai cho server ${guild.name}!`);
+        logger.warn('GUILD', `Không có lệnh nào được tải để triển khai cho server ${guild.name}!`);
         commandsToRegister = [];
       }
     }
 
     // Triển khai slash commands cho guild mới
     await deployCommandsToGuild(guild.id, commandsToRegister);
-    console.log(`\x1b[32m%s\x1b[0m`, `Đã triển khai các lệnh slash cho server: ${guild.name}`);
+    logger.info('GUILD', `Đã triển khai các lệnh slash cho server: ${guild.name}`);
 
     // Thông báo cho chủ sở hữu server hoặc kênh mặc định nếu có thể
     const defaultChannel = findDefaultChannel(guild);
@@ -149,7 +150,7 @@ async function handleGuildJoin(guild, commands) {
       });
     }
   } catch (error) {
-    console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi xử lý guild mới:`, error);
+    logger.error('GUILD', `Lỗi khi xử lý guild mới:`, error);
   }
 }
 
@@ -158,7 +159,7 @@ async function handleGuildJoin(guild, commands) {
  * @param {Discord.Guild} guild - Guild mà bot vừa rời khỏi
  */
 function handleGuildLeave(guild) {
-  console.log(`\x1b[33m%s\x1b[0m`, `Bot đã rời khỏi server: ${guild.name} (id: ${guild.id})`);
+  logger.info('GUILD', `Bot đã rời khỏi server: ${guild.name} (id: ${guild.id})`);
 
   // Xóa thông tin guild khỏi MongoDB
   removeGuildFromDB(guild.id);
@@ -190,22 +191,22 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
 
     // Kiểm tra xem có lệnh nào để triển khai không
     if (!commands || commands.length === 0) {
-      console.warn(`\x1b[33m%s\x1b[0m`, `Không có lệnh nào để triển khai cho guild ID: ${guildId}`);
+      logger.warn('GUILD', `Không có lệnh nào để triển khai cho guild ID: ${guildId}`);
       return [];
     }
 
     // Triển khai lệnh đến guild cụ thể
-    console.log(`\x1b[36m%s\x1b[0m`, `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
+    logger.info('GUILD', `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
 
     const data = await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
       { body: commands }
     );
 
-    console.log(`\x1b[32m%s\x1b[0m`, `Đã triển khai thành công ${data.length} lệnh đến guild ID: ${guildId}`);
+    logger.info('GUILD', `Đã triển khai thành công ${data.length} lệnh đến guild ID: ${guildId}`);
     return data;
   } catch (error) {
-    console.error(`\x1b[31m%s\x1b[0m`, 'Lỗi khi triển khai lệnh đến guild:', error);
+    logger.error('GUILD', 'Lỗi khi triển khai lệnh đến guild:', error);
     throw error;
   }
 }
@@ -249,7 +250,7 @@ function setupGuildHandlers(client, commands = null) {
 
       // Tải lệnh nếu chưa được tải
       if (!commands && client.commands.size === 0) {
-        console.log('\x1b[36m%s\x1b[0m', 'Đang tải lệnh từ thư mục commands...');
+        logger.info('GUILD', 'Đang tải lệnh từ thư mục commands...');
         loadCommands(client);
       }
 
@@ -260,7 +261,7 @@ function setupGuildHandlers(client, commands = null) {
       client.on('guildDelete', guild => handleGuildLeave(guild));
 
       // Đồng bộ tất cả guild hiện tại vào MongoDB và triển khai lệnh
-      console.log('\x1b[36m%s\x1b[0m', 'Đang đồng bộ thông tin servers với MongoDB...');
+      logger.info('GUILD', 'Đang đồng bộ thông tin servers với MongoDB...');
       const guilds = client.guilds.cache;
       let syncCount = 0;
       let deployCount = 0;
@@ -269,9 +270,9 @@ function setupGuildHandlers(client, commands = null) {
       const commandsToRegister = commands || getCommandsJson(client);
 
       if (!commandsToRegister || commandsToRegister.length === 0) {
-        console.warn('\x1b[33m%s\x1b[0m', 'Không có lệnh nào được tải để triển khai!');
+        logger.warn('GUILD', 'Không có lệnh nào được tải để triển khai!');
       } else {
-        console.log('\x1b[36m%s\x1b[0m', `Đã tải ${commandsToRegister.length} lệnh để triển khai cho các server`);
+        logger.info('GUILD', `Đã tải ${commandsToRegister.length} lệnh để triển khai cho các server`);
       }
 
       for (const guild of guilds.values()) {
@@ -285,19 +286,19 @@ function setupGuildHandlers(client, commands = null) {
             await deployCommandsToGuild(guild.id, commandsToRegister);
             deployCount++;
           } catch (error) {
-            console.error(`\x1b[31m%s\x1b[0m`, `Lỗi khi triển khai lệnh cho server ${guild.name}:`, error);
+            logger.error('GUILD', `Lỗi khi triển khai lệnh cho server ${guild.name}:`, error);
           }
         }
       }
 
-      console.log('\x1b[32m%s\x1b[0m', `Đã đồng bộ thành công ${syncCount}/${guilds.size} servers với MongoDB`);
+      logger.info('GUILD', `Đã đồng bộ thành công ${syncCount}/${guilds.size} servers với MongoDB`);
 
       if (commandsToRegister && commandsToRegister.length > 0) {
-        console.log('\x1b[32m%s\x1b[0m', `Đã triển khai lệnh thành công cho ${deployCount}/${guilds.size} servers`);
+        logger.info('GUILD', `Đã triển khai lệnh thành công cho ${deployCount}/${guilds.size} servers`);
       }
 
     } catch (error) {
-      console.error('\x1b[31m%s\x1b[0m', 'Lỗi khi thiết lập xử lý sự kiện guild:', error);
+      logger.error('GUILD', 'Lỗi khi thiết lập xử lý sự kiện guild:', error);
     }
   };
 
@@ -308,7 +309,7 @@ function setupGuildHandlers(client, commands = null) {
     initSystem.once('ready', setupHandlers);
   }
 
-  console.log('\x1b[36m%s\x1b[0m', 'Đã đăng ký handlers cho sự kiện guild');
+  logger.info('GUILD', 'Đã đăng ký handlers cho sự kiện guild');
 }
 
 // Export các hàm để sử dụng trong các file khác

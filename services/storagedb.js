@@ -364,7 +364,7 @@ class StorageDB {
           { $set: { lastUpdated: Date.now() } }
         );
 
-        // Lấy tất cả tin nhắn theo thứ tự
+        // Lấy toàn bộ cuộc trò chuyện theo đúng thứ tự
         const messages = await db.collection('conversations')
           .find({ userId })
           .sort({ messageIndex: 1 })
