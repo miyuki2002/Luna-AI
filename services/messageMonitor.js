@@ -281,21 +281,13 @@ class MessageMonitor {
       const recommendationMatch = analysis.match(/ACTION:\s*(.+?)(?=\n|$)/i);
       const reasonMatch = analysis.match(/REASON:\s*(.+?)(?=\n|$)/i);
 
-      // Thử tìm các trường trong phân tích (sử dụng tiếng Việt - cho trường hợp cũ)
-      const oldViolationMatch = !violationMatch ? analysis.match(/VI_PHẠM:\s*(Có|Không)/i) : null;
-      const oldRuleMatch = !ruleMatch ? analysis.match(/QUY_TẮC_VI_PHẠM:\s*(.+?)(?=\n|$)/i) : null;
-      const oldSeverityMatch = !severityMatch ? analysis.match(/MỨC_ĐỘ:\s*(Thấp|Trung bình|Cao|Không có)/i) : null;
-      const oldFakeMatch = !fakeMatch ? analysis.match(/DẤU_HIỆU_GIẢ_MẠO:\s*(Có|Không)/i) : null;
-      const oldRecommendationMatch = !recommendationMatch ? analysis.match(/ĐỀ_XUẤT:\s*(.+?)(?=\n|$)/i) : null;
-      const oldReasonMatch = !reasonMatch ? analysis.match(/LÝ_DO:\s*(.+?)(?=\n|$)/i) : null;
-
       // Sử dụng kết quả tìm được (uu tiên tiếng Anh)
-      const finalViolationMatch = violationMatch || oldViolationMatch;
-      const finalRuleMatch = ruleMatch || oldRuleMatch;
-      const finalSeverityMatch = severityMatch || oldSeverityMatch;
-      const finalFakeMatch = fakeMatch || oldFakeMatch;
-      const finalRecommendationMatch = recommendationMatch || oldRecommendationMatch;
-      const finalReasonMatch = reasonMatch || oldReasonMatch;
+      const finalViolationMatch = violationMatch;
+      const finalRuleMatch = ruleMatch;
+      const finalSeverityMatch = severityMatch;
+      const finalFakeMatch = fakeMatch;
+      const finalRecommendationMatch = recommendationMatch;
+      const finalReasonMatch = reasonMatch;
 
       // Ghi log các trường đã tìm thấy
       logger.debug('MONITOR', `Vi phạm: ${finalViolationMatch ? finalViolationMatch[1] : 'Không tìm thấy'}`);
