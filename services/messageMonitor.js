@@ -82,7 +82,7 @@ class MessageMonitor {
           ignoredRoles: setting.ignoredRoles || []
         });
         logger.debug('MONITOR', `Đã tải cài đặt cho guild ${setting.guildId} thành công`);
-        logger.debug('MONITOR', `Số quy tắc: ${setting.rules.length}, Số kênh bỏ qua: ${(setting.ignoredChannels || []).length}, Số vai trò bỏ qua: ${(setting.ignoredRoles || []).length}`);
+        // logger.debug('MONITOR', `Số quy tắc: ${setting.rules.length}, Số kênh bỏ qua: ${(setting.ignoredChannels || []).length}, Số vai trò bỏ qua: ${(setting.ignoredRoles || []).length}`);
       }
 
       logger.info('MONITOR', `✅ Đã tải ${settings.length} cài đặt giám sát từ cơ sở dữ liệu thành công`);
@@ -117,6 +117,12 @@ class MessageMonitor {
     // Chức năng trò chuyện sẽ được ưu tiên khi bot được tag
     if (this.client && message.mentions.has(this.client.user)) {
       logger.debug('MONITOR', `Bỏ qua tin nhắn tag bot từ ${message.author.tag}`);
+      return;
+    }
+
+    // Bỏ qua tin nhắn có mention @everyone hoặc @role
+    if (message.mentions.everyone || message.mentions.roles.size > 0) {
+      logger.debug('MONITOR', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
       return;
     }
 

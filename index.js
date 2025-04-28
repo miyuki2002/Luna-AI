@@ -13,13 +13,12 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMembers,       // Thêm intent này để đọc thông tin thành viên
-    GatewayIntentBits.GuildMessageReactions, // Thêm intent này để đọc phản ứng tin nhắn
+    GatewayIntentBits.GuildMembers,       
+    GatewayIntentBits.GuildMessageReactions, 
   ],
   partials: [Partials.Channel, Partials.Message, Partials.Reaction] // Thêm partials để xử lý tin nhắn cũ
 });
 
-// Khởi tạo các bộ sưu tập cơ bản
 client.commands = new Collection();
 client.features = ['EXPERIENCE_POINTS']; // Kích hoạt tính năng XP
 client.logs = []; // Mảng để lưu các log
@@ -36,15 +35,18 @@ client.on(Events.MessageCreate, async message => {
   // Bỏ qua tin nhắn từ bot
   if (message.author.bot) return;
 
-  // Chỉ xử lý tin nhắn khi bot được tag và không phải là cảnh báo từ chức năng giám sát
+  // Chỉ xử lý tin nhắn khi bot được tag trực tiếp và không phải là cảnh báo từ chức năng giám sát
   if (message.mentions.has(client.user)) {
+    // Kiểm tra xem tin nhắn có mention @everyone hoặc @role không
+    const hasEveryoneOrRoleMention = message.mentions.everyone || message.mentions.roles.size > 0;
+
     // Kiểm tra xem tin nhắn có phải là cảnh báo từ chức năng giám sát không
     const isMonitorWarning = message.content.includes('**CẢNH BÁO') ||
                             message.content.includes('**Lưu ý') ||
                             message.content.includes('**CẢNH BÁO NGHÊM TRỌNG');
 
-    // Nếu không phải cảnh báo từ chức năng giám sát, xử lý như tin nhắn trò chuyện bình thường
-    if (!isMonitorWarning) {
+    // Nếu không phải cảnh báo từ chức năng giám sát và không có mention @everyone hoặc @role, xử lý như tin nhắn trò chuyện bình thường
+    if (!isMonitorWarning && !hasEveryoneOrRoleMention) {
       // Ghi log để debug
       logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
 
@@ -55,6 +57,9 @@ client.on(Events.MessageCreate, async message => {
       } catch (error) {
         logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện:`, error);
       }
+    } else if (hasEveryoneOrRoleMention) {
+      // Ghi log khi bỏ qua tin nhắn có mention @everyone hoặc @role
+      logger.debug('CHAT', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
     }
   }
 

@@ -71,7 +71,7 @@ async function startbot(client, loadCommands) {
 
     try {
       // Khởi tạo guild profile system
-      console.log('🔄 Đang khởi tạo hệ thống profile guild...');
+      logger.info('SYSTEM', '🔄 Đang khởi tạo hệ thống profile guild...');
 
       // Thiết lập indexes cho guild profiles
       await GuildProfileDB.setupGuildProfileIndexes();
@@ -80,16 +80,16 @@ async function startbot(client, loadCommands) {
       for (const [guildId, guild] of client.guilds.cache) {
         try {
           const guildProfile = await GuildProfileDB.getGuildProfile(guildId);
-          console.log(`✅ Đã tải cấu hình XP cho guild ${guild.name}`);
+          logger.info('SYSTEM', `✅ Đã tải cấu hình XP cho guild ${guild.name}`);
         } catch (err) {
-          console.error(`❌ Lỗi khi tải cấu hình guild ${guild.name}:`, err);
+          logger.error('SYSTEM', `❌ Lỗi khi tải cấu hình guild ${guild.name}:`, err);
         }
       }
 
-      console.log('✅ Đã khởi tạo hệ thống profile guild');
+      logger.info('SYSTEM', '✅ Đã khởi tạo hệ thống profile guild');
       initSystem.markReady('guildProfiles');
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo hệ thống profile guild:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống profile guild:', error);
       initSystem.markReady('guildProfiles'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
@@ -98,17 +98,17 @@ async function startbot(client, loadCommands) {
       await NeuralNetworks.initializeGreetingPatterns();
       initSystem.markReady('greetingPatterns');
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo mẫu lời chào:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo mẫu lời chào:', error);
       initSystem.markReady('greetingPatterns'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
     try {
       // Tải các lệnh khi khởi động
       const commandCount = loadCommands(client);
-      console.log('\x1b[32m%s\x1b[0m', `Đã tải tổng cộng ${commandCount} lệnh!`);
+      logger.info('SYSTEM', `Đã tải tổng cộng ${commandCount} lệnh!`);
       initSystem.markReady('commands');
     } catch (error) {
-      console.error('❌ Lỗi khi tải commands:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi tải commands:', error);
       initSystem.markReady('commands'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
@@ -117,20 +117,13 @@ async function startbot(client, loadCommands) {
       const connected = await NeuralNetworks.testConnection();
       initSystem.markReady('api');
     } catch (error) {
-      console.error('❌ Lỗi khi kết nối đến X.AI API:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi kết nối đến X.AI API:', error);
       initSystem.markReady('api'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
 
-    try {
-      // Khởi tạo hệ thống giám sát tin nhắn
-      console.log('🔍 Đang khởi tạo hệ thống giám sát tin nhắn...');
-      await messageMonitor.initialize(client);
-      console.log('✅ Đã khởi tạo hệ thống giám sát tin nhắn');
-      initSystem.markReady('messageMonitor');
-    } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
-      initSystem.markReady('messageMonitor'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
-    }
+    // TẠM THỜI VÔ HIỆU HÓA HỆ THỐNG GIÁM SÁT TIN NHẮN
+    logger.warn('SYSTEM', '🔒 Hệ thống giám sát tin nhắn đã bị tạm thời vô hiệu hóa');
+    initSystem.markReady('messageMonitor'); // Đánh dấu là đã sẵn sàng để bot có thể tiếp tục khởi động
 
     // Set bot presence
     client.user.setPresence({
@@ -138,7 +131,7 @@ async function startbot(client, loadCommands) {
       status: 'online'
     });
 
-    console.log(`✅ Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
+    logger.info('SYSTEM', `✅ Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
   });
 }
 
