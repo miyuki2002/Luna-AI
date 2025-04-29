@@ -3,7 +3,6 @@ const axios = require('axios');
 const fs = require('fs');
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
-// Import the conversationManager module
 const conversationManager = require('../handlers/conversationManager.js');
 const logger = require('../utils/logger.js');
 
@@ -899,8 +898,8 @@ REASON: [Giải thích ngắn gọn]`
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
-      // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+      // Khởi tạo/tải lịch sử cuộc trò chuyện
+      await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
 
       // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, 'user', thinkingPrompt);
@@ -925,7 +924,7 @@ REASON: [Giải thích ngắn gọn]`
 
       return content;
     } catch (error) {
-      console.error(`Lỗi khi gọi X.AI API cho chế độ thinking:`, error.message);
+      console.error(`Lỗi khi gọi API cho chế độ thinking:`, error.message);
       if (error.response) {
         console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
       }
