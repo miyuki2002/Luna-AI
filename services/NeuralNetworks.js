@@ -206,16 +206,16 @@ class NeuralNetworks {
       return originalPrompt;
     }
 
-    let enhancedPrompt = `${originalPrompt}\n\n[THÔNG TIN TÌM KIẾM]\n`;
-    enhancedPrompt += 'Dưới đây là thông tin liên quan từ web. Hãy sử dụng thông tin này khi thích hợp để bổ sung cho câu trả lời của bạn, nhưng không cần thiết phải tham khảo tất cả:\n\n';
+    let enhancedPrompt = `${originalPrompt}\n\n[SEARCH INFORMATION]\n`;
+    enhancedPrompt += 'Below is relevant information from the web. Use this information when appropriate to supplement your answer, but you don\'t need to reference all of it:\n\n';
 
     relevantResults.forEach((result, index) => {
-      enhancedPrompt += `[Nguồn ${index + 1}]: ${result.title}\n`;
+      enhancedPrompt += `[Source ${index + 1}]: ${result.title}\n`;
       enhancedPrompt += `${result.snippet}\n`;
       enhancedPrompt += `URL: ${result.url}\n\n`;
     });
 
-    enhancedPrompt += 'Hãy tổng hợp thông tin trên một cách tự nhiên vào câu trả lời của bạn, không cần liệt kê lại các nguồn. Trả lời với giọng điệu thân thiện, không quá học thuật.';
+    enhancedPrompt += 'Naturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.';
 
     return enhancedPrompt;
   }
@@ -408,10 +408,10 @@ REASON: [Giải thích ngắn gọn]`
       // Xác định xem có phải là cuộc trò chuyện mới hay không
       const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
 
-      // Thêm hướng dẫn cụ thể về phong cách trả lời, bổ sung hướng dẫn về lời chào
+      // Add specific instructions about response style, with guidance about greetings
       let enhancedPrompt = `Reply like a smart, sweet, and charming young woman named Luna. Use gentle, friendly language — nothing too stiff or robotic.`;
 
-      // Thêm hướng dẫn không gửi lời chào nếu đang trong cuộc trò chuyện hiện có
+      // Add instructions not to send greetings if in an existing conversation
       if (!isNewConversation) {
         enhancedPrompt += ` IMPORTANT: This is an ongoing conversation, DO NOT introduce yourself again or send greetings like "Chào bạn", "Hi", "Hello" or "Mình là Luna". Continue the conversation naturally without reintroducing yourself.`;
       } else {
@@ -887,15 +887,15 @@ REASON: [Giải thích ngắn gọn]`
       const userId = message?.author?.id || 'default-user';
       console.log(`Đang gửi yêu cầu thinking mode đến ${this.CoreModel}...`);
 
-      // Tạo prompt đặc biệt yêu cầu mô hình hiển thị quá trình suy nghĩ
+      // Create a special prompt asking the model to show its thinking process
       const thinkingPrompt =
-        `Hãy giải thích quá trình suy nghĩ của bạn theo từng bước trước khi đưa ra câu trả lời cuối cùng.
+        `Explain your thinking process step by step before giving your final answer.
 
-         Hãy chia câu trả lời của bạn thành hai phần:
-         1. [THINKING] - Quá trình suy nghĩ, phân tích và suy luận của bạn
-         2. [ANSWER] - Câu trả lời cuối cùng, rõ ràng và ngắn gọn
+         Please divide your response into two parts:
+         1. [THINKING] - Your thinking process, analysis, and reasoning
+         2. [ANSWER] - Your final answer, clear and concise
 
-         Câu hỏi: ${prompt}`;
+         Question: ${prompt}`;
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
@@ -946,15 +946,15 @@ REASON: [Giải thích ngắn gọn]`
 
       // Kiểm tra xem có yêu cầu chế độ thinking không
       if (prompt.toLowerCase().includes('thinking') || prompt.toLowerCase().includes('giải thích từng bước')) {
-        const codingThinkingPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.Model}.
-          Hãy giải thích quá trình suy nghĩ của bạn trước khi viết mã.
+        const codingThinkingPrompt = `${this.systemPrompt} You are also a programming assistant with model name ${this.Model}.
+          Please explain your thinking process before writing code.
 
-          Sử dụng định dạng:
-          [THINKING] - Phân tích vấn đề và cách tiếp cận
-          [CODE] - Mã hoàn chỉnh với comment đầy đủ
-          [EXPLANATION] - Giải thích chi tiết về mã
+          Use this format:
+          [THINKING] - Problem analysis and approach
+          [CODE] - Complete code with full comments
+          [EXPLANATION] - Detailed explanation of the code
 
-          Câu hỏi: ${prompt}`;
+          Question: ${prompt}`;
 
         // Lấy lịch sử cuộc trò chuyện hiện có
         await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
@@ -986,7 +986,7 @@ REASON: [Giải thích ngắn gọn]`
         return content;
       }
 
-      const codingSystemPrompt = `${this.systemPrompt} Bạn cũng là trợ lý lập trình với tên mô hình ${this.Model}. Cung cấp ví dụ mã và giải thích. Luôn đưa ra mã trong khối code và có comment đầy đủ.`;
+      const codingSystemPrompt = `${this.systemPrompt} You are also a programming assistant with model name ${this.Model}. Provide code examples and explanations. Always present code in code blocks with comprehensive comments.`;
 
       // Lấy lịch sử cuộc trò chuyện hiện có
       await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
