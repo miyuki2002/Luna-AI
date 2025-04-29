@@ -11,19 +11,16 @@ const logger = require('../utils/logger.js');
  */
 async function handleViolation(message, results) {
   try {
-    // Lấy cài đặt giám sát cho guild từ cơ sở dữ liệu
     const db = mongoClient.getDb();
     const settings = await db.collection('monitor_settings').findOne({ guildId: message.guild.id });
     if (!settings || !settings.enabled) return;
 
-    // Xác định hành động cần thực hiện dựa trên quy tắc vi phạm và mức độ nghiêm trọng
     let actionToTake = 'warn'; // Mặc định là cảnh báo
 
-    // Kiểm tra cài đặt hành động tự động cho quy tắc cụ thể
+    // Xác định hành động dựa trên quy tắc vi phạm hoặc mức độ nghiêm trọng
     if (settings.ruleActions && settings.ruleActions[results.violatedRule]) {
       actionToTake = settings.ruleActions[results.violatedRule];
     }
-    // Nếu không có cài đặt cụ thể cho quy tắc, sử dụng mức độ nghiêm trọng
     else if (results.severity) {
       if (results.severity === 'Cao') {
         actionToTake = 'mute';
@@ -34,13 +31,12 @@ async function handleViolation(message, results) {
       }
     }
 
-    // Nếu phát hiện tài khoản giả mạo, nâng cấp hành động
+    // Nâng cao mức xử phạt nếu phát hiện tài khoản giả mạo
     if (results.isFakeAccount) {
       if (actionToTake === 'warn') actionToTake = 'mute';
       else if (actionToTake === 'mute') actionToTake = 'kick';
     }
 
-    // Tạo embed thông báo vi phạm cho kênh log
     const violationEmbed = new EmbedBuilder()
       .setColor(
         results.severity === 'Cao' || results.severity === 'Rất cao' || results.severity === 'Nghiêm trọng' ? 0xFF0000 :
@@ -60,10 +56,9 @@ async function handleViolation(message, results) {
       )
       .setTimestamp();
 
-    // Tìm kênh log
+    // Tìm kênh log phù hợp
     let logChannel = null;
 
-    // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
     const logSettings = await db.collection('mod_settings').findOne({ guildId: message.guild.id });
 
     if (logSettings && logSettings.logChannelId) {
@@ -74,7 +69,7 @@ async function handleViolation(message, results) {
       }
     }
 
-    // Nếu không có kênh log được cài đặt, tìm kênh mặc định
+    // Tìm kênh log mặc định nếu không có kênh được cài đặt
     if (!logChannel) {
       logChannel = message.guild.channels.cache.find(
         channel => channel.name.includes('mod-logs') ||
@@ -84,7 +79,6 @@ async function handleViolation(message, results) {
       );
     }
 
-    // Gửi thông báo đến kênh log
     if (logChannel && logChannel.isTextBased()) {
       await logChannel.send({ embeds: [violationEmbed] });
     }
@@ -92,7 +86,6 @@ async function handleViolation(message, results) {
     // Tạo tin nhắn cảnh báo trực tiếp cho người vi phạm
     let warningMessage = `<@${message.author.id}> `;
 
-    // Tạo nội dung cảnh báo dựa trên hành động và mức độ nghiêm trọng
     const actionEmoji = {
       'warn': '⚠️',
       'mute': '🔇',
@@ -118,16 +111,14 @@ async function handleViolation(message, results) {
       warningMessage += `Vui lòng tuân thủ quy tắc của server.`;
     }
 
-    // Gửi cảnh báo trực tiếp vào kênh
     try {
       await message.channel.send(warningMessage);
     } catch (error) {
       logger.error('MONITOR', 'Không thể gửi cảnh báo trực tiếp:', error);
     }
 
-    // Thực hiện hành động tự động dựa trên actionToTake
     try {
-      // Luôn xóa tin nhắn vi phạm nếu hành động là mute, kick hoặc ban
+      // Xóa tin nhắn vi phạm nếu có hành động nghiêm trọng
       if (actionToTake !== 'warn') {
         try {
           await message.delete();
@@ -137,28 +128,25 @@ async function handleViolation(message, results) {
         }
       }
 
-      // Thực hiện hành động tương ứng
+      // Thực hiện hành động trên người vi phạm
       if (actionToTake === 'mute') {
-        // Mute người dùng (timeout)
         const muteDuration = 10 * 60 * 1000; // 10 phút
         await message.member.timeout(muteDuration, `Vi phạm quy tắc: ${results.violatedRule}`);
         logger.info('MONITOR', `Đã mute ${message.author.tag} trong 10 phút vì vi phạm quy tắc`);
 
-        // Lưu hành động vào cơ sở dữ liệu
+        // Lưu hành động vào log hệ thống
         await modUtils.logModAction({
           guildId: message.guild.id,
           targetId: message.author.id,
           moderatorId: message.client.user.id,
           action: 'mute',
           reason: `Vi phạm quy tắc: ${results.violatedRule}`,
-          duration: 10 // 10 phút
+          duration: 10
         });
       } else if (actionToTake === 'kick') {
-        // Kick người dùng
         await message.member.kick(`Vi phạm quy tắc: ${results.violatedRule}`);
         logger.info('MONITOR', `Đã kick ${message.author.tag} vì vi phạm quy tắc`);
 
-        // Lưu hành động vào cơ sở dữ liệu
         await modUtils.logModAction({
           guildId: message.guild.id,
           targetId: message.author.id,
@@ -167,14 +155,12 @@ async function handleViolation(message, results) {
           reason: `Vi phạm quy tắc: ${results.violatedRule}`
         });
       } else if (actionToTake === 'ban') {
-        // Ban người dùng
         await message.member.ban({
           reason: `Vi phạm quy tắc: ${results.violatedRule}`,
           deleteMessageSeconds: 86400 // Xóa tin nhắn trong 24 giờ
         });
         logger.info('MONITOR', `Đã ban ${message.author.tag} vì vi phạm quy tắc`);
 
-        // Lưu hành động vào cơ sở dữ liệu
         await modUtils.logModAction({
           guildId: message.guild.id,
           targetId: message.author.id,
@@ -183,7 +169,6 @@ async function handleViolation(message, results) {
           reason: `Vi phạm quy tắc: ${results.violatedRule}`
         });
       } else {
-        // Cảnh báo
         await modUtils.logModAction({
           guildId: message.guild.id,
           targetId: message.author.id,

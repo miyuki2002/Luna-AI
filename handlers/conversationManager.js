@@ -1,12 +1,9 @@
-// Quản lý cuộc trò chuyện
 const storageDB = require('../services/storagedb.js');
 
 // Sử dụng closure để ngăn chặn truy cập trước khi khởi tạo
 const conversationManager = (() => {
-  // Map để lưu trữ lịch sử cuộc trò chuyện riêng biệt cho từng người dùng
   const userConversations = new Map();
 
-  // Lấy hoặc tạo mới lịch sử cuộc trò chuyện cho người dùng
   const getUserHistory = (userId) => {
     if (!userConversations.has(userId)) {
       userConversations.set(userId, []);
@@ -25,7 +22,7 @@ const conversationManager = (() => {
     async loadConversationHistory(userId, systemPrompt, modelName) {
       const history = await storageDB.getConversationHistory(userId, systemPrompt, modelName);
 
-      // Xóa và cập nhật bộ nhớ đệm cục bộ cho người dùng cụ thể
+      // Cập nhật cache cục bộ cho user
       const userHistory = getUserHistory(userId);
       userHistory.length = 0;
       history.forEach(msg => userHistory.push(msg));
@@ -41,11 +38,10 @@ const conversationManager = (() => {
      * @returns {Promise} - Kết quả của thao tác với cơ sở dữ liệu
      */
     addMessage(userId, role, content) {
-      // Thêm vào bộ nhớ đệm cục bộ của người dùng cụ thể
+      // Thêm vào cache cục bộ
       const userHistory = getUserHistory(userId);
       userHistory.push({ role, content });
 
-      // Thêm vào cơ sở dữ liệu
       return storageDB.addMessageToConversation(userId, role, content);
     },
 
