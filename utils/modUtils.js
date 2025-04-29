@@ -2,7 +2,7 @@ const mongoClient = require('../services/mongoClient.js');
 
 /**
  * Lưu hành động moderation vào cơ sở dữ liệu
- * @param {Object} options - Các tùy chọn
+* @param {Object} options - Các tùy chọn
  * @param {string} options.guildId - ID của server
  * @param {string} options.targetId - ID của thành viên bị xử lý
  * @param {string} options.moderatorId - ID của người thực hiện hành động
@@ -16,14 +16,14 @@ async function logModAction(options) {
   try {
     const db = mongoClient.getDb();
     
-    // Tạo collection modlog nếu chưa tồn tại
+    // Tạo collection log nếu chưa tồn tại
     try {
       await db.createCollection('modlog');
     } catch (error) {
       // Bỏ qua lỗi nếu collection đã tồn tại
     }
     
-    // Chuẩn bị dữ liệu
+    // Chuẩn bị dữ liệu cơ bản
     const logData = {
       guildId: options.guildId,
       targetId: options.targetId,
@@ -33,7 +33,7 @@ async function logModAction(options) {
       timestamp: Date.now()
     };
     
-    // Thêm thông tin bổ sung nếu có
+    // Thêm các thông tin tùy chọn
     if (options.duration) {
       logData.duration = options.duration;
     }
@@ -42,7 +42,7 @@ async function logModAction(options) {
       logData.count = options.count;
     }
     
-    // Lưu vào cơ sở dữ liệu
+    // Lưu vào DB
     const result = await db.collection('modlog').insertOne(logData);
     
     return { ...logData, _id: result.insertedId };
@@ -54,7 +54,7 @@ async function logModAction(options) {
 
 /**
  * Lấy danh sách hành động moderation
- * @param {Object} options - Các tùy chọn
+* @param {Object} options - Các tùy chọn
  * @param {string} options.guildId - ID của server
  * @param {string} options.targetId - ID của thành viên (tùy chọn)
  * @param {string} options.action - Loại hành động (tùy chọn)
@@ -65,7 +65,7 @@ async function getModLogs(options) {
   try {
     const db = mongoClient.getDb();
     
-    // Tạo filter
+    // Tạo bộ lọc
     const filter = { guildId: options.guildId };
     
     if (options.targetId) {
@@ -76,7 +76,7 @@ async function getModLogs(options) {
       filter.action = options.action;
     }
     
-    // Lấy dữ liệu
+    // Truy vấn và sắp xếp kết quả
     const logs = await db.collection('modlog')
       .find(filter)
       .sort({ timestamp: -1 })
@@ -92,7 +92,7 @@ async function getModLogs(options) {
 
 /**
  * Định dạng thời gian từ phút sang chuỗi dễ đọc
- * @param {number} minutes - Số phút
+* @param {number} minutes - Số phút
  * @returns {string} - Chuỗi thời gian đã định dạng
  */
 function formatDuration(minutes) {
