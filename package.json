@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/miyuki2002/luna.git"
+    "url": "https://github.com/miyuki2002/Luna-AI.git"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
