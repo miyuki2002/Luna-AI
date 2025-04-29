@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const NeuralNetworks = require('../../services/NeuralNetworks');
 const logger = require('../../utils/logger.js');
+const { splitMessageRespectWords } = require('../../handlers/messageHandler');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,17 +18,30 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // Call the getThinkingResponse function from NeuralNetworks
       const response = await NeuralNetworks.getThinkingResponse(prompt, interaction);
 
-      // Send the response as text, it contains thinking steps and final answer
-      await interaction.editReply({
-        content: response
-      });
+      if (response.length <= 2000) {
+        await interaction.editReply({
+          content: response
+        });
+      } else {
+        const chunks = splitMessageRespectWords(response);
+        
+
+        await interaction.editReply({
+          content: chunks[0]
+        });
+        
+        for (let i = 1; i < chunks.length; i++) {
+          await interaction.followUp({
+            content: chunks[i]
+          });
+        }
+      }
     } catch (error) {
       logger.error('COMMAND', 'Lỗi khi xử lý câu hỏi:', error);
       await interaction.editReply('Xin lỗi, tôi không thể phân tích câu hỏi này lúc này. Hãy thử lại sau nhé!');
     }
-  },
+  }
 };
 

@@ -361,5 +361,7 @@ async function handleMentionMessage(message, client) {
 module.exports = {
   handleMessage, // Giữ lại export này nếu cần dùng ở nơi khác
   handleMentionMessage, // Export hàm mới
-  processXp
+  processXp,
+  splitMessage,
+  splitMessageRespectWords // Export the splitMessageRespectWords function
 };
