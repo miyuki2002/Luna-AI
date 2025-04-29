@@ -36,7 +36,6 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
 
           // Hiển thị thông tin về thư mục chứa lệnh
           const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
-          // logger.debug('COMMAND', `Đã tải lệnh "${commandName}" từ danh mục "${category}"`); // Tắt hiển thị thông tin chi tiết (log quá nhiều)
         } else {
           logger.warn('COMMAND', `Lệnh tại ${itemPath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
         }

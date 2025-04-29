@@ -15,7 +15,6 @@ class MongoDBClient {
 
   async connect() {
     try {
-      // Tránh kết nối kép
       if (this.db) {
         console.log('Đã kết nối đến MongoDB rồi.');
         return this.db;
@@ -23,7 +22,6 @@ class MongoDBClient {
 
       if (this.isConnecting) {
         console.log('Đang trong quá trình kết nối đến MongoDB...');
-        // Đợi kết nối hoàn thành
         while (!this.db) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -69,9 +67,7 @@ class MongoDBClient {
     return this.db;
   }
 
-  // Phương thức mới để lấy DB một cách an toàn
   async getDbSafe() {
-    // Nếu chưa kết nối, hãy kết nối
     if (!this.db) {
       try {
         await this.connect();

@@ -1,5 +1,5 @@
 module.exports = {
-  // Function to convert a number to its ordinal form (1st, 2nd, 3rd, etc.)
+  // Chuyển số thành dạng thứ tự (1st, 2nd, 3rd, etc.)
   ordinalize: function(number) {
     const j = number % 10;
     const k = number % 100;
@@ -19,16 +19,16 @@ module.exports = {
 
   /**
    * Chuẩn hóa text về dạng không có font đặc biệt
-   * @param {string} text - Text cần chuẩn hóa
+* @param {string} text - Text cần chuẩn hóa
    * @returns {string} - Text đã được chuẩn hóa
    */
   normalizeText: function(text) {
     if (!text) return text;
 
-    // Loại bỏ các ký tự điều khiển và format
+    // Loại bỏ ký tự điều khiển và format
     text = text.normalize('NFKD');
     
-    // Thay thế các font đặc biệt bằng ký tự ASCII tương ứng
+    // Map font đặc biệt sang ASCII
     const specialFontMap = {
       '𝒜': 'A', '𝒝': 'B', '𝒞': 'C', '𝒟': 'D', '𝒠': 'E',
       '𝒡': 'F', '𝒢': 'G', '𝒣': 'H', '𝒤': 'I', '𝒥': 'J',
@@ -78,7 +78,7 @@ module.exports = {
       '𝙭': 'x', '𝙮': 'y', '𝙯': 'z'
     };
 
-    // Chuyển đổi các ký tự đặc biệt
+    // Thay thế từng ký tự nếu có trong map
     return text.split('').map(char => specialFontMap[char] || char).join('');
   }
 };
