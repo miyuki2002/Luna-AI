@@ -4,7 +4,7 @@ const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');
 const ProfileDB = require('../services/profiledb.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
-const messageMonitor = require('../services/messageMonitor.js');
+//const messageMonitor = require('../services/messageMonitor.js');
 const logger = require('../utils/logger.js');
 
 async function startbot(client, loadCommands) {
@@ -122,6 +122,19 @@ async function startbot(client, loadCommands) {
     }
 
     // TẠM THỜI VÔ HIỆU HÓA HỆ THỐNG GIÁM SÁT TIN NHẮN
+    /**
+    try {
+      // Khởi tạo hệ thống giám sát tin nhắn
+      console.log('🔍 Đang khởi tạo hệ thống giám sát tin nhắn...');
+      await messageMonitor.initialize(client);
+      console.log('✅ Đã khởi tạo hệ thống giám sát tin nhắn');
+      initSystem.markReady('messageMonitor');
+    } catch (error) {
+      console.error('❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
+      initSystem.markReady('messageMonitor'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
+    }
+    */
+
     logger.warn('SYSTEM', '🔒 Hệ thống giám sát tin nhắn đã bị tạm thời vô hiệu hóa');
     initSystem.markReady('messageMonitor'); // Đánh dấu là đã sẵn sàng để bot có thể tiếp tục khởi động
 
