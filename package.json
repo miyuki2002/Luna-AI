@@ -1,7 +1,7 @@
 {
   "name": "luna",
-  "version": "1.0.1",
-  "description": "Bot Discord sử dụng API Claude/Grok cho trò chuyện AI và tạo hình ảnh",
+  "version": "1.0.2",
+  "description": "Bot Discord hỗ trợ trò chuyện AI và tạo hình ảnh",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
