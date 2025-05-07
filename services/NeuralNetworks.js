@@ -482,11 +482,15 @@ REASON: [Giải thích ngắn gọn]`
     // Các từ khóa chỉ ý kiến cá nhân hoặc sáng tạo (không cần tìm kiếm)
     const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|what do you think|in your opinion|your thoughts|how do you feel|do you like)/i;
 
+    // Các từ khóa hỏi về kiến thức của bot
+    const knowledgeCheckKeywords = /(bạn có biết|bạn biết|bạn có hiểu|bạn hiểu|bạn có rõ|bạn rõ|do you know|you know|do you understand|you understand|are you familiar with)/i;
+
     // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
     if (opinionKeywords.test(prompt)) return false;
 
     // Kiểm tra mức độ ưu tiên tìm kiếm
     if (urgentInfoKeywords.test(prompt)) return true; // Ưu tiên cao nhất
+    if (knowledgeCheckKeywords.test(prompt)) return true; // Ưu tiên tìm kiếm khi hỏi về kiến thức
     return informationKeywords.test(prompt) || detailKeywords.test(prompt) || factsKeywords.test(prompt);
   }
 
