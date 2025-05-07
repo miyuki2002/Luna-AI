@@ -384,32 +384,49 @@ class MyAnimeListAPI {
       fields: []
     };
 
-    if (rankingList.length === 0) {
+    if (!rankingList || rankingList.length === 0) {
       embed.description = 'Không có dữ liệu bảng xếp hạng.';
       return embed;
     }
 
-    // Lấy tối đa 10 kết quả để hiển thị
-    const topResults = rankingList.slice(0, 10);
+    // Chỉ lấy 5 kết quả đầu để tránh lỗi
+    const topResults = rankingList.slice(0, 5);
     
     // Thêm thumbnail cho embed là ảnh của anime đầu tiên
-    if (topResults[0].node.main_picture) {
+    if (topResults[0]?.node?.main_picture) {
       embed.thumbnail = { url: topResults[0].node.main_picture.medium };
     }
 
+    // Log dữ liệu để debug
+    logger.info('MAL API', `Tạo embed cho ${topResults.length} kết quả ranking`);
+
     // Thêm các kết quả vào embed
     topResults.forEach((item, index) => {
-      const anime = item.node;
-      const ranking = item.ranking;
+      if (!item || typeof item !== 'object') {
+        logger.warn('MAL API', `Phần tử không hợp lệ ở vị trí ${index}: ${JSON.stringify(item)}`);
+        return;
+      }
+
+      // Kiểm tra và truy cập an toàn
+      const anime = item.node || {};
+      const ranking = item.ranking || (index + 1);
+      
+      // Đảm bảo title luôn có giá trị
+      const title = anime.title || 'Không có tiêu đề';
       
       let info = '';
       if (anime.mean) info += `⭐ Điểm: ${anime.mean}/10\n`;
       if (anime.num_episodes) info += `🎬 Tập: ${anime.num_episodes}\n`;
-      info += `📺 Loại: ${anime.media_type?.toUpperCase() || 'N/A'}`;
+      if (anime.media_type) info += `📺 Loại: ${anime.media_type.toUpperCase()}\n`;
+      
+      // Thêm ID nếu có
+      if (anime.id) {
+        info += `🔗 https://myanimelist.net/anime/${anime.id}`;
+      }
       
       embed.fields.push({
-        name: `${ranking}. ${anime.title}`,
-        value: info,
+        name: `${ranking}. ${title}`,
+        value: info || 'Không có thông tin',
         inline: false
       });
     });
