@@ -14,7 +14,7 @@ class NeuralNetworks {
     // Lấy API key từ biến môi trường
     this.apiKey = process.env.XAI_API_KEY;
     if (!this.apiKey) {
-      throw new Error('XAI_API_KEY không được đặt trong biến môi trường');
+      throw new Error('API không được đặt trong biến môi trường');
     }
 
     // Khởi tạo client Anthropic với cấu hình X.AI
@@ -465,22 +465,33 @@ REASON: [Giải thích ngắn gọn]`
    */
   shouldPerformWebSearch(prompt) {
     // Nếu prompt quá ngắn, không cần tìm kiếm
-    if (prompt.length < 15) return false;
+    if (prompt.length < 10) return false;
 
-    // Các từ khóa gợi ý cần thông tin cập nhật hoặc sự kiện
-    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|recent|current|latest|update|news)/i;
+    // Các từ khóa ưu tiên cao về thông tin mới nhất
+    const urgentInfoKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|breaking|today|this week|this month|this year|happening now|trending)/i;
+
+    // Các từ khóa về thông tin cập nhật hoặc sự kiện
+    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|sự kiện|diễn biến|thay đổi|phát triển|recent|current|latest|update|news|events|changes|developments)/i;
+
+    // Các từ khóa tìm kiếm thông tin chi tiết
+    const detailKeywords = /(thông tin về|chi tiết|tìm hiểu|tài liệu|nghiên cứu|báo cáo|information about|details|research|report|study|documentation)/i;
 
     // Các từ khóa gợi ý cần dữ liệu cụ thể
-    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|how many|when|where|who is|what is)/i;
+    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|như thế nào|tại sao|định nghĩa|how many|when|where|who is|what is|why|how|define)/i;
 
     // Các từ khóa chỉ ý kiến cá nhân hoặc sáng tạo (không cần tìm kiếm)
-    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|what do you think|in your opinion|your thoughts)/i;
+    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|what do you think|in your opinion|your thoughts|how do you feel|do you like)/i;
+
+    // Các từ khóa hỏi về kiến thức của bot
+    const knowledgeCheckKeywords = /(bạn có biết|bạn biết|bạn có hiểu|bạn hiểu|bạn có rõ|bạn rõ|do you know|you know|do you understand|you understand|are you familiar with)/i;
 
     // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
     if (opinionKeywords.test(prompt)) return false;
 
-    // Nếu có từ khóa về thông tin hoặc dữ kiện cụ thể, thực hiện tìm kiếm
-    return informationKeywords.test(prompt) || factsKeywords.test(prompt);
+    // Kiểm tra mức độ ưu tiên tìm kiếm
+    if (urgentInfoKeywords.test(prompt)) return true; // Ưu tiên cao nhất
+    if (knowledgeCheckKeywords.test(prompt)) return true; // Ưu tiên tìm kiếm khi hỏi về kiến thức
+    return informationKeywords.test(prompt) || detailKeywords.test(prompt) || factsKeywords.test(prompt);
   }
 
   /**
