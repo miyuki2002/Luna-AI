@@ -3,10 +3,10 @@ const mongoClient = require('./mongoClient.js');
 
 console.log('🔄 ProfileDB module đã được tải vào hệ thống');
 
-// Cache để theo dõi những user đã được tạo profile
+// Cache các userId đã tạo profile
 const userProfileCache = new Set();
 
-// Define the profile schema structure for reference
+// Cấu trúc cơ bản của profile người dùng
 const createProfileStructure = (userId) => ({
   _id: userId,
   data: {
@@ -60,13 +60,13 @@ const createProfileStructure = (userId) => ({
   }
 });
 
-// Function to get the profile collection
+// Lấy collection profile từ database
 const getProfileCollection = async () => {
   const db = mongoClient.getDb();
   return db.collection('user_profiles');
 };
 
-// Helper function to create a new profile with default values
+// Tạo profile mới với giá trị mặc định
 const createDefaultProfile = (userId) => {
   if (!userProfileCache.has(userId)) {
     console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
@@ -76,7 +76,7 @@ const createDefaultProfile = (userId) => {
   return createProfileStructure(userId);
 };
 
-// Helper function to get profile or create if not exists
+// Lấy profile người dùng hoặc tạo mới nếu chưa tồn tại
 const getProfile = async (userId) => {
   const collection = await getProfileCollection();
   let profile = await collection.findOne({ _id: userId });

@@ -1,7 +1,8 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Events, Collection } = require('discord.js');
-const { handleMessage } = require('./handlers/messageHandler');
-const { handleCommand, loadCommands, getCommandsJson } = require('./handlers/commandHandler');
+// Import the new handler function
+const { handleMentionMessage } = require('./handlers/messageHandler');
+const { handleCommand, loadCommands } = require('./handlers/commandHandler'); // Removed getCommandsJson as it's not used directly here
 const { startbot } = require('./events/ready');
 const { setupGuildHandlers } = require('./handlers/guildHandler');
 const logger = require('./utils/logger.js');
@@ -27,45 +28,12 @@ client.logs = []; // Mảng để lưu các log
 startbot(client, () => loadCommands(client));
 
 // Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
-// Sử dụng getCommandsJson để lấy commands từ cache
 setupGuildHandlers(client);
 
-// Đăng ký sự kiện tin nhắn cho chức năng trò chuyện khi được tag
+// Đăng ký sự kiện tin nhắn - sử dụng handler mới
 client.on(Events.MessageCreate, async message => {
-  // Bỏ qua tin nhắn từ bot
-  if (message.author.bot) return;
-
-  // Chỉ xử lý tin nhắn khi bot được tag trực tiếp và không phải là cảnh báo từ chức năng giám sát
-  if (message.mentions.has(client.user)) {
-    // Kiểm tra xem tin nhắn có mention @everyone hoặc @role không
-    const hasEveryoneOrRoleMention = message.mentions.everyone || message.mentions.roles.size > 0;
-
-    // Kiểm tra xem tin nhắn có phải là cảnh báo từ chức năng giám sát không
-    const isMonitorWarning = message.content.includes('**CẢNH BÁO') ||
-                            message.content.includes('**Lưu ý') ||
-                            message.content.includes('**CẢNH BÁO NGHÊM TRỌNG');
-
-    // Nếu không phải cảnh báo từ chức năng giám sát và không có mention @everyone hoặc @role, xử lý như tin nhắn trò chuyện bình thường
-    if (!isMonitorWarning && !hasEveryoneOrRoleMention) {
-      // Ghi log để debug
-      logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
-
-      try {
-        // Gọi handler cho chức năng trò chuyện
-        await handleMessage(message);
-        logger.info('CHAT', `Đã xử lý tin nhắn trò chuyện thành công`);
-      } catch (error) {
-        logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện:`, error);
-      }
-    } else if (hasEveryoneOrRoleMention) {
-      // Ghi log khi bỏ qua tin nhắn có mention @everyone hoặc @role
-      logger.debug('CHAT', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
-    }
-  }
-
-  // Lưu ý: Chức năng monitor được xử lý hoàn toàn riêng biệt trong messageMonitor.js
-  // và được khởi tạo trong events/ready.js
-  // messageMonitor sẽ đọc tất cả tin nhắn KHÔNG tag bot (tin nhắn tag bot được xử lý ở trên)
+  // Delegate the entire mention handling logic to the handler
+  await handleMentionMessage(message, client);
 });
 
 // Đăng ký sự kiện interaction - sẽ được kích hoạt sau khi ready

@@ -316,7 +316,52 @@ function splitMessageRespectWords(text, maxLength = 2000) {
   return chunks;
 }
 
+/**
+ * Hàm chính xử lý sự kiện MessageCreate khi bot được đề cập
+ * @param {import('discord.js').Message} message
+ * @param {import('discord.js').Client} client
+ */
+async function handleMentionMessage(message, client) {
+  // Bỏ qua tin nhắn từ bot
+  if (message.author.bot) return;
+
+  // Chỉ xử lý tin nhắn khi bot được tag trực tiếp
+  if (message.mentions.has(client.user)) {
+    // Kiểm tra xem tin nhắn có mention @everyone hoặc @role không
+    const hasEveryoneOrRoleMention = message.mentions.everyone || message.mentions.roles.size > 0;
+
+    // Kiểm tra xem tin nhắn có phải là cảnh báo từ chức năng giám sát không (ví dụ)
+    // Lưu ý: Logic kiểm tra cảnh báo monitor thực tế nằm trong messageMonitor.js
+    // Ở đây chỉ là ví dụ để tránh xử lý các tin nhắn cảnh báo như chat thông thường
+    const isMonitorWarning = message.content.includes('**CẢNH BÁO') ||
+                            message.content.includes('**Lưu ý') ||
+                            message.content.includes('**CẢNH BÁO NGHÊM TRỌNG');
+
+    // Nếu không phải cảnh báo từ chức năng giám sát và không có mention @everyone hoặc @role,
+    // xử lý như tin nhắn trò chuyện bình thường bằng hàm handleMessage
+    if (!isMonitorWarning && !hasEveryoneOrRoleMention) {
+      logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
+      try {
+        await handleMessage(message); // Gọi hàm xử lý nội dung tin nhắn
+        logger.info('CHAT', `Đã xử lý tin nhắn trò chuyện thành công`);
+      } catch (error) {
+        logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện:`, error);
+        // Có thể thêm phản hồi lỗi cho người dùng ở đây nếu cần
+        // await message.reply('Đã có lỗi xảy ra khi xử lý yêu cầu của bạn.');
+      }
+    } else if (hasEveryoneOrRoleMention) {
+      logger.debug('CHAT', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
+    } else if (isMonitorWarning) {
+      logger.debug('CHAT', `Bỏ qua tin nhắn cảnh báo từ monitor từ ${message.author.tag}`);
+    }
+  }
+  // Lưu ý: Tin nhắn không tag bot sẽ được xử lý bởi messageMonitor.js (nếu được kích hoạt)
+}
+
 module.exports = {
-  handleMessage,
-  processXp  // Xuất hàm processXp
+  handleMessage, // Giữ lại export này nếu cần dùng ở nơi khác
+  handleMentionMessage, // Export hàm mới
+  processXp,
+  splitMessage,
+  splitMessageRespectWords // Export the splitMessageRespectWords function
 };

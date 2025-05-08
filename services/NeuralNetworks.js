@@ -3,29 +3,29 @@ const axios = require('axios');
 const fs = require('fs');
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
-// Import the conversationManager module
 const conversationManager = require('../handlers/conversationManager.js');
 const logger = require('../utils/logger.js');
+// const malAPI = require('./MyAnimeListAPI.js');
+const prompts = require('../config/prompts.js');
 
 class NeuralNetworks {
   constructor() {
-    // Kiểm tra cài đặt TLS không an toàn và cảnh báo
     this.checkTLSSecurity();
 
     // Lấy API key từ biến môi trường
     this.apiKey = process.env.XAI_API_KEY;
     if (!this.apiKey) {
-      throw new Error('XAI_API_KEY không được đặt trong biến môi trường');
+      throw new Error('API không được đặt trong biến môi trường');
     }
 
-    // Khởi tạo client Anthropic với cấu hình X.AI
+    // Khởi tạo client Anthropic
     this.client = new Anthropic({
       apiKey: this.apiKey,
       baseURL: 'https://api.x.ai'
     });
 
     // System Prompt
-    this.systemPrompt = "Your name is Luna. You are a female-voiced AI with a cute, friendly, and warm tone. You speak naturally and gently, like a lovely older or younger sister, always maintaining professionalism without sounding too formal. When it fits, you can add light humor, emotion, or gentle encouragement. You always listen carefully and respond based on what the user shares, making them feel comfortable and connected — like chatting with someone who truly gets them, priority reply Vietnamese.";
+    this.systemPrompt = prompts.system.main;
 
     this.CoreModel = 'grok-3-fast-beta';
     this.imageModel = 'grok-2-image-1212';
@@ -33,7 +33,7 @@ class NeuralNetworks {
     this.Model = 'luna-v1-preview';
 
     // Cấu hình StorageDB
-    storageDB.setMaxConversationLength(10);
+    storageDB.setMaxConversationLength(30);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
 
     // Khởi tạo mảng rỗng để sử dụng trước khi có dữ liệu từ MongoDB
@@ -144,8 +144,8 @@ class NeuralNetworks {
           cx: googleCseId,
           q: optimizedQuery,
           num: 5,
-          hl: 'vi', // Ưu tiên kết quả tiếng Việt
-          gl: 'vn'  // Ưu tiên kết quả từ Việt Nam
+          hl: 'vi',
+          gl: 'vn'
         }
       });
 
@@ -206,17 +206,18 @@ class NeuralNetworks {
       return originalPrompt;
     }
 
-    let enhancedPrompt = `${originalPrompt}\n\n[SEARCH INFORMATION]\n`;
-    enhancedPrompt += 'Below is relevant information from the web. Use this information when appropriate to supplement your answer, but you don\'t need to reference all of it:\n\n';
-
+    let resultsText = '';
     relevantResults.forEach((result, index) => {
-      enhancedPrompt += `[Source ${index + 1}]: ${result.title}\n`;
-      enhancedPrompt += `${result.snippet}\n`;
-      enhancedPrompt += `URL: ${result.url}\n\n`;
+      resultsText += `[Source ${index + 1}]: ${result.title}\n`;
+      resultsText += `${result.snippet}\n`;
+      resultsText += `URL: ${result.url}\n\n`;
     });
 
-    enhancedPrompt += 'Naturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.';
-
+    // Sử dụng mẫu từ cấu hình prompt
+    const enhancedPrompt = prompts.web.searchEnhancedPrompt
+      .replace('${originalPromptText}', originalPrompt)
+      .replace('${searchResultsText}', resultsText);
+      
     return enhancedPrompt;
   }
 
@@ -284,19 +285,7 @@ class NeuralNetworks {
         messages: [
           {
             role: 'system',
-            content: `Bạn là trợ lý phân tích tin nhắn. Nhiệm vụ của bạn là phân tích tin nhắn và xác định xem nó có vi phạm quy tắc nào không.
-
-QUAN TRỌNG: Hãy phân tích kỹ lưỡng và chính xác. Nếu tin nhắn có chứa chính xác nội dung bị cấm trong quy tắc, hãy trả lời "VIOLATION: Có". Nếu không, trả lời "VIOLATION: Không".
-
-Ví dụ: Nếu quy tắc là "không chat s4ory" và tin nhắn chứa "s4ory", thì đó là vi phạm.
-
-Trả lời theo định dạng chính xác sau:
-VIOLATION: Có/Không
-RULE: [Số thứ tự quy tắc hoặc "Không có"]
-SEVERITY: Thấp/Trung bình/Cao/Không có
-FAKE: Có/Không
-ACTION: Không cần hành động/Cảnh báo/Xóa tin nhắn/Mute/Kick/Ban
-REASON: [Giải thích ngắn gọn]`
+            content: prompts.system.monitoring
           },
           {
             role: 'user',
@@ -350,23 +339,12 @@ REASON: [Giải thích ngắn gọn]`
       const imageMatch = prompt.match(imageCommandRegex);
 
       if (imageMatch) {
-        // Trích xuất mô tả hình ảnh (bây giờ trong nhóm 2)
         const imagePrompt = imageMatch[2];
         const commandUsed = imageMatch[1];
         logger.info('NEURAL', `Phát hiện lệnh tạo hình ảnh "${commandUsed}". Prompt: ${imagePrompt}`);
 
-        // Nếu có message object (từ Discord), sử dụng messageHandler
-        if (message) {
-          // Truyền hàm generateImage được bind với this
-          return await messageHandler.handleDiscordImageGeneration(
-            message,
-            imagePrompt,
-            this.generateImage.bind(this)
-          );
-        }
-
-        // Nếu không, tạo hình ảnh và trả về URL như thông thường
-        return await this.generateImage(imagePrompt);
+        // Chuyển hướng người dùng sang sử dụng lệnh /image
+        return `Để tạo hình ảnh, vui lòng sử dụng lệnh /image với nội dung bạn muốn tạo. Ví dụ:\n/image ${imagePrompt}`;
       }
 
       // Kiểm tra xem có phải là lệnh yêu cầu phân tích ký ức không
@@ -408,21 +386,21 @@ REASON: [Giải thích ngắn gọn]`
       // Xác định xem có phải là cuộc trò chuyện mới hay không
       const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
 
-      // Add specific instructions about response style, with guidance about greetings
-      let enhancedPrompt = `Reply like a smart, sweet, and charming young woman named Luna. Use gentle, friendly language — nothing too stiff or robotic.`;
+      // Thêm hướng dẫn cụ thể về phong cách phản hồi
+      let enhancedPrompt = prompts.chat.responseStyle;
 
-      // Add instructions not to send greetings if in an existing conversation
+      // Không gửi lời chào nếu đang trong cuộc trò chuyện tiếp tục
       if (!isNewConversation) {
-        enhancedPrompt += ` IMPORTANT: This is an ongoing conversation, DO NOT introduce yourself again or send greetings like "Chào bạn", "Hi", "Hello" or "Mình là Luna". Continue the conversation naturally without reintroducing yourself.`;
+        enhancedPrompt += prompts.chat.ongoingConversation;
       } else {
-        enhancedPrompt += ` If it fits the context, feel free to sprinkle in light humor or kind encouragement.`;
+        enhancedPrompt += prompts.chat.newConversation;
       }
 
       if (searchResults.length > 0) {
-        enhancedPrompt += ` I've provided you with web search results. Incorporate this information naturally into your response without explicitly listing the sources. Respond in a conversational tone as Luna, not as an information aggregator.`;
+        enhancedPrompt += prompts.chat.webSearch;
       }
 
-      enhancedPrompt += ` Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going. ${enhancedPromptWithMemory}`;
+      enhancedPrompt += prompts.chat.generalInstructions + ` ${enhancedPromptWithMemory}`;
 
       // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
       const userMessage = enhancedPrompt || prompt;
@@ -460,28 +438,121 @@ REASON: [Giải thích ngắn gọn]`
   }
 
   /**
+   * Xử lý hoàn thành chat thông thường (tách từ phương thức getCompletion)
+   * @param {string} enhancedPrompt - Prompt đã được cải thiện
+   * @param {string} userId - ID người dùng
+   * @param {object} message - Đối tượng tin nhắn
+   * @param {array} searchResults - Kết quả tìm kiếm web
+   * @returns {Promise<string>} - Phản hồi
+   */
+  async processNormalChatCompletion(enhancedPrompt, userId, message, searchResults) {
+    try {
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+
+      // Lấy lịch sử cuộc trò chuyện hiện có
+      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+
+      // Xác định xem có phải là cuộc trò chuyện mới hay không
+      const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
+
+      // Thêm hướng dẫn cụ thể về phong cách phản hồi
+      let promptWithInstructions = prompts.chat.responseStyle;
+
+      // Thêm hướng dẫn dựa trên trạng thái cuộc trò chuyện
+      if (!isNewConversation) {
+        promptWithInstructions += prompts.chat.ongoingConversation;
+      } else {
+        promptWithInstructions += prompts.chat.newConversation;
+      }
+
+      if (searchResults.length > 0) {
+        promptWithInstructions += prompts.chat.webSearch;
+      }
+
+      promptWithInstructions += prompts.chat.generalInstructions + ` ${enhancedPrompt}`;
+
+      // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
+      const userMessage = promptWithInstructions;
+
+      // Thêm tin nhắn người dùng vào lịch sử
+      await conversationManager.addMessage(userId, 'user', userMessage);
+
+      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện của người dùng cụ thể
+      const messages = conversationManager.getHistory(userId);
+
+      // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
+      const response = await axiosInstance.post('/v1/chat/completions', {
+        model: this.CoreModel,
+        max_tokens: 2048,
+        messages: messages
+      });
+
+      logger.info('NEURAL', 'Đã nhận phản hồi từ API');
+      let content = response.data.choices[0].message.content;
+
+      // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
+      await conversationManager.addMessage(userId, 'assistant', content);
+
+      // Xử lý và định dạng phản hồi
+      content = await this.formatResponseContent(content, isNewConversation, searchResults);
+
+      return content;
+    } catch (error) {
+      logger.error('NEURAL', `Lỗi khi xử lý yêu cầu chat completion:`, error.message);
+      if (error.response) {
+        logger.error('NEURAL', 'Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
+      }
+      return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
+    }
+  }
+
+  /**
    * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không
    * @param {string} prompt - Prompt từ người dùng
    * @returns {boolean} - True nếu nên thực hiện tìm kiếm web
    */
   shouldPerformWebSearch(prompt) {
     // Nếu prompt quá ngắn, không cần tìm kiếm
-    if (prompt.length < 15) return false;
+    if (prompt.length < 10) return false;
 
-    // Các từ khóa gợi ý cần thông tin cập nhật hoặc sự kiện
-    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|recent|current|latest|update|news)/i;
+    // Các từ khóa ưu tiên cao về thông tin mới nhất
+    const urgentInfoKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|breaking|today|this week|this month|this year|happening now|trending)/i;
+
+    // Các từ khóa về thông tin cập nhật hoặc sự kiện
+    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|sự kiện|diễn biến|thay đổi|phát triển|recent|current|latest|update|news|events|changes|developments)/i;
+
+    // Các từ khóa tìm kiếm thông tin chi tiết
+    const detailKeywords = /(thông tin về|chi tiết|tìm hiểu|tài liệu|nghiên cứu|báo cáo|information about|details|research|report|study|documentation)/i;
 
     // Các từ khóa gợi ý cần dữ liệu cụ thể
-    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|how many|when|where|who is|what is)/i;
+    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|như thế nào|tại sao|định nghĩa|how many|when|where|who is|what is|why|how|define)/i;
 
     // Các từ khóa chỉ ý kiến cá nhân hoặc sáng tạo (không cần tìm kiếm)
-    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|what do you think|in your opinion|your thoughts)/i;
+    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|what do you think|in your opinion|your thoughts|how do you feel|do you like)/i;
+
+    // Các từ khóa hỏi về kiến thức của bot
+    const knowledgeCheckKeywords = /(bạn có biết|bạn biết|bạn có hiểu|bạn hiểu|bạn có rõ|bạn rõ|do you know|you know|do you understand|you understand|are you familiar with)/i;
+
+    // Các từ khóa liên quan đến anime/manga
+    const animeKeywords = /(anime|manga|manhua|manhwa|hoạt hình|phim hoạt hình|webtoon|light novel|visual novel|doujinshi|otaku|cosplay|mangaka|seiyuu|studio|season|tập|chapter|volume|arc|raw|scan|fansub|vietsub|raw|scanlation)/i;
+
+    // Các từ khóa về thể loại anime/manga
+    const genreKeywords = /(shounen|shoujo|seinen|josei|mecha|isekai|slice of life|harem|reverse harem|romance|action|adventure|fantasy|sci-fi|horror|comedy|drama|psychological|mystery|supernatural|magical girl|sports|school life)/i;
+
+    // Các từ khóa về studio và nhà sản xuất
+    const studioKeywords = /(ghibli|kyoto animation|shaft|madhouse|bones|ufotable|a-1 pictures|wit studio|mappa|trigger|toei animation|pierrot|production i\.g|sunrise|gainax|hoạt hình 3d|cgi animation|3d animation)/i;
 
     // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
     if (opinionKeywords.test(prompt)) return false;
 
-    // Nếu có từ khóa về thông tin hoặc dữ kiện cụ thể, thực hiện tìm kiếm
-    return informationKeywords.test(prompt) || factsKeywords.test(prompt);
+    // Kiểm tra mức độ ưu tiên tìm kiếm
+    if (urgentInfoKeywords.test(prompt)) return true;
+    if (knowledgeCheckKeywords.test(prompt)) return true;
+    if (animeKeywords.test(prompt)) return true;
+    if (genreKeywords.test(prompt)) return true;
+    if (studioKeywords.test(prompt)) return true;
+    return informationKeywords.test(prompt) || detailKeywords.test(prompt) || factsKeywords.test(prompt);
   }
 
   /**
@@ -581,7 +652,7 @@ REASON: [Giải thích ngắn gọn]`
 
       // Chỉ thêm thông tin từ trí nhớ nếu có thông tin liên quan
       if (relevantMessages.length > 0) {
-        const memoryContext = `[Thông tin từ cuộc trò chuyện trước: ${relevantMessages.join('. ')}] `;
+        const memoryContext = prompts.memory.memoryContext.replace('${relevantMessagesText}', relevantMessages.join('. '));
         enhancedPrompt = memoryContext + enhancedPrompt;
         console.log('Đã bổ sung prompt với thông tin từ trí nhớ');
       }
@@ -887,20 +958,13 @@ REASON: [Giải thích ngắn gọn]`
       const userId = message?.author?.id || 'default-user';
       console.log(`Đang gửi yêu cầu thinking mode đến ${this.CoreModel}...`);
 
-      // Create a special prompt asking the model to show its thinking process
-      const thinkingPrompt =
-        `Explain your thinking process step by step before giving your final answer.
-
-         Please divide your response into two parts:
-         1. [THINKING] - Your thinking process, analysis, and reasoning
-         2. [ANSWER] - Your final answer, clear and concise
-
-         Question: ${prompt}`;
+      // Tạo prompt đặc biệt yêu cầu mô hình hiển thị quá trình suy nghĩ
+      const thinkingPrompt = prompts.chat.thinking.replace('${promptText}', prompt);
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
-      // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+      // Khởi tạo/tải lịch sử cuộc trò chuyện
+      await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
 
       // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, 'user', thinkingPrompt);
@@ -925,7 +989,7 @@ REASON: [Giải thích ngắn gọn]`
 
       return content;
     } catch (error) {
-      console.error(`Lỗi khi gọi X.AI API cho chế độ thinking:`, error.message);
+      console.error(`Lỗi khi gọi API cho chế độ thinking:`, error.message);
       if (error.response) {
         console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
       }
@@ -946,13 +1010,7 @@ REASON: [Giải thích ngắn gọn]`
 
       // Kiểm tra xem có yêu cầu chế độ thinking không
       if (prompt.toLowerCase().includes('thinking') || prompt.toLowerCase().includes('giải thích từng bước')) {
-        const codingThinkingPrompt = `${this.systemPrompt} You are also a programming assistant with model name ${this.Model}.
-          Please explain your thinking process before writing code.
-
-          Use this format:
-          [THINKING] - Problem analysis and approach
-          [CODE] - Complete code with full comments
-          [EXPLANATION] - Detailed explanation of the code
+        const codingThinkingPrompt = `${this.systemPrompt}${prompts.system.codingThinking.replace('${modelName}', this.Model)}
 
           Question: ${prompt}`;
 
@@ -986,7 +1044,7 @@ REASON: [Giải thích ngắn gọn]`
         return content;
       }
 
-      const codingSystemPrompt = `${this.systemPrompt} You are also a programming assistant with model name ${this.Model}. Provide code examples and explanations. Always present code in code blocks with comprehensive comments.`;
+      const codingSystemPrompt = `${this.systemPrompt}${prompts.system.coding.replace('${modelName}', this.Model)}`;
 
       // Lấy lịch sử cuộc trò chuyện hiện có
       await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
