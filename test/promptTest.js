@@ -2,10 +2,10 @@ const prompts = require('../config/prompts.js');
 const NeuralNetworks = require('../services/NeuralNetworks.js');
 
 /**
- * Simple test script to demonstrate how to use the prompt configuration
+ * Script kiểm tra đơn giản để minh họa cách sử dụng cấu hình prompt
  */
 async function testPrompts() {
-  console.log('=== LUNA AI PROMPT CONFIGURATION TEST ===');
+  console.log('=== KIỂM TRA CẤU HÌNH PROMPT LUNA AI ===');
 
   // Display the main system prompt
   console.log('\n== Main System Prompt ==');
@@ -27,7 +27,7 @@ async function testPrompts() {
     }
   ];
 
-  // Manually create search results text for demonstration
+  // Tạo văn bản kết quả tìm kiếm thủ công để minh họa
   let searchResultsText = '';
   searchResults.forEach((result, index) => {
     searchResultsText += `[Source ${index + 1}]: ${result.title}\n`;
@@ -58,8 +58,8 @@ async function testPrompts() {
   const codingPrompt = prompts.system.coding.replace('${modelName}', modelName);
   console.log(codingPrompt);
 
-  console.log('\n=== TEST COMPLETED ===');
+  console.log('\n=== KIỂM TRA HOÀN THÀNH ===');
 }
 
-// Run the test
+// Chạy kiểm tra
 testPrompts().catch(console.error); 

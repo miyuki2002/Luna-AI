@@ -5,12 +5,11 @@ const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 const conversationManager = require('../handlers/conversationManager.js');
 const logger = require('../utils/logger.js');
-const malAPI = require('./MyAnimeListAPI.js');
+// const malAPI = require('./MyAnimeListAPI.js');
 const prompts = require('../config/prompts.js');
 
 class NeuralNetworks {
   constructor() {
-    // Kiểm tra cài đặt TLS không an toàn và cảnh báo
     this.checkTLSSecurity();
 
     // Lấy API key từ biến môi trường
@@ -19,7 +18,7 @@ class NeuralNetworks {
       throw new Error('API không được đặt trong biến môi trường');
     }
 
-    // Khởi tạo client Anthropic với cấu hình X.AI
+    // Khởi tạo client Anthropic
     this.client = new Anthropic({
       apiKey: this.apiKey,
       baseURL: 'https://api.x.ai'
@@ -34,7 +33,7 @@ class NeuralNetworks {
     this.Model = 'luna-v1-preview';
 
     // Cấu hình StorageDB
-    storageDB.setMaxConversationLength(10);
+    storageDB.setMaxConversationLength(30);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
 
     // Khởi tạo mảng rỗng để sử dụng trước khi có dữ liệu từ MongoDB
@@ -145,8 +144,8 @@ class NeuralNetworks {
           cx: googleCseId,
           q: optimizedQuery,
           num: 5,
-          hl: 'vi', // Ưu tiên kết quả tiếng Việt
-          gl: 'vn'  // Ưu tiên kết quả từ Việt Nam
+          hl: 'vi',
+          gl: 'vn'
         }
       });
 
@@ -214,7 +213,7 @@ class NeuralNetworks {
       resultsText += `URL: ${result.url}\n\n`;
     });
 
-    // Use template from prompts config
+    // Sử dụng mẫu từ cấu hình prompt
     const enhancedPrompt = prompts.web.searchEnhancedPrompt
       .replace('${originalPromptText}', originalPrompt)
       .replace('${searchResultsText}', resultsText);
@@ -335,43 +334,17 @@ class NeuralNetworks {
       // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
       const userId = message?.author?.id || 'default-user';
 
-      // Kiểm tra xem prompt có chứa nội dung liên quan đến anime/manga không
-      if (this.containsAnimeRelatedContent(prompt)) {
-        logger.info('NEURAL', 'Phát hiện nội dung liên quan đến anime/manga');
-        return await this.processAnimeRelatedRequest(prompt, message);
-      }
-
-      // Kiểm tra xem prompt có phải là lệnh liên quan đến MyAnimeList không
-      const malRegex = /(^|\s)(anime|manga|mal|myanimelist|อนิเมะ|อนิเมะ|アニメ|漫画|애니메이션|만화)([\s:]+|\s+về\s+|\s+info\s+|\s+thông tin\s+|\s+chi tiết\s+|\s+tìm\s+|\s+kiếm\s+|\s+search\s+|\s+season\s+|\s+mùa\s+|\s+xếp hạng\s+|\s+ranking\s+|\s+top\s+|\s+bxh\s+)(.+)/i;
-      const malMatch = prompt.match(malRegex);
-
-      if (malMatch) {
-        logger.info('NEURAL', 'Phát hiện lệnh liên quan đến MyAnimeList');
-        return await this.handleMyAnimeListRequest(malMatch[2].toLowerCase(), malMatch[4], message);
-      }
-
       // Kiểm tra xem lời nhắc có phải là lệnh tạo hình ảnh không (với hỗ trợ lệnh tiếng Việt mở rộng)
       const imageCommandRegex = /^(vẽ|tạo hình|vẽ hình|hình|tạo ảnh ai|tạo ảnh)\s+(.+)$/i;
       const imageMatch = prompt.match(imageCommandRegex);
 
       if (imageMatch) {
-        // Trích xuất mô tả hình ảnh (bây giờ trong nhóm 2)
         const imagePrompt = imageMatch[2];
         const commandUsed = imageMatch[1];
         logger.info('NEURAL', `Phát hiện lệnh tạo hình ảnh "${commandUsed}". Prompt: ${imagePrompt}`);
 
-        // Nếu có message object (từ Discord), sử dụng messageHandler
-        if (message) {
-          // Truyền hàm generateImage được bind với this
-          return await messageHandler.handleDiscordImageGeneration(
-            message,
-            imagePrompt,
-            this.generateImage.bind(this)
-          );
-        }
-
-        // Nếu không, tạo hình ảnh và trả về URL như thông thường
-        return await this.generateImage(imagePrompt);
+        // Chuyển hướng người dùng sang sử dụng lệnh /image
+        return `Để tạo hình ảnh, vui lòng sử dụng lệnh /image với nội dung bạn muốn tạo. Ví dụ:\n/image ${imagePrompt}`;
       }
 
       // Kiểm tra xem có phải là lệnh yêu cầu phân tích ký ức không
@@ -413,10 +386,10 @@ class NeuralNetworks {
       // Xác định xem có phải là cuộc trò chuyện mới hay không
       const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
 
-      // Add specific instructions about response style, with guidance about greetings
+      // Thêm hướng dẫn cụ thể về phong cách phản hồi
       let enhancedPrompt = prompts.chat.responseStyle;
 
-      // Add instructions not to send greetings if in an existing conversation
+      // Không gửi lời chào nếu đang trong cuộc trò chuyện tiếp tục
       if (!isNewConversation) {
         enhancedPrompt += prompts.chat.ongoingConversation;
       } else {
@@ -465,218 +438,6 @@ class NeuralNetworks {
   }
 
   /**
-   * Kiểm tra xem nội dung có liên quan đến anime/manga không
-   * @param {string} prompt - Nội dung tin nhắn
-   * @returns {boolean} - true nếu nội dung liên quan đến anime/manga
-   */
-  containsAnimeRelatedContent(prompt) {
-    // Các từ khóa phổ biến liên quan đến anime/manga
-    const animeKeywords = [
-      // Các thuật ngữ cơ bản
-      /\b(anime|manga|light novel|webtoon|manhwa|manhua)\b/i,
-      
-      // Các thuật ngữ tiếng Việt
-      /\b(truyện tranh nhật|hoạt hình nhật|phim hoạt hình nhật bản)\b/i,
-      
-      // Studio và nhà xuất bản phổ biến
-      /\b(studio ghibli|kyoto animation|toei animation|shaft|bones|madhouse|ufotable|mappa|a-1 pictures|wit studio|shueisha|viz media)\b/i,
-      
-      // Thể loại anime phổ biến
-      /\b(isekai|shonen|shounen|shoujo|shojo|seinen|josei|mecha|slice of life|harem|romcom)\b/i,
-      
-      // Các dịch vụ streaming anime
-      /\b(crunchyroll|funimation|animelab|wakanim|netflix anime|hulu anime|myanimelist)\b/i,
-      
-      // Các sự kiện và thuật ngữ anime
-      /\b(cosplay|anime convention|anime expo|otaku|weeb|waifu|husbando|senpai|kohai|chan|kun|san|sama)\b/i,
-      
-      // Các anime nổi tiếng
-      /\b(naruto|one piece|bleach|dragon ball|attack on titan|demon slayer|kimetsu no yaiba|my hero academia|full metal alchemist|death note|sword art online|hunter x hunter|jojo|evangelion|sailor moon|detective conan)\b/i
-    ];
-
-    // Kiểm tra từng biểu thức chính quy
-    for (const regex of animeKeywords) {
-      if (regex.test(prompt)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Xử lý yêu cầu liên quan đến anime/manga
-   * @param {string} prompt - Nội dung tin nhắn
-   * @param {object} message - Đối tượng tin nhắn Discord (nếu có)
-   * @returns {Promise<string|Object>} - Phản hồi
-   */
-  async processAnimeRelatedRequest(prompt, message) {
-    try {
-      // Extract userId from message or use default
-      const userId = message?.author?.id || 'default-user';
-      
-      // Use the anime analysis prompt from the prompts configuration
-      const analysisPrompt = prompts.anime.analysisPrompt.replace('${promptText}', prompt);
-      
-      // Sử dụng CoreModel để phân tích yêu cầu nếu các regex trên không phát hiện được
-      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      
-      try {
-        const response = await axiosInstance.post('/v1/chat/completions', {
-          model: this.thinkingModel,
-          max_tokens: 500,
-          messages: [
-            {
-              role: 'system',
-              content: prompts.system.malAnalysis
-            },
-            {
-              role: 'user',
-              content: analysisPrompt
-            }
-          ]
-        });
-        
-        const content = response.data.choices[0].message.content;
-        
-        // Trích xuất JSON từ phản hồi
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*}/);
-        
-        if (jsonMatch) {
-          try {
-            const jsonString = jsonMatch[1] || jsonMatch[0];
-            const parsedResult = JSON.parse(jsonString);
-            
-            logger.info('NEURAL', `Kết quả phân tích JSON: ${JSON.stringify(parsedResult)}`);
-            
-            // Nếu là yêu cầu liên quan đến anime
-            if (parsedResult.isAnimeRequest) {
-              logger.info('NEURAL', `Phát hiện yêu cầu anime: ${JSON.stringify(parsedResult)}`);
-              
-              // Xử lý theo loại yêu cầu
-              switch (parsedResult.requestType) {
-                case 'search':
-                  return await this.handleMALSearch({
-                    dataType: parsedResult.dataType,
-                    searchTerm: parsedResult.searchTerm,
-                    additionalInfo: parsedResult.additionalInfo
-                  }, message);
-                case 'details':
-                  return await this.handleMALDetails({
-                    dataType: parsedResult.dataType,
-                    searchTerm: parsedResult.searchTerm,
-                    additionalInfo: parsedResult.additionalInfo
-                  }, message);
-                case 'ranking':
-                  return await this.handleMALRanking({
-                    dataType: parsedResult.dataType,
-                    searchTerm: '',
-                    additionalInfo: parsedResult.additionalInfo
-                  }, message);
-                case 'seasonal':
-                  return await this.handleMALSeasonal({
-                    dataType: 'anime',
-                    searchTerm: '',
-                    additionalInfo: parsedResult.additionalInfo
-                  }, message);
-                default:
-                  // Xử lý thông minh khi không rõ loại yêu cầu
-                  if (parsedResult.searchTerm) {
-                    // Nếu có searchTerm, mặc định là tìm kiếm
-                    return await this.handleMALSearch({
-                      dataType: parsedResult.dataType || 'anime',
-                      searchTerm: parsedResult.searchTerm,
-                      additionalInfo: {}
-                    }, message);
-                  } else {
-                    // Nếu không có searchTerm, mặc định là ranking
-                    return await this.handleMALRanking({
-                      dataType: parsedResult.dataType || 'anime',
-                      searchTerm: '',
-                      additionalInfo: {
-                        rankingType: 'all'
-                      }
-                    }, message);
-                  }
-              }
-            }
-          } catch (parseError) {
-            logger.error('NEURAL', 'Lỗi khi phân tích JSON:', parseError.message);
-          }
-        }
-      } catch (apiError) {
-        logger.error('NEURAL', 'Lỗi khi gọi API phân tích:', apiError.message);
-      }
-      
-      // Continue with the rest of the function...
-      // (Keep the rest of the implementation since it handles fallbacks and other logic)
-      
-      // Process with the regular chat completion flow
-      return this.processNormalChatCompletion(enhancedPromptWithMemory, userId, message, searchResults);
-    } catch (error) {
-      logger.error('NEURAL', 'Lỗi khi xử lý yêu cầu liên quan đến anime:', error.message);
-      return this.processNormalChatCompletion(prompt, userId, message, []);
-    }
-  }
-
-  /**
-   * Kiểm tra từ khóa anime trong prompt (dùng cho phân tích thủ công)
-   * @param {string} prompt - Nội dung tin nhắn
-   * @returns {boolean} - true nếu chứa từ khóa anime
-   */
-  containsAnimeKeywords(prompt) {
-    const loweredPrompt = prompt.toLowerCase();
-    const animeTerms = [
-      'anime', 'manga', 'myanimelist', 'mal', 
-      'top anime', 'bxh anime', 'xếp hạng anime',
-      'top manga', 'bxh manga', 'xếp hạng manga',
-      'anime movie', 'anime series', 'anime tv', 'ova', 
-      'phim hoạt hình nhật bản', 'light novel',
-      'seasonal anime', 'anime season', 'anime mùa',
-      'phim anime', 'phim hoạt hình', 'otaku',
-      'ranking anime', 'anime ranking', 'anime hay nhất',
-      'anime mới', 'manga mới', 'upcoming anime'
-    ];
-    
-    // Kiểm tra các tên anime/manga phổ biến
-    const popularTitles = [
-      'naruto', 'one piece', 'bleach', 'dragon ball', 
-      'attack on titan', 'shingeki no kyojin', 
-      'my hero academia', 'boku no hero', 
-      'demon slayer', 'kimetsu no yaiba',
-      'jujutsu kaisen', 'fullmetal alchemist',
-      'death note', 'tokyo ghoul', 'hunter x hunter',
-      'sword art online', 'steins gate', 'gintama',
-      'spy x family', 'chainsaw man', 'aot', 'bnha'
-    ];
-    
-    return animeTerms.some(term => loweredPrompt.includes(term)) || 
-           popularTitles.some(title => loweredPrompt.includes(title));
-  }
-
-  /**
-   * Trích xuất từ khóa tìm kiếm anime từ prompt
-   * @param {string} prompt - Nội dung tin nhắn
-   * @returns {string} - Từ khóa tìm kiếm
-   */
-  extractAnimeSearchTerm(prompt) {
-    // Loại bỏ các từ khóa thông dụng để lấy phần còn lại làm từ khóa tìm kiếm
-    let searchTerm = prompt.replace(/(anime|manga|mal|myanimelist|top|bxh|xếp hạng|năm|2025|2024|search|tìm|kiếm)/gi, '').trim();
-    
-    // Nếu chỉ còn ít từ hoặc không còn gì, trả về mặc định
-    if (searchTerm.length < 3) {
-      // Nếu có "top" hoặc "xếp hạng", có thể là yêu cầu về top anime
-      if (prompt.toLowerCase().includes('top') || prompt.toLowerCase().includes('xếp hạng') || prompt.toLowerCase().includes('bxh')) {
-        return ''; // Để trống để xử lý như yêu cầu ranking
-      }
-      // Mặc định tìm kiếm với từ khóa là toàn bộ prompt
-      return prompt;
-    }
-    
-    return searchTerm;
-  }
-
-  /**
    * Xử lý hoàn thành chat thông thường (tách từ phương thức getCompletion)
    * @param {string} enhancedPrompt - Prompt đã được cải thiện
    * @param {string} userId - ID người dùng
@@ -695,10 +456,10 @@ class NeuralNetworks {
       // Xác định xem có phải là cuộc trò chuyện mới hay không
       const isNewConversation = conversationHistory.length <= 2; // Chỉ có system prompt và tin nhắn hiện tại
 
-      // Add specific instructions about response style, with guidance about greetings
+      // Thêm hướng dẫn cụ thể về phong cách phản hồi
       let promptWithInstructions = prompts.chat.responseStyle;
 
-      // Add instructions based on conversation state
+      // Thêm hướng dẫn dựa trên trạng thái cuộc trò chuyện
       if (!isNewConversation) {
         promptWithInstructions += prompts.chat.ongoingConversation;
       } else {
@@ -1185,7 +946,7 @@ class NeuralNetworks {
       const userId = message?.author?.id || 'default-user';
       console.log(`Đang gửi yêu cầu thinking mode đến ${this.CoreModel}...`);
 
-      // Create a special prompt asking the model to show its thinking process
+      // Tạo prompt đặc biệt yêu cầu mô hình hiển thị quá trình suy nghĩ
       const thinkingPrompt = prompts.chat.thinking.replace('${promptText}', prompt);
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -1415,479 +1176,6 @@ class NeuralNetworks {
    */
   getModelName() {
     return this.Model;
-  }
-
-  /**
-   * Xử lý các yêu cầu liên quan đến MyAnimeList
-   * @param {string} command - Loại lệnh (anime, manga, mal)
-   * @param {string} query - Truy vấn của người dùng
-   * @param {object} message - Đối tượng tin nhắn Discord (nếu có)
-   * @returns {Promise<string|Object>} - Phản hồi hoặc embed
-   */
-  async handleMyAnimeListRequest(command, query, message) {
-    try {
-      logger.info('NEURAL', `Đang xử lý yêu cầu MyAnimeList: ${command} ${query}`);
-
-      // Use the MAL request analysis prompt from the prompts configuration
-      const analysisPrompt = prompts.anime.malRequestAnalysis
-        .replace('${commandText}', command)
-        .replace('${queryText}', query);
-
-      // Sử dụng Axios với cấu hình bảo mật
-      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-
-      // Gửi yêu cầu phân tích đến CoreModel
-      const response = await axiosInstance.post('/v1/chat/completions', {
-        model: this.thinkingModel, // Sử dụng thinking model để phân tích nhanh
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'system',
-            content: prompts.system.malAnalysis
-          },
-          {
-            role: 'user',
-            content: analysisPrompt
-          }
-        ]
-      });
-
-      // Lấy kết quả phân tích
-      const content = response.data.choices[0].message.content;
-      
-      // Trích xuất JSON từ phản hồi
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*}/);
-      let parsedRequest;
-      
-      if (jsonMatch) {
-        try {
-          // Cố gắng phân tích cú pháp JSON từ kết quả trả về
-          const jsonString = jsonMatch[1] || jsonMatch[0];
-          parsedRequest = JSON.parse(jsonString);
-        } catch (parseError) {
-          logger.error('NEURAL', 'Lỗi khi phân tích cú pháp JSON:', parseError.message);
-          return 'Mình không thể hiểu yêu cầu tìm kiếm của bạn. Vui lòng thử lại với cú pháp khác.';
-        }
-      } else {
-        // Nếu không trích xuất được JSON, sử dụng phân tích đơn giản
-        logger.warn('NEURAL', 'Không thể trích xuất JSON từ phản hồi, chuyển sang phân tích đơn giản');
-        parsedRequest = this.simpleMALRequestAnalysis(command, query);
-      }
-
-      logger.info('NEURAL', `Kết quả phân tích yêu cầu: ${JSON.stringify(parsedRequest)}`);
-
-      // Xử lý yêu cầu dựa trên phân tích
-      switch (parsedRequest.requestType) {
-        case 'search':
-          return await this.handleMALSearch(parsedRequest, message);
-        case 'details':
-          return await this.handleMALDetails(parsedRequest, message);
-        case 'ranking':
-          return await this.handleMALRanking(parsedRequest, message);
-        case 'seasonal':
-          return await this.handleMALSeasonal(parsedRequest, message);
-        default:
-          return 'Mình không hiểu yêu cầu của bạn. Vui lòng thử lại với từ khóa cụ thể hơn.';
-      }
-    } catch (error) {
-      logger.error('NEURAL', 'Lỗi khi xử lý yêu cầu MyAnimeList:', error.message);
-      return 'Xin lỗi, mình gặp lỗi khi xử lý yêu cầu MyAnimeList của bạn. Vui lòng thử lại sau.';
-    }
-  }
-
-  /**
-   * Phân tích đơn giản yêu cầu MyAnimeList khi không thể sử dụng CoreModel
-   * @param {string} command - Loại lệnh (anime, manga, mal)
-   * @param {string} query - Truy vấn của người dùng
-   * @returns {Object} - Kết quả phân tích
-   */
-  simpleMALRequestAnalysis(command, query) {
-    // Xử lý query để loại bỏ các từ thừa
-    query = query.trim();
-    // Loại bỏ các từ không cần thiết ở đầu query
-    query = query.replace(/^(về|thông tin về|chi tiết về|tìm|kiếm|search|info|details|information about)\s+/i, '');
-
-    // Kiểm tra xem có phải là yêu cầu xem chi tiết hay không (theo ID hoặc từ khóa "info")
-    const detailsRegex = /^(details|info|thông tin|chi tiết|id)[:\s]+(\d+)$/i;
-    const detailsMatch = query.match(detailsRegex);
-    
-    // Kiểm tra xem có phải là yêu cầu xem bảng xếp hạng hay không
-    const rankingRegex = /^(ranking|rank|xếp hạng|bxh|top)[:\s]*(all|airing|upcoming|tv|ova|movie|special|bypopularity|favorite|manga|novels|oneshots|doujin|manhwa|manhua)?$/i;
-    const rankingMatch = query.match(rankingRegex);
-    
-    // Kiểm tra xem có phải là yêu cầu xem anime theo mùa hay không
-    const seasonalRegex = /^(season|seasonal|mùa)[:\s]+(\d{4})[:\s]+(winter|spring|summer|fall|đông|xuân|hạ|thu)$/i;
-    const seasonalMatch = query.match(seasonalRegex);
-    
-    if (detailsMatch) {
-      return {
-        requestType: 'details',
-        dataType: command === 'manga' ? 'manga' : 'anime',
-        searchTerm: detailsMatch[2],
-        additionalInfo: {}
-      };
-    } else if (rankingMatch) {
-      let rankingType = rankingMatch[2]?.toLowerCase() || 'all';
-      
-      return {
-        requestType: 'ranking',
-        dataType: command === 'manga' ? 'manga' : 'anime',
-        searchTerm: '',
-        additionalInfo: {
-          rankingType: rankingType
-        }
-      };
-    } else if (seasonalMatch) {
-      let season = seasonalMatch[3].toLowerCase();
-      // Chuyển đổi tên mùa tiếng Việt sang tiếng Anh
-      if (season === 'đông') season = 'winter';
-      else if (season === 'xuân') season = 'spring';
-      else if (season === 'hạ') season = 'summer';
-      else if (season === 'thu') season = 'fall';
-      
-      return {
-        requestType: 'seasonal',
-        dataType: 'anime',
-        searchTerm: '',
-        additionalInfo: {
-          year: seasonalMatch[2],
-          season: season
-        }
-      };
-    } else {
-      // Mặc định là tìm kiếm
-      return {
-        requestType: 'search',
-        dataType: command === 'manga' ? 'manga' : 'anime',
-        searchTerm: query,
-        additionalInfo: {}
-      };
-    }
-  }
-
-  /**
-   * Xử lý tìm kiếm anime/manga
-   * @param {Object} request - Yêu cầu đã phân tích
-   * @param {Object} message - Đối tượng tin nhắn Discord (nếu có)
-   * @returns {Promise<string|Object>} - Phản hồi hoặc embed
-   */
-  async handleMALSearch(request, message) {
-    try {
-      if (request.dataType === 'manga') {
-        const results = await malAPI.searchManga(request.searchTerm);
-        if (results.length === 0) {
-          return `Mình không tìm thấy manga nào với từ khóa "${request.searchTerm}".`;
-        }
-        
-        if (message) {
-          // Trả về embed nếu là từ Discord
-          return malAPI.createMangaSearchEmbed(results, request.searchTerm);
-        } else {
-          // Trả về văn bản nếu không phải từ Discord
-          let response = `🔍 Kết quả tìm kiếm manga cho "${request.searchTerm}":\n\n`;
-          results.slice(0, 5).forEach((item, index) => {
-            const manga = item.node;
-            response += `${index + 1}. ${manga.title}\n`;
-            if (manga.mean) response += `   ⭐ Điểm: ${manga.mean}/10\n`;
-            if (manga.num_volumes) response += `   📚 Tập: ${manga.num_volumes}\n`;
-            response += `   🔗 https://myanimelist.net/manga/${manga.id}\n\n`;
-          });
-          return response;
-        }
-      } else {
-        const results = await malAPI.searchAnime(request.searchTerm);
-        if (results.length === 0) {
-          return `Mình không tìm thấy anime nào với từ khóa "${request.searchTerm}".`;
-        }
-        
-        if (message) {
-          // Trả về embed nếu là từ Discord
-          return malAPI.createAnimeSearchEmbed(results, request.searchTerm);
-        } else {
-          // Trả về văn bản nếu không phải từ Discord
-          let response = `🔍 Kết quả tìm kiếm anime cho "${request.searchTerm}":\n\n`;
-          results.slice(0, 5).forEach((item, index) => {
-            const anime = item.node;
-            response += `${index + 1}. ${anime.title}\n`;
-            if (anime.mean) response += `   ⭐ Điểm: ${anime.mean}/10\n`;
-            if (anime.num_episodes) response += `   🎬 Tập: ${anime.num_episodes}\n`;
-            response += `   🔗 https://myanimelist.net/anime/${anime.id}\n\n`;
-          });
-          return response;
-        }
-      }
-    } catch (error) {
-      logger.error('NEURAL', 'Lỗi khi tìm kiếm anime/manga:', error.message);
-      return 'Xin lỗi, mình gặp lỗi khi tìm kiếm. Vui lòng thử lại sau.';
-    }
-  }
-
-  /**
-   * Xử lý lấy thông tin chi tiết anime/manga
-   * @param {Object} request - Yêu cầu đã phân tích
-   * @param {Object} message - Đối tượng tin nhắn Discord (nếu có)
-   * @returns {Promise<string|Object>} - Phản hồi hoặc embed
-   */
-  async handleMALDetails(request, message) {
-    try {
-      if (request.dataType === 'manga') {
-        const manga = await malAPI.getMangaDetails(request.searchTerm);
-        if (!manga) {
-          return `Mình không tìm thấy thông tin chi tiết của manga với ID ${request.searchTerm}.`;
-        }
-        
-        if (message) {
-          // Trả về embed nếu là từ Discord
-          return malAPI.createMangaDetailEmbed(manga);
-        } else {
-          // Trả về văn bản nếu không phải từ Discord
-          let status = 'N/A';
-          switch (manga.status) {
-            case 'finished': status = 'Đã hoàn thành'; break;
-            case 'currently_publishing': status = 'Đang xuất bản'; break;
-            case 'not_yet_published': status = 'Chưa xuất bản'; break;
-          }
-          
-          let response = `📚 ${manga.title}\n\n`;
-          response += manga.synopsis ? `${manga.synopsis.substring(0, 300)}${manga.synopsis.length > 300 ? '...' : ''}\n\n` : '';
-          response += `⭐ Điểm: ${manga.mean || 'N/A'}/10\n`;
-          response += `📚 Tập: ${manga.num_volumes || 'N/A'}\n`;
-          response += `📑 Chương: ${manga.num_chapters || 'N/A'}\n`;
-          response += `📅 Trạng thái: ${status}\n`;
-          
-          if (manga.genres && manga.genres.length > 0) {
-            response += `🏷️ Thể loại: ${manga.genres.map(g => g.name).join(', ')}\n`;
-          }
-          
-          response += `🔗 https://myanimelist.net/manga/${manga.id}`;
-          return response;
-        }
-      } else {
-        const anime = await malAPI.getAnimeDetails(request.searchTerm);
-        if (!anime) {
-          return `Mình không tìm thấy thông tin chi tiết của anime với ID ${request.searchTerm}.`;
-        }
-        
-        if (message) {
-          // Trả về embed nếu là từ Discord
-          return malAPI.createAnimeDetailEmbed(anime);
-        } else {
-          // Trả về văn bản nếu không phải từ Discord
-          let status = 'N/A';
-          switch (anime.status) {
-            case 'finished_airing': status = 'Đã hoàn thành'; break;
-            case 'currently_airing': status = 'Đang phát sóng'; break;
-            case 'not_yet_aired': status = 'Chưa phát sóng'; break;
-          }
-          
-          let response = `📺 ${anime.title}\n\n`;
-          response += anime.synopsis ? `${anime.synopsis.substring(0, 300)}${anime.synopsis.length > 300 ? '...' : ''}\n\n` : '';
-          response += `⭐ Điểm: ${anime.mean || 'N/A'}/10\n`;
-          response += `🎬 Số tập: ${anime.num_episodes || 'N/A'}\n`;
-          response += `📅 Trạng thái: ${status}\n`;
-          
-          if (anime.genres && anime.genres.length > 0) {
-            response += `🏷️ Thể loại: ${anime.genres.map(g => g.name).join(', ')}\n`;
-          }
-          
-          if (anime.studios && anime.studios.length > 0) {
-            response += `🏢 Studio: ${anime.studios.map(s => s.name).join(', ')}\n`;
-          }
-          
-          response += `🔗 https://myanimelist.net/anime/${anime.id}`;
-          return response;
-        }
-      }
-    } catch (error) {
-      logger.error('NEURAL', 'Lỗi khi lấy thông tin chi tiết anime/manga:', error.message);
-      return 'Xin lỗi, mình gặp lỗi khi lấy thông tin chi tiết. Vui lòng thử lại sau.';
-    }
-  }
-
-  /**
-   * Xử lý lấy bảng xếp hạng anime/manga
-   * @param {Object} request - Yêu cầu đã phân tích
-   * @param {Object} message - Đối tượng tin nhắn Discord (nếu có)
-   * @returns {Promise<string|Object>} - Phản hồi hoặc embed
-   */
-  async handleMALRanking(request, message) {
-    try {
-      const rankingType = request.additionalInfo?.rankingType || 'all';
-      
-      if (request.dataType === 'manga') {
-        const results = await malAPI.getMangaRanking(rankingType);
-        if (results.length === 0) {
-          return `Mình không thể lấy bảng xếp hạng manga loại "${rankingType}".`;
-        }
-        
-        if (message) {
-          // Trả về embed nếu là từ Discord
-          return malAPI.createMangaRankingEmbed(results, rankingType);
-        } else {
-          // Trả về văn bản nếu không phải từ Discord
-          let response = `📊 Top Manga - ${rankingType}\n\n`;
-          results.slice(0, 5).forEach((item, index) => {
-            if (!item || !item.node) {
-              logger.warn('NEURAL', `Phần tử manga không hợp lệ ở vị trí ${index}`);
-              return;
-            }
-            const manga = item.node;
-            const ranking = item.ranking || (index + 1);
-            const title = manga.title || "Không có tiêu đề";
-            response += `${ranking}. ${title}\n`;
-            if (manga.mean) response += `   ⭐ Điểm: ${manga.mean}/10\n`;
-            if (manga.id) response += `   🔗 https://myanimelist.net/manga/${manga.id}\n\n`;
-          });
-          return response;
-        }
-      } else {
-        const results = await malAPI.getAnimeRanking(rankingType);
-        if (results.length === 0) {
-          return `Mình không thể lấy bảng xếp hạng anime loại "${rankingType}".`;
-        }
-        
-        // Log để debug kỹ hơn về cấu trúc dữ liệu
-        logger.info('NEURAL', `Đã nhận ${results.length} kết quả ranking anime`);
-        if (results.length > 0) {
-          logger.info('NEURAL', `Cấu trúc mẫu: ${JSON.stringify(results[0])}`);
-        }
-        
-        if (message) {
-          // Trả về embed nếu là từ Discord
-          return malAPI.createAnimeRankingEmbed(results, rankingType);
-        } else {
-          // Trả về văn bản nếu không phải từ Discord
-          let response = `📊 Top Anime - ${rankingType}\n\n`;
-          results.slice(0, 5).forEach((item, index) => {
-            if (!item || !item.node) {
-              logger.warn('NEURAL', `Phần tử không hợp lệ ở vị trí ${index}: ${JSON.stringify(item)}`);
-              return;
-            }
-            
-            // Kiểm tra cấu trúc đối tượng và truy cập an toàn
-            const anime = item.node;
-            const ranking = item.ranking || (index + 1);
-            
-            // Truy cập an toàn thuộc tính title
-            const title = anime.title || "Không có tiêu đề";
-            
-            response += `${ranking}. ${title}\n`;
-            if (anime.mean) response += `   ⭐ Điểm: ${anime.mean}/10\n`;
-            if (anime.id) {
-              response += `   🔗 https://myanimelist.net/anime/${anime.id}\n\n`;
-            } else {
-              response += `\n`;
-            }
-          });
-          return response;
-        }
-      }
-    } catch (error) {
-      logger.error('NEURAL', `Lỗi khi lấy bảng xếp hạng anime/manga: ${error.message}`);
-      logger.error('NEURAL', `Stack trace: ${error.stack}`);
-      return 'Xin lỗi, mình gặp lỗi khi lấy bảng xếp hạng. Vui lòng thử lại sau.';
-    }
-  }
-
-  /**
-   * Xử lý lấy anime theo mùa
-   * @param {Object} request - Yêu cầu đã phân tích
-   * @param {Object} message - Đối tượng tin nhắn Discord (nếu có)
-   * @returns {Promise<string|Object>} - Phản hồi hoặc embed
-   */
-  async handleMALSeasonal(request, message) {
-    try {
-      const year = request.additionalInfo.year;
-      const season = request.additionalInfo.season;
-      
-      const results = await malAPI.getSeasonalAnime(year, season);
-      if (results.length === 0) {
-        return `Mình không thể lấy danh sách anime mùa ${season} năm ${year}.`;
-      }
-      
-      if (message) {
-        // Chuyển đổi tên mùa sang tiếng Việt
-        let seasonVi = '';
-        switch (season) {
-          case 'winter': seasonVi = 'Đông'; break;
-          case 'spring': seasonVi = 'Xuân'; break;
-          case 'summer': seasonVi = 'Hạ'; break;
-          case 'fall': seasonVi = 'Thu'; break;
-          default: seasonVi = season; break;
-        }
-        
-        // Tạo embed tùy chỉnh cho mùa
-        const embed = {
-          color: 0x2E51A2,
-          title: `Anime mùa ${seasonVi} ${year}`,
-          footer: {
-            text: 'Powered by MyAnimeList API'
-          },
-          timestamp: new Date(),
-          fields: []
-        };
-        
-        if (results[0].node.main_picture) {
-          embed.thumbnail = { url: results[0].node.main_picture.medium };
-        }
-        
-        results.slice(0, 10).forEach((item, index) => {
-          const anime = item.node;
-          
-          let info = '';
-          if (anime.mean) info += `⭐ Điểm: ${anime.mean}/10\n`;
-          if (anime.num_episodes) info += `🎬 Tập: ${anime.num_episodes}\n`;
-          
-          if (anime.genres && anime.genres.length > 0) {
-            const genreList = anime.genres.map(g => g.name).slice(0, 3).join(', ');
-            info += `🏷️ Thể loại: ${genreList}\n`;
-          }
-          
-          if (anime.studios && anime.studios.length > 0) {
-            info += `🏢 Studio: ${anime.studios[0].name}`;
-          }
-          
-          embed.fields.push({
-            name: `${index + 1}. ${anime.title}`,
-            value: info || 'Không có thông tin bổ sung.',
-            inline: false
-          });
-        });
-        
-        if (results.length > 10) {
-          embed.fields.push({
-            name: 'Và nhiều hơn nữa...',
-            value: `Tìm thấy tổng cộng ${results.length} kết quả.`,
-            inline: false
-          });
-        }
-        
-        return embed;
-      } else {
-        // Trả về văn bản nếu không phải từ Discord
-        let seasonVi = '';
-        switch (season) {
-          case 'winter': seasonVi = 'Đông'; break;
-          case 'spring': seasonVi = 'Xuân'; break;
-          case 'summer': seasonVi = 'Hạ'; break;
-          case 'fall': seasonVi = 'Thu'; break;
-          default: seasonVi = season; break;
-        }
-        
-        let response = `🗓️ Anime mùa ${seasonVi} ${year}\n\n`;
-        results.slice(0, 5).forEach((item, index) => {
-          const anime = item.node;
-          response += `${index + 1}. ${anime.title}\n`;
-          if (anime.mean) response += `   ⭐ Điểm: ${anime.mean}/10\n`;
-          if (anime.num_episodes) response += `   🎬 Tập: ${anime.num_episodes}\n`;
-          response += `   🔗 https://myanimelist.net/anime/${anime.id}\n\n`;
-        });
-        return response;
-      }
-    } catch (error) {
-      logger.error('NEURAL', 'Lỗi khi lấy anime theo mùa:', error.message);
-      return 'Xin lỗi, mình gặp lỗi khi lấy anime theo mùa. Vui lòng thử lại sau.';
-    }
   }
 }
 
