@@ -534,12 +534,24 @@ class NeuralNetworks {
     // Các từ khóa hỏi về kiến thức của bot
     const knowledgeCheckKeywords = /(bạn có biết|bạn biết|bạn có hiểu|bạn hiểu|bạn có rõ|bạn rõ|do you know|you know|do you understand|you understand|are you familiar with)/i;
 
+    // Các từ khóa liên quan đến anime/manga
+    const animeKeywords = /(anime|manga|manhua|manhwa|hoạt hình|phim hoạt hình|webtoon|light novel|visual novel|doujinshi|otaku|cosplay|mangaka|seiyuu|studio|season|tập|chapter|volume|arc|raw|scan|fansub|vietsub|raw|scanlation)/i;
+
+    // Các từ khóa về thể loại anime/manga
+    const genreKeywords = /(shounen|shoujo|seinen|josei|mecha|isekai|slice of life|harem|reverse harem|romance|action|adventure|fantasy|sci-fi|horror|comedy|drama|psychological|mystery|supernatural|magical girl|sports|school life)/i;
+
+    // Các từ khóa về studio và nhà sản xuất
+    const studioKeywords = /(ghibli|kyoto animation|shaft|madhouse|bones|ufotable|a-1 pictures|wit studio|mappa|trigger|toei animation|pierrot|production i\.g|sunrise|gainax|hoạt hình 3d|cgi animation|3d animation)/i;
+
     // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
     if (opinionKeywords.test(prompt)) return false;
 
     // Kiểm tra mức độ ưu tiên tìm kiếm
-    if (urgentInfoKeywords.test(prompt)) return true; // Ưu tiên cao nhất
-    if (knowledgeCheckKeywords.test(prompt)) return true; // Ưu tiên tìm kiếm khi hỏi về kiến thức
+    if (urgentInfoKeywords.test(prompt)) return true;
+    if (knowledgeCheckKeywords.test(prompt)) return true;
+    if (animeKeywords.test(prompt)) return true;
+    if (genreKeywords.test(prompt)) return true;
+    if (studioKeywords.test(prompt)) return true;
     return informationKeywords.test(prompt) || detailKeywords.test(prompt) || factsKeywords.test(prompt);
   }
 
