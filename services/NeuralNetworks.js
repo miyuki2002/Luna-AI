@@ -1150,7 +1150,23 @@ class NeuralNetworks {
       });
 
       console.log('Đã nhận hình ảnh từ API');
-      return response.data.data[0].url;
+      
+      // Lấy URL hình ảnh từ response
+      const imageUrl = response.data.data[0].url;
+      
+      // Tải hình ảnh từ URL
+      const imageResponse = await this.createSecureAxiosInstance().get(imageUrl, { 
+        responseType: 'arraybuffer' 
+      });
+      
+      // Tạo buffer từ dữ liệu hình ảnh
+      const imageBuffer = Buffer.from(imageResponse.data);
+      
+      // Trả về cả buffer và URL của hình ảnh
+      return {
+        buffer: imageBuffer,
+        url: imageUrl
+      };
     } catch (error) {
       console.error('Lỗi khi tạo hình ảnh:', error.message);
       if (error.response) {

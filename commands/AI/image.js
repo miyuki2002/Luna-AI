@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const NeuralNetworks = require('../../services/NeuralNetworks');
 const logger = require('../../utils/logger.js');
 
@@ -17,19 +17,22 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // Call the generateImage function from NeuralNetworks
-      const imageUrl = await NeuralNetworks.generateImage(prompt);
+      const imageResult = await NeuralNetworks.generateImage(prompt);
 
-      // Check if the response is an error message (returned as string) or a valid URL
-      if (imageUrl.startsWith('http')) {
-        await interaction.editReply({
-          content: `🎨 Đây là bức tranh tôi vẽ theo ý tưởng của bạn: "${prompt}"`,
-          files: [imageUrl]
-        });
-      } else {
-        // If not a URL, it's probably an error message
-        await interaction.editReply(`❌ ${imageUrl}`);
+      if (typeof imageResult === 'string') {
+        // Nếu là chuỗi lỗi
+        await interaction.editReply(`❌ ${imageResult}`);
+        return;
       }
+      
+      // Tạo attachment từ buffer
+      const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
+
+      // Gửi ảnh dưới dạng tệp đính kèm
+      await interaction.editReply({
+        content: `🎨 Đây là bức tranh tôi vẽ theo ý tưởng của bạn: "${prompt}"`,
+        files: [attachment]
+      });
     } catch (error) {
       logger.error('COMMAND', 'Lỗi khi tạo hình ảnh:', error);
       await interaction.editReply('Xin lỗi, tôi không thể hoàn thành bức tranh lúc này. Hãy thử lại sau nhé!');
