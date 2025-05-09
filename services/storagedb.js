@@ -13,9 +13,6 @@ class StorageDB {
     // Tuổi thọ tối đa của cuộc trò chuyện (tính bằng mili giây) - 3 giờ
     this.maxConversationAge = 3 * 60 * 60 * 1000;
 
-    // Bỏ việc khởi tạo kết nối MongoDB ở đây để tránh kết nối kép
-    // Việc khởi tạo sẽ được chuyển sang ready.js
-
     // Dọn dẹp cuộc trò chuyện cũ mỗi giờ
     setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
   }
@@ -224,10 +221,10 @@ class StorageDB {
           content: systemPrompt + ` You are running on ${modelName} model.`
         }];
       }
-      
+
       // Chuẩn hóa userId
       const validUserId = userId.trim();
-      
+
       const db = mongoClient.getDb();
 
       // Kiểm tra lịch sử hiện có
@@ -258,11 +255,11 @@ class StorageDB {
           .toArray();
 
         logger.debug('DATABASE', `Đã lấy ${messages.length} tin nhắn từ cơ sở dữ liệu cho userId: ${validUserId}`);
-        
+
         if (messages.length === 0) {
           // Trường hợp cực kỳ hiếm: có bản ghi nhưng không lấy được tin nhắn nào
           logger.warn('DATABASE', `Sự không nhất quán: Phát hiện ${count} tin nhắn nhưng không truy vấn được cho userId: ${validUserId}`);
-          
+
           // Khởi tạo lại với system prompt
           const systemMessage = {
             role: 'system',
@@ -271,12 +268,12 @@ class StorageDB {
           await this.addMessageToConversation(validUserId, systemMessage.role, systemMessage.content);
           return [systemMessage];
         }
-        
+
         return messages;
       }
     } catch (error) {
       logger.error('DATABASE', 'Lỗi khi lấy lịch sử cuộc trò chuyện:', error);
-      
+
       // Fallback nếu có lỗi
       return [{
         role: 'system',
@@ -313,14 +310,14 @@ class StorageDB {
       }
 
       const db = mongoClient.getDb();
-      
+
       // Đảm bảo meta document tồn tại
       await db.collection('conversation_meta').updateOne(
         { userId: validUserId },
         { $set: { lastUpdated: Date.now() } },
         { upsert: true }
       );
-      
+
       // Đếm tin nhắn hiện có để xác định chỉ số mới
       const count = await db.collection('conversations').countDocuments({ userId: validUserId });
 
@@ -333,25 +330,24 @@ class StorageDB {
           content,
           timestamp: Date.now()
         });
-        
-        logger.debug('DATABASE', `Đã thêm tin nhắn (${role}) cho userId: ${validUserId}, messageIndex: ${count}`);
 
+        logger.debug('DATABASE', `Đã thêm tin nhắn (${role}) cho userId: ${validUserId}, messageIndex: ${count}`);
         // Kiểm tra và duy trì độ dài tối đa của cuộc trò chuyện
         await this.trimConversation(validUserId);
-        
+
         return true;
       } catch (insertError) {
         // Xử lý lỗi trùng khóa
         if (insertError.code === 11000) {
           logger.warn('DATABASE', `Phát hiện lỗi trùng lặp khóa cho userId ${validUserId}, đang thử sửa chữa...`);
-          
+
           try {
             // Xóa tin nhắn trùng lặp nếu có
-            await db.collection('conversations').deleteOne({ 
-              userId: validUserId, 
-              messageIndex: count 
+            await db.collection('conversations').deleteOne({
+              userId: validUserId,
+              messageIndex: count
             });
-            
+
             // Thử lại việc thêm tin nhắn
             await db.collection('conversations').insertOne({
               userId: validUserId,
@@ -360,7 +356,7 @@ class StorageDB {
               content,
               timestamp: Date.now()
             });
-            
+
             logger.info('DATABASE', `Đã sửa chữa và thêm thành công tin nhắn cho userId: ${validUserId}`);
             return true;
           } catch (retryError) {
@@ -387,42 +383,39 @@ class StorageDB {
     try {
       const db = mongoClient.getDb();
       const count = await db.collection('conversations').countDocuments({ userId });
-      
+
       // Nếu số lượng tin nhắn vượt quá giới hạn, xóa tin nhắn cũ
       if (count > this.maxConversationLength) {
         // Lấy số tin nhắn cần xóa
         const excessCount = count - this.maxConversationLength;
-        
+
         // Tìm tin nhắn cũ nhất để bảo toàn system prompt
         const oldestMsgs = await db.collection('conversations')
           .find({ userId })
           .sort({ messageIndex: 1 })
-          .limit(excessCount + 1) // +1 để kiểm tra xem tin nhắn đầu tiên có phải là system
+          .limit(excessCount + 1)
           .toArray();
-        
+
         // Đảm bảo luôn giữ lại system prompt nếu có
         let startIndex = 0;
         if (oldestMsgs.length > 0 && oldestMsgs[0].role === 'system') {
-          startIndex = 1; // Bỏ qua system prompt
+          startIndex = 1;
         }
-        
+
         // Lấy ID của các tin nhắn cần xóa
         const messageIndexesToDelete = oldestMsgs
           .slice(startIndex, startIndex + excessCount)
           .map(msg => msg.messageIndex);
-        
+
         if (messageIndexesToDelete.length > 0) {
           // Xóa tin nhắn cũ
           await db.collection('conversations').deleteMany({
             userId,
             messageIndex: { $in: messageIndexesToDelete }
           });
-          
+
           logger.debug('DATABASE', `Đã xóa ${messageIndexesToDelete.length} tin nhắn cũ cho userId: ${userId}`);
-          
-          // Lưu ý: Đây là phương pháp đơn giản để cập nhật, nhưng có thể gây ra sự không nhất quán
-          // với chỉ số không liên tục. Một phương pháp tốt hơn là tạo lại toàn bộ cuộc trò chuyện với chỉ số mới,
-          // nhưng để đơn giản hóa, chúng ta bỏ qua việc cập nhật chỉ số.
+
         }
       }
     } catch (error) {
@@ -447,7 +440,7 @@ class StorageDB {
 
       // Chuẩn hóa userId
       const validUserId = userId.trim();
-      
+
       const db = mongoClient.getDb();
 
       // Xóa toàn bộ lịch sử hiện có
@@ -459,9 +452,9 @@ class StorageDB {
         role: 'system',
         content: systemPrompt + ` You are running on ${modelName} model.`
       };
-      
+
       const success = await this.addMessageToConversation(validUserId, systemMessage.role, systemMessage.content);
-      
+
       if (success) {
         await db.collection('conversation_meta').updateOne(
           { userId: validUserId },
@@ -501,7 +494,7 @@ class StorageDB {
         // Lập danh sách các userId cần xóa
         const userIds = oldUsers.map(user => user.userId);
         logger.info('DATABASE', `Tìm thấy ${oldUsers.length} cuộc trò chuyện cũ cần dọn dẹp`);
-        
+
         // Hiển thị thời gian không hoạt động cho mỗi người dùng trong debug
         oldUsers.forEach(user => {
           const inactiveDuration = Math.round((now - user.lastUpdated) / (1000 * 60 * 60));
@@ -510,7 +503,7 @@ class StorageDB {
 
         // Xóa dữ liệu cuộc trò chuyện
         const deleteResult = await db.collection('conversations').deleteMany({ userId: { $in: userIds } });
-        
+
         // Xóa metadata
         const metaDeleteResult = await db.collection('conversation_meta').deleteMany({ userId: { $in: userIds } });
 
