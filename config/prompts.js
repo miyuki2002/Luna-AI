@@ -9,7 +9,7 @@ const prompts = {
   },
   anime: {
     analysisPrompt: `Phân tích nội dung sau và xác định xem có phải là yêu cầu tìm kiếm thông tin anime/manga không: 
-    "${promptText}"
+    "\${promptText}"
     
     Nếu người dùng đang yêu cầu thông tin về anime hoặc manga cụ thể, hãy trích xuất các thông tin sau:
     1. Loại yêu cầu (tìm kiếm/thông tin chi tiết/xếp hạng/theo mùa)
@@ -32,7 +32,7 @@ const prompts = {
         "season": "winter|spring|summer|fall" 
       }
     }`,
-    malRequestAnalysis: `Phân tích yêu cầu tìm kiếm anime/manga sau: "${commandText} ${queryText}"
+    malRequestAnalysis: `Phân tích yêu cầu tìm kiếm anime/manga sau: "\${commandText} \${queryText}"
     Cần xác định:
     1. Loại yêu cầu (tìm kiếm/thông tin chi tiết/xếp hạng/theo mùa)
     2. Loại dữ liệu (anime/manga)
@@ -58,18 +58,23 @@ const prompts = {
     1. [THINKING] - Your thinking process, analysis, and reasoning
     2. [ANSWER] - Your final answer, clear and concise
 
-    Question: ${promptText}`,
+    Question: \${promptText}`,
     responseStyle: `Reply like a smart, sweet, and charming young woman named Luna. Use gentle, friendly language — nothing too stiff or robotic.`,
     ongoingConversation: ` IMPORTANT: This is an ongoing conversation, DO NOT introduce yourself again or send greetings like "Chào bạn", "Hi", "Hello" or "Mình là Luna". Continue the conversation naturally without reintroducing yourself.`,
     newConversation: ` If it fits the context, feel free to sprinkle in light humor or kind encouragement.`,
     webSearch: ` I've provided you with web search results. Incorporate this information naturally into your response without explicitly listing the sources. Respond in a conversational tone as Luna, not as an information aggregator.`,
     generalInstructions: ` Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going.`
   },
+  code: {
+    prefix: "Hãy giúp tôi giải quyết vấn đề lập trình sau:",
+    suffix: "Vui lòng cung cấp code với đầy đủ comment và giải thích để tôi có thể hiểu rõ. Nếu có nhiều cách làm, ưu tiên cách tốt nhất và dễ bảo trì.",
+    systemAddition: "\nYou are a programming assistant. When providing code examples, make sure they are complete, well-commented, and follow best practices. Always include all necessary imports and setup code. Never provide partial code examples that cannot be executed directly. Always ensure your code correctly addresses the user's requirements."
+  },
   web: {
-    searchEnhancedPrompt: `${originalPromptText}\n\n[SEARCH INFORMATION]\nBelow is relevant information from the web. Use this information when appropriate to supplement your answer, but you don't need to reference all of it:\n\n${searchResultsText}\n\nNaturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.`
+    searchEnhancedPrompt: `\${originalPromptText}\n\n[SEARCH INFORMATION]\nBelow is relevant information from the web. Use this information when appropriate to supplement your answer, but you don't need to reference all of it:\n\n\${searchResultsText}\n\nNaturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.`
   },
   memory: {
-    memoryContext: `[Thông tin từ cuộc trò chuyện trước: ${relevantMessagesText}] `
+    memoryContext: `[Thông tin từ cuộc trò chuyện trước: \${relevantMessagesText}] `
   }
 };
 

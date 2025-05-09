@@ -317,6 +317,9 @@ class NeuralNetworks {
 
   /**
    * Nhận phản hồi trò chuyện từ API
+   * @param {string} prompt - Câu hỏi hoặc yêu cầu của người dùng
+   * @param {Object|null} message - Đối tượng tin nhắn Discord nếu có
+   * @returns {Promise<string>} - Phản hồi từ API
    */
   async getCompletion(prompt, message = null) {
     // Nếu đây là yêu cầu từ chức năng giám sát và không phải từ tin nhắn tag bot, chuyển sang phương thức riêng
@@ -330,9 +333,28 @@ class NeuralNetworks {
     if (message && message.mentions && message.mentions.has(this.client?.user)) {
       logger.debug('NEURAL', 'Xử lý tin nhắn tag bot như tin nhắn trò chuyện bình thường');
     }
+    
     try {
-      // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
-      const userId = message?.author?.id || 'default-user';
+      // Trích xuất và xác thực ID người dùng
+      let userId;
+      
+      if (message?.author?.id) {
+        // Từ tin nhắn Discord
+        userId = message.author.id;
+        // Thêm thông tin kênh để phân biệt DM và guild chat
+        if (message.channel && message.channel.type === 'DM') {
+          userId = `DM-${userId}`; // Cuộc trò chuyện DM
+        } else if (message.guildId) {
+          userId = `${message.guildId}-${userId}`; // Cuộc trò chuyện trong guild
+        }
+      } else {
+        // Từ nguồn khác hoặc không xác định được
+        userId = 'anonymous-user';
+        logger.warn('NEURAL', 'Không thể xác định userId, sử dụng ID mặc định');
+      }
+      
+      logger.info('NEURAL', `Đang xử lý yêu cầu chat completion cho userId: ${userId}`);
+      logger.debug('NEURAL', `Prompt: "${prompt.substring(0, 50)}..."`);
 
       // Kiểm tra xem lời nhắc có phải là lệnh tạo hình ảnh không (với hỗ trợ lệnh tiếng Việt mở rộng)
       const imageCommandRegex = /^(vẽ|tạo hình|vẽ hình|hình|tạo ảnh ai|tạo ảnh)\s+(.+)$/i;
@@ -355,8 +377,6 @@ class NeuralNetworks {
         const memoryRequest = memoryMatch[2].trim() || "toàn bộ cuộc trò chuyện";
         return await this.getMemoryAnalysis(userId, memoryRequest);
       }
-
-      logger.info('NEURAL', `Đang xử lý yêu cầu chat completion cho prompt: "${prompt.substring(0, 50)}..."`);
 
       // Xác định xem prompt có cần tìm kiếm web hay không
       const shouldSearchWeb = this.shouldPerformWebSearch(prompt);
@@ -411,14 +431,33 @@ class NeuralNetworks {
       // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện của người dùng cụ thể
       const messages = conversationManager.getHistory(userId);
 
+      // Đảm bảo messages không rỗng
+      if (!messages || messages.length === 0) {
+        logger.error('NEURAL', `Lịch sử cuộc trò chuyện rỗng cho userId: ${userId}, khởi tạo lại`);
+        // Tạo system message mặc định
+        const defaultSystemMessage = {
+          role: 'system',
+          content: this.systemPrompt + ` You are running on ${this.Model} model.`
+        };
+        
+        // Khởi tạo lại cuộc trò chuyện
+        await conversationManager.resetConversation(userId, this.systemPrompt, this.Model);
+        
+        // Thêm tin nhắn người dùng hiện tại
+        await conversationManager.addMessage(userId, 'user', userMessage);
+      }
+
+      // Lấy lịch sử cuộc trò chuyện cập nhật
+      const updatedMessages = conversationManager.getHistory(userId);
+      
       // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.CoreModel,
         max_tokens: 2048,
-        messages: messages
+        messages: updatedMessages
       });
 
-      logger.info('NEURAL', 'Đã nhận phản hồi từ API');
+      logger.info('NEURAL', `Đã nhận phản hồi từ API cho userId: ${userId}`);
       let content = response.data.choices[0].message.content;
 
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
@@ -999,71 +1038,86 @@ class NeuralNetworks {
 
   /**
    * Nhận phản hồi mã từ API
-   * @param {string} prompt - Câu hỏi hoặc yêu cầu từ người dùng
-   * @param {object} message - Đối tượng tin nhắn (tuỳ chọn)
+   * @param {string} prompt - Prompt của người dùng
+   * @param {Object|null} message - Đối tượng tin nhắn Discord nếu có
    * @returns {Promise<string>} - Phản hồi mã từ API
    */
   async getCodeCompletion(prompt, message = null) {
     try {
-      // Trích xuất ID người dùng từ tin nhắn hoặc tạo một ID cho tương tác không phải Discord
-      const userId = message?.author?.id || 'default-user';
-
-      // Kiểm tra xem có yêu cầu chế độ thinking không
-      if (prompt.toLowerCase().includes('thinking') || prompt.toLowerCase().includes('giải thích từng bước')) {
-        const codingThinkingPrompt = `${this.systemPrompt}${prompts.system.codingThinking.replace('${modelName}', this.Model)}
-
-          Question: ${prompt}`;
-
-        // Lấy lịch sử cuộc trò chuyện hiện có
-        await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
-
-        // Thêm tin nhắn người dùng vào lịch sử
-        await conversationManager.addMessage(userId, 'user', codingThinkingPrompt);
-
-        // Lấy lịch sử cuộc trò chuyện của người dùng cụ thể
-        const messages = conversationManager.getHistory(userId);
-
-        const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-
-        const response = await axiosInstance.post('/v1/chat/completions', {
-          model: this.CoreModel,
-          max_tokens: 4096,
-          messages: messages
-        });
-
-        let content = response.data.choices[0].message.content;
-
-        // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
-        await conversationManager.addMessage(userId, 'assistant', content);
-
-        // Định dạng phần suy nghĩ để dễ đọc hơn
-        content = content.replace('[THINKING]', '💭 **Quá trình phân tích:**\n');
-        content = content.replace('[CODE]', '\n\n💻 **Code:**\n');
-        content = content.replace('[EXPLANATION]', '\n\n📝 **Giải thích:**\n');
-
-        return content;
+      // Trích xuất và xác thực ID người dùng
+      let userId;
+      
+      if (message?.author?.id) {
+        // Từ tin nhắn Discord
+        userId = message.author.id;
+        // Thêm thông tin kênh để phân biệt DM và guild chat
+        if (message.channel && message.channel.type === 'DM') {
+          userId = `DM-${userId}`; // Cuộc trò chuyện DM
+        } else if (message.guildId) {
+          userId = `${message.guildId}-${userId}`; // Cuộc trò chuyện trong guild
+        }
+      } else {
+        // Từ nguồn khác hoặc không xác định được
+        userId = 'anonymous-code-user';
+        logger.warn('NEURAL', 'Không thể xác định userId cho yêu cầu mã, sử dụng ID mặc định');
       }
-
-      const codingSystemPrompt = `${this.systemPrompt}${prompts.system.coding.replace('${modelName}', this.Model)}`;
-
-      // Lấy lịch sử cuộc trò chuyện hiện có
-      await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
-
-      // Thêm tin nhắn người dùng vào lịch sử
-      await conversationManager.addMessage(userId, 'user', prompt);
-
-      // Lấy lịch sử cuộc trò chuyện của người dùng cụ thể
-      const messages = conversationManager.getHistory(userId);
+      
+      logger.info('NEURAL', `Đang xử lý yêu cầu code completion cho userId: ${userId}`);
+      logger.debug('NEURAL', `Prompt: "${prompt.substring(0, 50)}..."`);
 
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
+      // Thêm hướng dẫn cụ thể cho code completion
+      const enhancedPrompt = `${prompts.code.prefix} ${prompt} ${prompts.code.suffix}`;
+
+      // Thêm tin nhắn người dùng vào lịch sử
+      await conversationManager.addMessage(userId, 'user', enhancedPrompt);
+
+      // Lấy lịch sử cuộc trò chuyện hiện có
+      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+
+      // Tạo mảng tin nhắn với prefill hệ thống + lịch sử cuộc trò chuyện
+      const messages = [
+        {
+          role: 'system',
+          content: this.systemPrompt + prompts.code.systemAddition
+        },
+        ...conversationManager.getHistory(userId).slice(1)
+      ];
+
+      // Đảm bảo messages không rỗng
+      if (!messages || messages.length <= 1) {
+        logger.error('NEURAL', `Lịch sử cuộc trò chuyện rỗng cho userId: ${userId}, khởi tạo lại`);
+        // Khởi tạo lại cuộc trò chuyện
+        await conversationManager.resetConversation(userId, this.systemPrompt + prompts.code.systemAddition, this.Model);
+        
+        // Thêm tin nhắn người dùng hiện tại
+        await conversationManager.addMessage(userId, 'user', enhancedPrompt);
+      }
+
+      // Lấy lịch sử cuộc trò chuyện cập nhật
+      const updatedMessages = messages.length <= 1 
+        ? [
+            {
+              role: 'system',
+              content: this.systemPrompt + prompts.code.systemAddition
+            },
+            {
+              role: 'user',
+              content: enhancedPrompt
+            }
+          ]
+        : messages;
+
+      // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.CoreModel,
-        max_tokens: 4096,
-        messages: messages
+        max_tokens: 4000,
+        messages: updatedMessages
       });
 
+      logger.info('NEURAL', `Đã nhận phản hồi mã từ API cho userId: ${userId}`);
       const content = response.data.choices[0].message.content;
 
       // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
@@ -1071,11 +1125,11 @@ class NeuralNetworks {
 
       return content;
     } catch (error) {
-      console.error(`Lỗi khi gọi X.AI API cho mã:`, error.message);
+      logger.error('NEURAL', `Lỗi khi gọi X.AI API cho code completion:`, error.message);
       if (error.response) {
-        console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
+        logger.error('NEURAL', 'Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
       }
-      return `Xin lỗi, tôi không thể tạo mã do lỗi kết nối. Lỗi: ${error.message}`;
+      return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
     }
   }
 
