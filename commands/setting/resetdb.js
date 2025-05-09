@@ -1,17 +1,18 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const storageDB = require('../../services/storagedb.js');
+require('dotenv').config();
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('resetdb')
-    .setDescription('Xóa và tạo lại cơ sở dữ liệu (chỉ dành cho admin)')
+    .setDescription('Xóa và tạo lại cơ sở dữ liệu (chỉ dành cho owner)')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
-    // Kiểm tra quyền admin
-    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+    const ownerId = process.env.OWNER_ID;
+    if (interaction.user.id !== ownerId) {
       return interaction.reply({ 
-        content: 'Bạn không có quyền sử dụng lệnh này. Chỉ admin mới có thể reset cơ sở dữ liệu.', 
+        content: 'Bạn không có quyền sử dụng lệnh này. Chỉ owner mới có thể reset cơ sở dữ liệu.', 
         ephemeral: true 
       });
     }
