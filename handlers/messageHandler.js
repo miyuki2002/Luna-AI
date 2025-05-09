@@ -21,13 +21,6 @@ async function handleMessage(message) {
       return;
     }
 
-    // Kiểm tra cấu trúc lệnh trong nội dung
-    if (content.startsWith('/image')) {
-      await handleImageGeneration(message, content.replace('/image', '').trim());
-      commandExecuted = true;
-      return;
-    }
-
     if (content.toLowerCase().includes('code') ||
       content.toLowerCase().includes('function') ||
       content.toLowerCase().includes('write a')) {
