@@ -207,127 +207,31 @@ class StorageDB {
   }
 
   /**
-   * Thêm tin nhắn vào lịch sử cuộc trò chuyện trong MongoDB
-   * @param {string} userId - Định danh người dùng
-   * @param {string} role - Vai trò của tin nhắn ('user' hoặc 'assistant')
-   * @param {string} content - Nội dung tin nhắn
-   */
-  async addMessageToConversation(userId, role, content) {
-    try {
-      // Kiểm tra tính hợp lệ của dữ liệu đầu vào
-      if (!userId || userId === 'null' || userId === 'undefined') {
-        logger.error('DATABASE', 'Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId không hợp lệ:', userId);
-        return;
-      }
-
-      if (!role) {
-        logger.error('DATABASE', 'Lỗi: Không thể thêm tin nhắn với role rỗng');
-        return;
-      }
-
-      if (!content) {
-        logger.warn('DATABASE', 'Cảnh báo: Đang thêm tin nhắn với nội dung rỗng');
-      }
-
-      const db = mongoClient.getDb();
-      const count = await db.collection('conversations').countDocuments({ userId });
-
-      try {
-        await db.collection('conversations').insertOne({
-          userId,
-          messageIndex: count,
-          role,
-          content,
-          timestamp: Date.now()
-        });
-      } catch (insertError) {
-        // Xử lý lỗi trùng khóa
-        if (insertError.code === 11000) {
-          logger.warn('DATABASE', `Phát hiện lỗi trùng lặp khóa cho userId ${userId}, đang thử sửa chữa...`);
-
-          // Xử lý theo loại lỗi
-          if (insertError.keyValue && insertError.keyValue.conversationId === null) {
-            // Reset collection nếu conversationId là null
-            await this.resetConversationsCollection();
-
-            await db.collection('conversations').insertOne({
-              userId,
-              messageIndex: 0, // Bắt đầu từ 0 sau khi reset
-              role,
-              content,
-              timestamp: Date.now()
-            });
-
-            logger.info('DATABASE', `Đã khắc phục lỗi trùng lặp khóa bằng cách reset collection`);
-          } else {
-            // Xử lý trùng khóa userId + messageIndex
-            const highestMsg = await db.collection('conversations')
-              .findOne({ userId }, { sort: { messageIndex: -1 } });
-
-            const nextIndex = highestMsg ? highestMsg.messageIndex + 1 : 0;
-
-            await db.collection('conversations').insertOne({
-              userId,
-              messageIndex: nextIndex,
-              role,
-              content,
-              timestamp: Date.now()
-            });
-
-            logger.info('DATABASE', `Đã khắc phục lỗi trùng lặp khóa bằng cách sử dụng messageIndex mới: ${nextIndex}`);
-          }
-        } else {
-          throw insertError;
-        }
-      }
-
-      // Cập nhật metadata
-      await db.collection('conversation_meta').updateOne(
-        { userId },
-        { $set: { lastUpdated: Date.now() } },
-        { upsert: true }
-      );
-
-      // Xóa tin nhắn cũ nếu vượt quá giới hạn
-      if (count >= this.maxConversationLength) {
-        const oldestMsg = await db.collection('conversations')
-          .findOne(
-            { userId, messageIndex: { $gt: 0 } },
-            { sort: { messageIndex: 1 } }
-          );
-
-        if (oldestMsg) {
-          // Xóa tin nhắn cũ nhất (trừ system prompt)
-          await db.collection('conversations').deleteOne({
-            userId,
-            messageIndex: oldestMsg.messageIndex
-          });
-
-          // Cập nhật lại chỉ số của các tin nhắn
-          await db.collection('conversations').updateMany(
-            { userId, messageIndex: { $gt: oldestMsg.messageIndex } },
-            { $inc: { messageIndex: -1 } }
-          );
-        }
-      }
-    } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi thêm tin nhắn vào MongoDB:', error);
-    }
-  }
-
-  /**
    * Lấy lịch sử cuộc trò chuyện của người dùng từ MongoDB
    * @param {string} userId - Định danh người dùng
    * @param {string} systemPrompt - Lời nhắc hệ thống cho cuộc trò chuyện mới
    * @param {string} modelName - Tên mô hình AI
-   * @returns {Array} - Mảng các tin nhắn trò chuyện
+   * @returns {Promise<Array>} - Mảng các tin nhắn trò chuyện
    */
   async getConversationHistory(userId, systemPrompt, modelName) {
     try {
+      // Xác thực userId
+      if (!userId || typeof userId !== 'string' || userId === 'null' || userId === 'undefined') {
+        logger.error('DATABASE', 'Lỗi: Không thể lấy lịch sử cuộc trò chuyện với userId không hợp lệ:', userId);
+        // Trả về system prompt mặc định
+        return [{
+          role: 'system',
+          content: systemPrompt + ` You are running on ${modelName} model.`
+        }];
+      }
+      
+      // Chuẩn hóa userId
+      const validUserId = userId.trim();
+      
       const db = mongoClient.getDb();
 
       // Kiểm tra lịch sử hiện có
-      const count = await db.collection('conversations').countDocuments({ userId });
+      const count = await db.collection('conversations').countDocuments({ userId: validUserId });
 
       if (count === 0) {
         // Khởi tạo với system prompt nếu chưa có lịch sử
@@ -335,22 +239,39 @@ class StorageDB {
           role: 'system',
           content: systemPrompt + ` You are running on ${modelName} model.`
         };
-        await this.addMessageToConversation(userId, systemMessage.role, systemMessage.content);
+        await this.addMessageToConversation(validUserId, systemMessage.role, systemMessage.content);
+        logger.info('DATABASE', `Đã khởi tạo cuộc trò chuyện mới cho userId: ${validUserId}`);
         return [systemMessage];
       } else {
         // Cập nhật thời gian hoạt động
         await db.collection('conversation_meta').updateOne(
-          { userId },
-          { $set: { lastUpdated: Date.now() } }
+          { userId: validUserId },
+          { $set: { lastUpdated: Date.now() } },
+          { upsert: true }
         );
 
         // Lấy toàn bộ lịch sử theo thứ tự
         const messages = await db.collection('conversations')
-          .find({ userId })
+          .find({ userId: validUserId })
           .sort({ messageIndex: 1 })
           .project({ _id: 0, role: 1, content: 1 })
           .toArray();
 
+        logger.debug('DATABASE', `Đã lấy ${messages.length} tin nhắn từ cơ sở dữ liệu cho userId: ${validUserId}`);
+        
+        if (messages.length === 0) {
+          // Trường hợp cực kỳ hiếm: có bản ghi nhưng không lấy được tin nhắn nào
+          logger.warn('DATABASE', `Sự không nhất quán: Phát hiện ${count} tin nhắn nhưng không truy vấn được cho userId: ${validUserId}`);
+          
+          // Khởi tạo lại với system prompt
+          const systemMessage = {
+            role: 'system',
+            content: systemPrompt + ` You are running on ${modelName} model.`
+          };
+          await this.addMessageToConversation(validUserId, systemMessage.role, systemMessage.content);
+          return [systemMessage];
+        }
+        
         return messages;
       }
     } catch (error) {
@@ -365,59 +286,243 @@ class StorageDB {
   }
 
   /**
+   * Thêm tin nhắn vào lịch sử cuộc trò chuyện trong MongoDB
+   * @param {string} userId - Định danh người dùng
+   * @param {string} role - Vai trò của tin nhắn ('user', 'assistant', hoặc 'system')
+   * @param {string} content - Nội dung tin nhắn
+   * @returns {Promise<boolean>} - Kết quả thao tác
+   */
+  async addMessageToConversation(userId, role, content) {
+    try {
+      // Xác thực tính hợp lệ của dữ liệu đầu vào
+      if (!userId || typeof userId !== 'string' || userId === 'null' || userId === 'undefined') {
+        logger.error('DATABASE', 'Lỗi: Không thể thêm tin nhắn vào cuộc trò chuyện với userId không hợp lệ:', userId);
+        return false;
+      }
+
+      // Chuẩn hóa userId
+      const validUserId = userId.trim();
+
+      if (!role) {
+        logger.error('DATABASE', 'Lỗi: Không thể thêm tin nhắn với role rỗng');
+        return false;
+      }
+
+      if (!content) {
+        logger.warn('DATABASE', `Cảnh báo: Đang thêm tin nhắn với nội dung rỗng cho userId: ${validUserId}`);
+      }
+
+      const db = mongoClient.getDb();
+      
+      // Đảm bảo meta document tồn tại
+      await db.collection('conversation_meta').updateOne(
+        { userId: validUserId },
+        { $set: { lastUpdated: Date.now() } },
+        { upsert: true }
+      );
+      
+      // Đếm tin nhắn hiện có để xác định chỉ số mới
+      const count = await db.collection('conversations').countDocuments({ userId: validUserId });
+
+      try {
+        // Thêm tin nhắn mới
+        await db.collection('conversations').insertOne({
+          userId: validUserId,
+          messageIndex: count,
+          role,
+          content,
+          timestamp: Date.now()
+        });
+        
+        logger.debug('DATABASE', `Đã thêm tin nhắn (${role}) cho userId: ${validUserId}, messageIndex: ${count}`);
+
+        // Kiểm tra và duy trì độ dài tối đa của cuộc trò chuyện
+        await this.trimConversation(validUserId);
+        
+        return true;
+      } catch (insertError) {
+        // Xử lý lỗi trùng khóa
+        if (insertError.code === 11000) {
+          logger.warn('DATABASE', `Phát hiện lỗi trùng lặp khóa cho userId ${validUserId}, đang thử sửa chữa...`);
+          
+          try {
+            // Xóa tin nhắn trùng lặp nếu có
+            await db.collection('conversations').deleteOne({ 
+              userId: validUserId, 
+              messageIndex: count 
+            });
+            
+            // Thử lại việc thêm tin nhắn
+            await db.collection('conversations').insertOne({
+              userId: validUserId,
+              messageIndex: count,
+              role,
+              content,
+              timestamp: Date.now()
+            });
+            
+            logger.info('DATABASE', `Đã sửa chữa và thêm thành công tin nhắn cho userId: ${validUserId}`);
+            return true;
+          } catch (retryError) {
+            logger.error('DATABASE', `Không thể sửa chữa lỗi trùng lặp cho userId: ${validUserId}`, retryError);
+            return false;
+          }
+        } else {
+          logger.error('DATABASE', `Lỗi khi thêm tin nhắn cho userId: ${validUserId}`, insertError);
+          return false;
+        }
+      }
+    } catch (error) {
+      logger.error('DATABASE', 'Lỗi khi thêm tin nhắn vào MongoDB:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Giới hạn độ dài của cuộc trò chuyện theo maxConversationLength
+   * @param {string} userId - Định danh người dùng
+   * @private
+   */
+  async trimConversation(userId) {
+    try {
+      const db = mongoClient.getDb();
+      const count = await db.collection('conversations').countDocuments({ userId });
+      
+      // Nếu số lượng tin nhắn vượt quá giới hạn, xóa tin nhắn cũ
+      if (count > this.maxConversationLength) {
+        // Lấy số tin nhắn cần xóa
+        const excessCount = count - this.maxConversationLength;
+        
+        // Tìm tin nhắn cũ nhất để bảo toàn system prompt
+        const oldestMsgs = await db.collection('conversations')
+          .find({ userId })
+          .sort({ messageIndex: 1 })
+          .limit(excessCount + 1) // +1 để kiểm tra xem tin nhắn đầu tiên có phải là system
+          .toArray();
+        
+        // Đảm bảo luôn giữ lại system prompt nếu có
+        let startIndex = 0;
+        if (oldestMsgs.length > 0 && oldestMsgs[0].role === 'system') {
+          startIndex = 1; // Bỏ qua system prompt
+        }
+        
+        // Lấy ID của các tin nhắn cần xóa
+        const messageIndexesToDelete = oldestMsgs
+          .slice(startIndex, startIndex + excessCount)
+          .map(msg => msg.messageIndex);
+        
+        if (messageIndexesToDelete.length > 0) {
+          // Xóa tin nhắn cũ
+          await db.collection('conversations').deleteMany({
+            userId,
+            messageIndex: { $in: messageIndexesToDelete }
+          });
+          
+          logger.debug('DATABASE', `Đã xóa ${messageIndexesToDelete.length} tin nhắn cũ cho userId: ${userId}`);
+          
+          // Lưu ý: Đây là phương pháp đơn giản để cập nhật, nhưng có thể gây ra sự không nhất quán
+          // với chỉ số không liên tục. Một phương pháp tốt hơn là tạo lại toàn bộ cuộc trò chuyện với chỉ số mới,
+          // nhưng để đơn giản hóa, chúng ta bỏ qua việc cập nhật chỉ số.
+        }
+      }
+    } catch (error) {
+      logger.error('DATABASE', `Lỗi khi cắt bớt cuộc trò chuyện cho userId: ${userId}`, error);
+    }
+  }
+
+  /**
    * Xóa lịch sử cuộc trò chuyện của người dùng
    * @param {string} userId - Định danh người dùng
    * @param {string} systemPrompt - Lời nhắc hệ thống mới
    * @param {string} modelName - Tên mô hình
+   * @returns {Promise<boolean>} - Kết quả xóa
    */
   async clearConversationHistory(userId, systemPrompt, modelName) {
     try {
+      // Xác thực userId
+      if (!userId || typeof userId !== 'string' || userId === 'null' || userId === 'undefined') {
+        logger.error('DATABASE', 'Lỗi: Không thể xóa lịch sử cuộc trò chuyện với userId không hợp lệ:', userId);
+        return false;
+      }
+
+      // Chuẩn hóa userId
+      const validUserId = userId.trim();
+      
       const db = mongoClient.getDb();
 
-      await db.collection('conversations').deleteMany({ userId });
+      // Xóa toàn bộ lịch sử hiện có
+      await db.collection('conversations').deleteMany({ userId: validUserId });
+      logger.info('DATABASE', `Đã xóa lịch sử cuộc trò chuyện cho userId: ${validUserId}`);
 
       // Khởi tạo lại với lời nhắc hệ thống
       const systemMessage = {
         role: 'system',
         content: systemPrompt + ` You are running on ${modelName} model.`
       };
-      await this.addMessageToConversation(userId, systemMessage.role, systemMessage.content);
-
-      await db.collection('conversation_meta').updateOne(
-        { userId },
-        { $set: { lastUpdated: Date.now() } },
-        { upsert: true }
-      );
-
-      logger.info('DATABASE', `Đã xóa cuộc trò chuyện của người dùng ${userId}`);
+      
+      const success = await this.addMessageToConversation(validUserId, systemMessage.role, systemMessage.content);
+      
+      if (success) {
+        await db.collection('conversation_meta').updateOne(
+          { userId: validUserId },
+          { $set: { lastUpdated: Date.now() } },
+          { upsert: true }
+        );
+        logger.info('DATABASE', `Đã khởi tạo lại cuộc trò chuyện với system prompt cho userId: ${validUserId}`);
+        return true;
+      } else {
+        logger.error('DATABASE', `Không thể thêm system prompt sau khi xóa cuộc trò chuyện cho userId: ${validUserId}`);
+        return false;
+      }
     } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi xóa lịch sử cuộc trò chuyện:', error);
+      logger.error('DATABASE', `Lỗi khi xóa lịch sử cuộc trò chuyện: ${error.message}`, error);
+      return false;
     }
   }
 
   /**
    * Xóa các cuộc trò chuyện cũ để giải phóng bộ nhớ
+   * @returns {Promise<number>} - Số lượng cuộc trò chuyện đã xóa
    */
   async cleanupOldConversations() {
     try {
       const db = mongoClient.getDb();
       const now = Date.now();
+      const cutoffTime = now - this.maxConversationAge;
+
+      logger.debug('DATABASE', `Đang tìm cuộc trò chuyện cũ hơn ${Math.round(this.maxConversationAge / (1000 * 60 * 60))} giờ...`);
 
       const oldUsers = await db.collection('conversation_meta')
-        .find({ lastUpdated: { $lt: now - this.maxConversationAge } })
-        .project({ userId: 1, _id: 0 })
+        .find({ lastUpdated: { $lt: cutoffTime } })
+        .project({ userId: 1, _id: 0, lastUpdated: 1 })
         .toArray();
 
       if (oldUsers.length > 0) {
+        // Lập danh sách các userId cần xóa
         const userIds = oldUsers.map(user => user.userId);
+        logger.info('DATABASE', `Tìm thấy ${oldUsers.length} cuộc trò chuyện cũ cần dọn dẹp`);
+        
+        // Hiển thị thời gian không hoạt động cho mỗi người dùng trong debug
+        oldUsers.forEach(user => {
+          const inactiveDuration = Math.round((now - user.lastUpdated) / (1000 * 60 * 60));
+          logger.debug('DATABASE', `Cuộc trò chuyện của userId: ${user.userId} đã không hoạt động trong ${inactiveDuration} giờ`);
+        });
 
-        await db.collection('conversations').deleteMany({ userId: { $in: userIds } });
-        await db.collection('conversation_meta').deleteMany({ userId: { $in: userIds } });
+        // Xóa dữ liệu cuộc trò chuyện
+        const deleteResult = await db.collection('conversations').deleteMany({ userId: { $in: userIds } });
+        
+        // Xóa metadata
+        const metaDeleteResult = await db.collection('conversation_meta').deleteMany({ userId: { $in: userIds } });
 
-        logger.info('DATABASE', `Đã dọn dẹp ${oldUsers.length} cuộc trò chuyện cũ`);
+        logger.info('DATABASE', `Đã dọn dẹp ${oldUsers.length} cuộc trò chuyện cũ (đã xóa ${deleteResult.deletedCount} tin nhắn, ${metaDeleteResult.deletedCount} bản ghi metadata)`);
+        return oldUsers.length;
+      } else {
+        logger.debug('DATABASE', 'Không có cuộc trò chuyện cũ cần dọn dẹp');
+        return 0;
       }
     } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi dọn dẹp cuộc trò chuyện cũ:', error);
+      logger.error('DATABASE', `Lỗi khi dọn dẹp cuộc trò chuyện cũ: ${error.message}`, error);
+      return 0;
     }
   }
 

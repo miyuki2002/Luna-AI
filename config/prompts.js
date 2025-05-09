@@ -65,6 +65,11 @@ const prompts = {
     webSearch: ` I've provided you with web search results. Incorporate this information naturally into your response without explicitly listing the sources. Respond in a conversational tone as Luna, not as an information aggregator.`,
     generalInstructions: ` Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going.`
   },
+  code: {
+    prefix: "Hãy giúp tôi giải quyết vấn đề lập trình sau:",
+    suffix: "Vui lòng cung cấp code với đầy đủ comment và giải thích để tôi có thể hiểu rõ. Nếu có nhiều cách làm, ưu tiên cách tốt nhất và dễ bảo trì.",
+    systemAddition: "\nYou are a programming assistant. When providing code examples, make sure they are complete, well-commented, and follow best practices. Always include all necessary imports and setup code. Never provide partial code examples that cannot be executed directly. Always ensure your code correctly addresses the user's requirements."
+  },
   web: {
     searchEnhancedPrompt: `${originalPromptText}\n\n[SEARCH INFORMATION]\nBelow is relevant information from the web. Use this information when appropriate to supplement your answer, but you don't need to reference all of it:\n\n${searchResultsText}\n\nNaturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.`
   },

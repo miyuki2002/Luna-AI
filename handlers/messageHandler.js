@@ -5,6 +5,7 @@ const logger = require('../utils/logger.js');
 
 /**
  * Xử lý tin nhắn Discord đề cập đến bot
+ * @param {Object} message - Đối tượng tin nhắn Discord
  */
 async function handleMessage(message) {
   try {
@@ -38,13 +39,13 @@ async function handleMessage(message) {
       return;
     }
 
-    // Mặc định là phản hồi trò chuyện
+    // Mặc định là phản hồi trò chuyện - luôn truyền message object đầy đủ
     await handleChatRequest(message, content);
 
     // Xử lý XP sau khi xử lý tin nhắn
     processXp(message, commandExecuted, true);
   } catch (error) {
-    logger.error('MESSAGE', 'Lỗi khi xử lý tin nhắn:', error);
+    logger.error('MESSAGE', `Lỗi khi xử lý tin nhắn từ ${message.author.tag}:`, error);
     await message.reply('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn.');
 
     // Xử lý XP với thông tin rằng có lỗi xảy ra
@@ -96,14 +97,16 @@ async function processXp(message, commandExecuted, execute) {
 
 /**
  * Xử lý yêu cầu trò chuyện thông thường
+ * @param {Object} message - Đối tượng tin nhắn Discord
+ * @param {string} content - Nội dung tin nhắn đã xử lý
  */
 async function handleChatRequest(message, content) {
-
   // Hiển thị chỉ báo đang nhập
   await message.channel.sendTyping();
 
   try {
-    const response = await NeuralNetworks.getCompletion(content);
+    // Đảm bảo truyền đối tượng message đầy đủ để có thông tin người dùng chính xác
+    const response = await NeuralNetworks.getCompletion(content, message);
 
     // Chia phản hồi nếu nó quá dài cho Discord
     if (response.length > 2000) {
@@ -115,7 +118,7 @@ async function handleChatRequest(message, content) {
       await message.reply(response);
     }
   } catch (error) {
-    logger.error('MESSAGE', 'Lỗi khi nhận phản hồi trò chuyện:', error);
+    logger.error('MESSAGE', `Lỗi khi nhận phản hồi trò chuyện cho ${message.author.tag}:`, error);
 
     // Thông báo chi tiết hơn về lỗi
     if (error.code === 'EPROTO' || error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
@@ -164,11 +167,14 @@ async function handleImageGeneration(message, prompt) {
 
 /**
  * Xử lý yêu cầu về mã
+ * @param {Object} message - Đối tượng tin nhắn Discord
+ * @param {string} prompt - Nội dung tin nhắn đã xử lý
  */
 async function handleCodeRequest(message, prompt) {
   await message.channel.sendTyping();
 
   try {
+    // Đảm bảo truyền đối tượng message đầy đủ để có thông tin người dùng chính xác
     const codeResponse = await NeuralNetworks.getCodeCompletion(prompt, message);
 
     // Trích xuất khối mã hoặc định dạng dưới dạng mã
@@ -189,7 +195,7 @@ async function handleCodeRequest(message, prompt) {
       await message.reply(formattedResponse);
     }
   } catch (error) {
-    logger.error('CODE', 'Lỗi khi nhận mã:', error);
+    logger.error('CODE', `Lỗi khi nhận mã cho ${message.author.tag}:`, error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo mã đó.');
   }
 }
@@ -318,8 +324,8 @@ function splitMessageRespectWords(text, maxLength = 2000) {
 
 /**
  * Hàm chính xử lý sự kiện MessageCreate khi bot được đề cập
- * @param {import('discord.js').Message} message
- * @param {import('discord.js').Client} client
+ * @param {import('discord.js').Message} message - Đối tượng tin nhắn Discord
+ * @param {import('discord.js').Client} client - Client Discord.js
  */
 async function handleMentionMessage(message, client) {
   // Bỏ qua tin nhắn từ bot
@@ -330,9 +336,7 @@ async function handleMentionMessage(message, client) {
     // Kiểm tra xem tin nhắn có mention @everyone hoặc @role không
     const hasEveryoneOrRoleMention = message.mentions.everyone || message.mentions.roles.size > 0;
 
-    // Kiểm tra xem tin nhắn có phải là cảnh báo từ chức năng giám sát không (ví dụ)
-    // Lưu ý: Logic kiểm tra cảnh báo monitor thực tế nằm trong messageMonitor.js
-    // Ở đây chỉ là ví dụ để tránh xử lý các tin nhắn cảnh báo như chat thông thường
+    // Kiểm tra xem tin nhắn có phải là cảnh báo từ chức năng giám sát không
     const isMonitorWarning = message.content.includes('**CẢNH BÁO') ||
                             message.content.includes('**Lưu ý') ||
                             message.content.includes('**CẢNH BÁO NGHÊM TRỌNG');
@@ -340,14 +344,19 @@ async function handleMentionMessage(message, client) {
     // Nếu không phải cảnh báo từ chức năng giám sát và không có mention @everyone hoặc @role,
     // xử lý như tin nhắn trò chuyện bình thường bằng hàm handleMessage
     if (!isMonitorWarning && !hasEveryoneOrRoleMention) {
-      logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
+      // Thêm thông tin người dùng vào log để gỡ lỗi
+      logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag} (ID: ${message.author.id})`);
+      logger.info('CHAT', `Kênh: ${message.channel.type === 'DM' ? 'DM' : message.channel.name} trong ${message.guild ? message.guild.name : 'DM'}`);
+      logger.info('CHAT', `Nội dung: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`);
+      
       try {
-        await handleMessage(message); // Gọi hàm xử lý nội dung tin nhắn
-        logger.info('CHAT', `Đã xử lý tin nhắn trò chuyện thành công`);
+        // Đảm bảo rằng chúng ta truyền đối tượng message để có thể lấy ID người dùng chính xác
+        await handleMessage(message); 
+        logger.info('CHAT', `Đã xử lý tin nhắn trò chuyện thành công cho ${message.author.tag}`);
       } catch (error) {
-        logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện:`, error);
-        // Có thể thêm phản hồi lỗi cho người dùng ở đây nếu cần
-        // await message.reply('Đã có lỗi xảy ra khi xử lý yêu cầu của bạn.');
+        logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện từ ${message.author.tag}:`, error);
+        // Phản hồi lỗi cho người dùng 
+        await message.reply('Xin lỗi, đã có lỗi xảy ra khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.');
       }
     } else if (hasEveryoneOrRoleMention) {
       logger.debug('CHAT', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
@@ -355,7 +364,6 @@ async function handleMentionMessage(message, client) {
       logger.debug('CHAT', `Bỏ qua tin nhắn cảnh báo từ monitor từ ${message.author.tag}`);
     }
   }
-  // Lưu ý: Tin nhắn không tag bot sẽ được xử lý bởi messageMonitor.js (nếu được kích hoạt)
 }
 
 module.exports = {
