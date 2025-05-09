@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const NeuralNetworks = require('../services/NeuralNetworks');
 const experience = require('../utils/xp');
 const logger = require('../utils/logger.js');
@@ -141,24 +141,29 @@ async function handleImageGeneration(message, prompt) {
   await message.channel.sendTyping();
 
   try {
-    // Lấy URL hình ảnh từ generateImage của NeuralNetworks
-    const imageUrl = await NeuralNetworks.generateImage(prompt);
+    // Lấy kết quả hình ảnh từ generateImage của NeuralNetworks
+    const imageResult = await NeuralNetworks.generateImage(prompt);
 
-    // Nếu nhận được thông báo lỗi thay vì URL, trả về thông báo đó
-    if (imageUrl.startsWith('Xin lỗi')) {
-      await message.reply(imageUrl);
+    // Nếu nhận được thông báo lỗi thay vì kết quả
+    if (typeof imageResult === 'string') {
+      await message.reply(imageResult);
       return;
     }
 
-    // Tạo embed và gửi trả lời
+    // Tạo attachment từ buffer
+    const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
+
+    // Tạo embed và gửi trả lời với file đính kèm
     const embed = new EmbedBuilder()
       .setTitle('Hình Ảnh Được Tạo')
       .setDescription(`Mô tả: ${prompt}`)
-      .setImage(imageUrl)
       .setColor('#0099ff')
       .setTimestamp();
 
-    await message.reply({ embeds: [embed] });
+    await message.reply({ 
+      embeds: [embed],
+      files: [attachment]
+    });
   } catch (error) {
     logger.error('IMAGE', 'Lỗi khi tạo hình ảnh:', error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');
