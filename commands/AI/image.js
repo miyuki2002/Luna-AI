@@ -20,7 +20,6 @@ module.exports = {
       const imageResult = await NeuralNetworks.generateImage(prompt);
 
       if (typeof imageResult === 'string') {
-        // Nếu là chuỗi lỗi
         await interaction.editReply(`❌ ${imageResult}`);
         return;
       }

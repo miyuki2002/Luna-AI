@@ -1140,7 +1140,6 @@ class NeuralNetworks {
     try {
       console.log(`Đang tạo hình ảnh với mô hình ${this.imageModel}...`);
 
-      // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       const response = await axiosInstance.post('/v1/images/generations', {
@@ -1151,18 +1150,14 @@ class NeuralNetworks {
 
       console.log('Đã nhận hình ảnh từ API');
       
-      // Lấy URL hình ảnh từ response
       const imageUrl = response.data.data[0].url;
       
-      // Tải hình ảnh từ URL
       const imageResponse = await this.createSecureAxiosInstance().get(imageUrl, { 
         responseType: 'arraybuffer' 
       });
       
-      // Tạo buffer từ dữ liệu hình ảnh
       const imageBuffer = Buffer.from(imageResponse.data);
       
-      // Trả về cả buffer và URL của hình ảnh
       return {
         buffer: imageBuffer,
         url: imageUrl
