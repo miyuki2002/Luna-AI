@@ -30,16 +30,6 @@ module.exports = {
       // Chuẩn bị nội dung phản hồi
       let replyContent = `🎨 Bức tranh từ "${prompt}"`;
       
-      // Thêm thông tin về nguồn nếu có
-      if (imageResult.source) {
-        replyContent += ` (${imageResult.source})`;
-      }
-
-      // Thêm thông báo về việc dịch prompt nếu có tiếng Việt
-      if (hasVietnamese) {
-        replyContent += `\n*(Prompt đã được tự động dịch sang tiếng Anh để tạo hình ảnh tốt hơn)*`;
-      }
-
       // Gửi ảnh dưới dạng tệp đính kèm
       await interaction.editReply({
         content: replyContent,

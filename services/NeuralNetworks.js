@@ -1180,22 +1180,24 @@ class NeuralNetworks {
       }
 
       const gradioModule = await this.loadGradioClient();
-      const { Client } = gradioModule; // Destructure Client từ module
+      const { Client } = gradioModule;
 
-      // THAY THẾ BẰNG HUGGING FACE TOKEN CỦA BẠN NẾU SPACE LÀ PRIVATE
-      // Sử dụng this.hf_token nếu đã được định nghĩa trong constructor
+      // Đặt hf_token để kết nối đến Space private nếu có
       const hfToken = this.hf_token || null;
-
       const options = {
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
           if (status.status === 'error' && status.detail === 'NOT_FOUND') {
             throw new Error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
           }
-          // Xử lý lỗi xác thực
-          if (status.status === 'error' && status.message && status.message.includes("authorization")) {
-            logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
-            throw new Error(`Lỗi xác thực với Space ${this.gradioImageSpace}. Vui lòng kiểm tra hf_token của bạn.`);
+          // Xử lý lỗi xác thực và các lỗi khác
+          if (status.status === 'error') {
+            if (status.message && status.message.includes("authorization")) {
+              logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
+              throw new Error(`Lỗi xác thực với Space ${this.gradioImageSpace}. Vui lòng kiểm tra hf_token của bạn.`);
+            } else {
+              logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
+            }
           }
         },
       };
@@ -1208,7 +1210,7 @@ class NeuralNetworks {
         logger.info('NEURAL', `Không có hf_token. Kết nối đến Space public.`);
       }
 
-      logger.info('NEURAL', `Đang kiểm tra kết nối đến Gradio Space: ${this.gradioImageSpace}`);
+      logger.info('NEURAL', `Đang kết nối đến Gradio Space: ${this.gradioImageSpace}`);
       let app;
       try {
         app = await Client.connect(this.gradioImageSpace, options);
@@ -1218,33 +1220,34 @@ class NeuralNetworks {
         if (connectError.message.toLowerCase().includes("authorization") || connectError.message.toLowerCase().includes("private space")) {
           throw new Error(`Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`);
         }
-        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space và hf_token (nếu private).`);
+        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space.`);
       }
 
       logger.info('NEURAL', `Kiểm tra API endpoints của Gradio Space ${this.gradioImageSpace}...`);
       const api = await app.view_api();
-      logger.info('NEURAL', `API endpoints: ${JSON.stringify(api)}`);
+      
+      const apiEndpointName = "/generate_image"; // Tên API standard
 
-      // Kiểm tra xem endpoint có tên là "/generate_image" có tồn tại không
-      if (!api.named_endpoints || !api.named_endpoints["/generate_image"]) {
-        // Nếu không, kiểm tra xem có endpoint không tên (theo index) nào không
+      // Kiểm tra endpoint có tên
+      if (!api.named_endpoints || !api.named_endpoints[apiEndpointName]) {
+        // Nếu không có endpoint có tên, kiểm tra các endpoint không tên
         const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
         if (!hasUnnamedEndpoint) {
-          throw new Error(`Space ${this.gradioImageSpace} không có endpoint /generate_image hoặc bất kỳ API endpoint nào được định nghĩa. Vui lòng kiểm tra cấu hình app.py.`);
+          throw new Error(`Space ${this.gradioImageSpace} không có endpoint ${apiEndpointName} hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`);
         }
-        logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên /generate_image. Sẽ thử sử dụng endpoint đầu tiên có sẵn (nếu có).`);
+        logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên ${apiEndpointName}. Sẽ thử sử dụng endpoint đầu tiên có sẵn.`);
       }
 
-      logger.info('NEURAL', `Đang gọi endpoint /generate_image trên Space ${this.gradioImageSpace}...`);
-      const result = await app.predict("/generate_image", [
-        finalPrompt, // prompt
-        "", // negative_prompt (giá trị mặc định từ Python là "")
-        0, // seed (giá trị mặc định từ Python là 0)
-        true, // randomize_seed (giá trị mặc định từ Python là True)
-        512, // width (giá trị mặc định từ Python là 512)
-        512, // height (giá trị mặc định từ Python là 512)
-        0.0, // guidance_scale (giá trị mặc định từ Python là 0.0)
-        2, // num_inference_steps (giá trị mặc định từ Python là 2)
+      logger.info('NEURAL', `Đang gọi endpoint ${apiEndpointName} trên Space ${this.gradioImageSpace}...`);
+      const result = await app.predict(apiEndpointName, [
+        finalPrompt,  // prompt
+        "",           // negative_prompt
+        0,            // seed
+        true,         // randomize_seed
+        512,          // width
+        512,          // height
+        0.0,          // guidance_scale
+        2,            // num_inference_steps
       ]);
 
       if (!result || !result.data) {
@@ -1252,9 +1255,8 @@ class NeuralNetworks {
         throw new Error("Không nhận được phản hồi hợp lệ từ Gradio API.");
       }
 
-      // Mã Python trả về (image, seed_val)
-      // Nên result.data sẽ là một mảng: [imageData, newSeedValue]
-      const imageData = result.data[0];
+      const imageData = result.data[0]; // Ảnh là phần tử đầu tiên trong mảng data trả về
+      // const newSeed = result.data[1]; // Seed là phần tử thứ hai (nếu có)
 
       if (!imageData || typeof imageData !== 'object') {
         throw new Error(`Dữ liệu hình ảnh không hợp lệ từ API: ${JSON.stringify(imageData)}`);
@@ -1282,6 +1284,14 @@ class NeuralNetworks {
         const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
         imageBuffer = Buffer.from(base64Data, 'base64');
         fs.writeFileSync(outputPath, imageBuffer);
+      } else if (imageData.is_file && imageData.name) {
+        // Trường hợp Gradio trả về file object
+        logger.info('NEURAL', `Nhận được file path: ${imageData.name}, đang tạo URL đầy đủ.`);
+        // Tạo URL đầy đủ từ file path
+        imageUrl = `${this.gradioImageSpace.replace(/\/+$/, '')}/file=${imageData.name}`;
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 60000 });
+        imageBuffer = Buffer.from(imageResponse.data);
+        fs.writeFileSync(outputPath, imageBuffer);
       } else {
         throw new Error(`Định dạng URL hình ảnh không được hỗ trợ hoặc không tìm thấy: ${imageUrl}`);
       }
@@ -1295,6 +1305,16 @@ class NeuralNetworks {
       };
     } catch (error) {
       logger.error('NEURAL', `Lỗi khi tạo hình ảnh với Gradio Space ${this.gradioImageSpace}: ${error.message}`, error.stack);
+      // Nếu lỗi là từ Space Gradio, thử phương pháp dự phòng với X.AI nếu có
+      if (this.apiKey) {
+        logger.info('NEURAL', 'Thử sử dụng X.AI API như phương pháp dự phòng...');
+        try {
+          return await this.generateImageWithXAI(prompt);
+        } catch (xaiError) {
+          logger.error('NEURAL', `Phương pháp dự phòng cũng thất bại: ${xaiError.message}`);
+          throw new Error(`Không thể tạo hình ảnh với cả Gradio và X.AI: ${error.message}`);
+        }
+      }
       throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
     }
   }
@@ -1313,9 +1333,13 @@ class NeuralNetworks {
       const options = {
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
-          if (status.status === 'error' && status.message && status.message.includes("authorization")) {
-            logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
-            return false;
+          if (status.status === 'error') {
+            if (status.message && status.message.includes("authorization")) {
+              logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
+              return false;
+            } else {
+              logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
+            }
           }
         }
       };
@@ -1330,14 +1354,16 @@ class NeuralNetworks {
       
       // Kiểm tra API endpoints
       const api = await app.view_api();
-      if (!api.named_endpoints || !api.named_endpoints["/generate_image"]) {
+      const apiEndpointName = "/generate_image"; // Tên API standard
+      
+      if (!api.named_endpoints || !api.named_endpoints[apiEndpointName]) {
         // Kiểm tra xem có endpoint không tên nào không
         const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
         if (!hasUnnamedEndpoint) {
-          logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint /generate_image hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`);
+          logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint ${apiEndpointName} hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`);
           return false;
         }
-        logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên /generate_image. Sẽ thử sử dụng endpoint đầu tiên có sẵn.`);
+        logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên ${apiEndpointName}. Sẽ thử sử dụng endpoint đầu tiên có sẵn.`);
       }
       
       logger.info('NEURAL', `Kết nối thành công đến Gradio Space ${this.gradioImageSpace}`);
