@@ -8,26 +8,30 @@ module.exports = {
     .setDescription('Hiển thị danh sách lệnh và thông tin trợ giúp'),
 
   async execute(interaction) {
+    const isOwner = interaction.user.id === process.env.OWNER_ID;
+    
     // Đọc các thư mục lệnh
     const commandsPath = path.join(__dirname, '../');
     const commandFolders = fs.readdirSync(commandsPath, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
     
-    // Tạo select menu cho danh mục
+    const visibleCategories = commandFolders.filter(folder => {
+      if (isOwner) return true;
+      return folder !== 'setting';
+    });
+    
     const select = new StringSelectMenuBuilder()
       .setCustomId('category-select')
       .setPlaceholder('Chọn danh mục lệnh')
       .addOptions(
-        // Thêm option tất cả danh mục
         new StringSelectMenuOptionBuilder()
           .setLabel('Tất cả')
           .setDescription('Xem tất cả các lệnh')
           .setValue('all')
           .setEmoji('📚'),
         
-        // Thêm option cho từng danh mục
-        ...commandFolders.map(folder => 
+        ...visibleCategories.map(folder => 
           new StringSelectMenuOptionBuilder()
             .setLabel(folder.charAt(0).toUpperCase() + folder.slice(1))
             .setDescription(`Xem lệnh danh mục ${folder}`)
@@ -40,7 +44,7 @@ module.exports = {
     
     // Tạo embed chào mừng ban đầu
     const welcomeEmbed = new EmbedBuilder()
-      .setColor(0x9B59B6) // Màu tím Luna
+      .setColor(0x9B59B6) // Màu tím
       .setTitle('📚 Trợ giúp lệnh Luna AI')
       .setDescription('Chọn một danh mục từ menu dropdown bên dưới để xem các lệnh.')
       .setFooter({ text: 'Luna AI • Developed by s4ory' })
@@ -70,18 +74,23 @@ module.exports = {
       
       const category = i.values[0];
       
-      // Tạo embed hiển thị lệnh
+      if (category === 'setting' && !isOwner) {
+        return i.reply({
+          content: 'Bạn không có quyền xem danh mục này. Chỉ chủ bot mới có thể truy cập.',
+          ephemeral: true
+        });
+      }
+      
       const helpEmbed = new EmbedBuilder()
         .setColor(0x9B59B6) // Màu tím
         .setTitle(`📚 Trợ giúp lệnh - ${category === 'all' ? 'Tất cả danh mục' : capitalizeFirstLetter(category)}`)
         .setFooter({ text: 'Luna AI • Developed by s4ory' })
         .setTimestamp();
       
-      // Hiển thị lệnh dựa trên danh mục được chọn
       if (category === 'all') {
         helpEmbed.setDescription('Danh sách tất cả các danh mục lệnh có sẵn:');
         
-        for (const folder of commandFolders) {
+        for (const folder of visibleCategories) {
           const folderPath = path.join(commandsPath, folder);
           const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
           
