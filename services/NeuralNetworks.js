@@ -1651,11 +1651,11 @@ class NeuralNetworks {
 
   /**
    * Theo dõi tiến trình của quá trình tạo hình ảnh
-   * @param {Object} message - Discord message object để gửi cập nhật tiến trình
+   * @param {Object} messageOrInteraction - Discord message hoặc interaction object để gửi cập nhật tiến trình
    * @param {string} prompt - Prompt đang được sử dụng
    * @returns {Object} - Controller object để cập nhật và dừng hiển thị tiến trình
    */
-  trackImageGenerationProgress(message, prompt) {
+  trackImageGenerationProgress(messageOrInteraction, prompt) {
     // Các giai đoạn xử lý có thể xảy ra khi tạo hình ảnh
     const stages = [
       "Đang khởi tạo",
@@ -1671,6 +1671,10 @@ class NeuralNetworks {
     let currentStage = 0;
     let shouldContinue = true;
     let progressMessage = null;
+    
+    // Xác định nếu đối tượng là interaction hay message
+    const isInteraction = messageOrInteraction.replied !== undefined || 
+                         messageOrInteraction.deferred !== undefined;
     
     // Hàm tạo emoji loading animation
     const getLoadingAnimation = (step) => {
@@ -1691,7 +1695,7 @@ class NeuralNetworks {
     
     // Hàm cập nhật thông báo tiến trình
     const updateProgress = async (step = 0) => {
-      if (!shouldContinue || !message) return;
+      if (!shouldContinue || !messageOrInteraction) return;
       
       // Thời gian đã trôi qua
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -1715,12 +1719,28 @@ class NeuralNetworks {
                       `**Thời gian:** ${elapsedTime}s`;
       
       try {
-        if (!progressMessage) {
-          // Tạo thông báo mới nếu chưa có
-          progressMessage = await message.reply(content);
+        if (isInteraction) {
+          // Xử lý đối tượng interaction (slash command)
+          if (!progressMessage) {
+            // Nếu là tương tác mới, dùng deferReply để hiển thị đang xử lý
+            if (!messageOrInteraction.deferred && !messageOrInteraction.replied) {
+              await messageOrInteraction.deferReply();
+            }
+            // Sau đó chỉnh sửa phản hồi để hiển thị tiến trình
+            progressMessage = await messageOrInteraction.editReply(content);
+          } else {
+            // Cập nhật thông báo tiến trình hiện có
+            await messageOrInteraction.editReply(content);
+          }
         } else {
-          // Cập nhật thông báo hiện có
-          await progressMessage.edit(content);
+          // Xử lý đối tượng message (tin nhắn thông thường)
+          if (!progressMessage) {
+            // Tạo thông báo mới nếu chưa có
+            progressMessage = await messageOrInteraction.reply(content);
+          } else {
+            // Cập nhật thông báo hiện có
+            await progressMessage.edit(content);
+          }
         }
       } catch (err) {
         logger.error('NEURAL', `Lỗi khi cập nhật tin nhắn tiến trình: ${err.message}`);
@@ -1745,18 +1765,22 @@ class NeuralNetworks {
         shouldContinue = false;
         clearInterval(progressInterval);
         
-        if (progressMessage) {
-          try {
-            const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-            const content = `### ✅ Đã tạo xong hình ảnh!\n` +
-                          `> "${promptPreview}"\n\n` +
-                          `**Tiến trình:** ${getProgressBar(100)}\n` +
-                          `**Hoàn thành trong:** ${elapsedTime}s`;
+        try {
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+          const content = `### ✅ Đã tạo xong hình ảnh!\n` +
+                         `> "${promptPreview}"\n\n` +
+                         `**Tiến trình:** ${getProgressBar(100)}\n` +
+                         `**Hoàn thành trong:** ${elapsedTime}s`;
+          
+          if (isInteraction) {
+            await messageOrInteraction.editReply(content);
+          } else if (progressMessage) {
             await progressMessage.edit(content);
-          } catch (err) {
-            logger.error('NEURAL', `Lỗi khi cập nhật thông báo hoàn tất: ${err.message}`);
           }
+        } catch (err) {
+          logger.error('NEURAL', `Lỗi khi cập nhật thông báo hoàn tất: ${err.message}`);
         }
+        
         return true;
       },
       
@@ -1765,18 +1789,39 @@ class NeuralNetworks {
         shouldContinue = false;
         clearInterval(progressInterval);
         
-        if (progressMessage) {
-          try {
-            const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-            const content = `### ❌ Không thể tạo hình ảnh\n` +
-                          `> "${promptPreview}"\n\n` +
-                          `**Lỗi:** ${errorMessage}\n` +
-                          `**Thời gian đã trôi qua:** ${elapsedTime}s`;
-            await progressMessage.edit(content);
-          } catch (err) {
-            logger.error('NEURAL', `Lỗi khi cập nhật thông báo lỗi: ${err.message}`);
+        try {
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+          let errorContent = `### ❌ Không thể tạo hình ảnh\n` +
+                         `> "${promptPreview}"\n\n`;
+          
+          // Xử lý trường hợp lỗi cụ thể
+          if (errorMessage.includes('content moderation') || 
+              errorMessage.includes('safety') || 
+              errorMessage.includes('inappropriate')) {
+            errorContent += `**Lỗi:** Nội dung yêu cầu không tuân thủ nguyên tắc kiểm duyệt. Vui lòng thử chủ đề khác.\n`;
+          } else if (errorMessage.includes('/generate_image')) {
+            errorContent += `**Lỗi:** Không tìm thấy API endpoint phù hợp trong Gradio Space. Space có thể đã thay đổi cấu trúc hoặc đang offline.\n`;
+          } else {
+            errorContent += `**Lỗi:** ${errorMessage.replace('Không thể tạo hình ảnh: ', '')}\n`;
           }
+          
+          errorContent += `**Thời gian đã trôi qua:** ${elapsedTime}s`;
+          
+          if (isInteraction) {
+            if (messageOrInteraction.deferred || messageOrInteraction.replied) {
+              await messageOrInteraction.editReply(errorContent);
+            } else {
+              await messageOrInteraction.reply(errorContent);
+            }
+          } else if (progressMessage) {
+            await progressMessage.edit(errorContent);
+          } else if (messageOrInteraction) {
+            await messageOrInteraction.reply(errorContent);
+          }
+        } catch (err) {
+          logger.error('NEURAL', `Lỗi khi cập nhật thông báo lỗi: ${err.message}`);
         }
+        
         return false;
       },
       
@@ -1797,12 +1842,16 @@ class NeuralNetworks {
                       `**Đang thực hiện:** ${stages[currentStage]}\n` +
                       `**Thời gian:** ${elapsedTime}s`;
         
-        if (progressMessage) {
-          try {
+        try {
+          if (isInteraction) {
+            if (messageOrInteraction.deferred || messageOrInteraction.replied) {
+              await messageOrInteraction.editReply(content);
+            }
+          } else if (progressMessage) {
             await progressMessage.edit(content);
-          } catch (err) {
-            logger.error('NEURAL', `Lỗi khi cập nhật tin nhắn tiến trình: ${err.message}`);
           }
+        } catch (err) {
+          logger.error('NEURAL', `Lỗi khi cập nhật tin nhắn tiến trình: ${err.message}`);
         }
       }
     };
