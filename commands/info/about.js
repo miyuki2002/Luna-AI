@@ -90,13 +90,6 @@ module.exports = {
 				{ icon: '	', label: 'Quản lý tin nhắn', value: 'xóa lịch sử' }
 			]);
 			
-			// Thông tin liên hệ
-			ctx.font = 'bold 24px Sans';
-			ctx.fillStyle = '#FFFFFF';
-			const contactText = 'Liên hệ & Hỗ trợ';
-			const contactWidth = ctx.measureText(contactText).width;
-			ctx.fillText(contactText, 450 - contactWidth / 2, 400);
-			
 			// Footer
 			ctx.font = '16px Sans';
 			ctx.fillStyle = '#94A1B2';
