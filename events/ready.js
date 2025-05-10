@@ -4,6 +4,7 @@ const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');
 const ProfileDB = require('../services/profiledb.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
+const { initDashboard } = require('./dashboard.js');
 //const messageMonitor = require('../services/messageMonitor.js');
 const logger = require('../utils/logger.js');
 
@@ -117,6 +118,19 @@ async function startbot(client, loadCommands) {
 
     logger.warn('SYSTEM', '🔒 Hệ thống giám sát tin nhắn đã bị tạm thời vô hiệu hóa');
     initSystem.markReady('messageMonitor');
+
+    // Khởi tạo Dashboard
+    try {
+      logger.info('SYSTEM', '🔄 Đang khởi tạo Web Dashboard...');
+      const dashboard = await initDashboard(client);
+      if (dashboard) {
+        logger.info('SYSTEM', '✅ Đã khởi tạo Web Dashboard thành công!');
+      }
+      initSystem.markReady('dashboard');
+    } catch (error) {
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo Web Dashboard:', error);
+      initSystem.markReady('dashboard');
+    }
 
     // Thiết lập trạng thái cho bot
     client.user.setPresence({

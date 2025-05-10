@@ -12,6 +12,7 @@ package-lock.json
 .env.test.local
 .env.production.local
 .env.mal
+.prettierrc
 
 # Log files
 logs/
