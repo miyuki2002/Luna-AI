@@ -1177,14 +1177,23 @@ class NeuralNetworks {
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
 
+      // Dịch prompt tiếng Việt sang tiếng Anh nếu cần
+      let finalPrompt = prompt;
+      if (prompt.match(/[\u00C0-\u1EF9]/)) { // Phát hiện tiếng Việt
+        finalPrompt = await this.translatePrompt(prompt);
+        logger.info('NEURAL', `Prompt dịch sang tiếng Anh: "${finalPrompt}"`);
+      }
+
       const gradioModule = await this.loadGradioClient();
       const Client = gradioModule.Client;
 
-      // Kiểm tra trạng thái Space trước
       const options = {
         hf_token: this.hf_token,
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
+          if (status.status === 'error' && status.detail === 'NOT_FOUND') {
+            throw new Error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
+          }
         },
       };
 
@@ -1194,45 +1203,28 @@ class NeuralNetworks {
         app = await Client.connect(this.gradioImageSpace, options);
       } catch (connectError) {
         logger.error('NEURAL', `Không thể kết nối đến Space ${this.gradioImageSpace}: ${connectError.message}`);
-        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space hoặc HF_TOKEN.`);
+        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space.`);
       }
 
-      // Kiểm tra API endpoints
       logger.info('NEURAL', `Kiểm tra API endpoints của Gradio Space ${this.gradioImageSpace}...`);
       const api = await app.view_api();
       logger.info('NEURAL', `API endpoints: ${JSON.stringify(api)}`);
 
-      // Tìm endpoint phù hợp
-      const endpoints = ["/predict", "/txt2img", "/generate", "/run", "/text2image"];
-      let result;
-      let endpointFound = false;
-
-      for (const endpoint of endpoints) {
-        try {
-          logger.info('NEURAL', `Đang thử với endpoint ${endpoint} trên Space ${this.gradioImageSpace}...`);
-          result = await app.predict(endpoint, [
-            prompt,
-            7.5, // cfg_scale
-            "DPM++ 2M Karras", // sampler
-            25, // steps
-            512, // width
-            512, // height
-          ]);
-          endpointFound = true;
-          logger.info('NEURAL', `Kết nối thành công đến ${this.gradioImageSpace} với endpoint ${endpoint}!`);
-          break;
-        } catch (err) {
-          logger.warn('NEURAL', `Endpoint ${endpoint} không hoạt động: ${err.message}`);
-        }
+      if (!api.named_endpoints || !api.named_endpoints["/generate_image"]) {
+        throw new Error(`Space ${this.gradioImageSpace} không có endpoint /generate_image. Vui lòng kiểm tra cấu hình app.py.`);
       }
 
-      if (!endpointFound) {
-        throw new Error(`Không tìm thấy API endpoint phù hợp trong Gradio Space ${this.gradioImageSpace}. Vui lòng kiểm tra cấu hình app.py.`);
-      }
+      logger.info('NEURAL', `Đang gọi endpoint /generate_image trên Space ${this.gradioImageSpace}...`);
+      const result = await app.predict("/generate_image", [
+        finalPrompt,
+        7.5, // cfg_scale
+        25, // steps
+        512, // width
+        512, // height
+      ]);
 
-      // Xử lý kết quả
       if (!result || !result[0]) {
-        throw new Error("Không nhận được phản hồi từ Gradio API");
+        throw new Error("Không nhận được phản hồi từ Gradio API.");
       }
 
       const uniqueFilename = `generated_image_${Date.now()}.png`;
@@ -1270,7 +1262,7 @@ class NeuralNetworks {
       };
     } catch (error) {
       logger.error('NEURAL', `Lỗi khi tạo hình ảnh với Gradio Space ${this.gradioImageSpace}: ${error.message}`);
-      throw error;
+      throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
     }
   }
 
@@ -1415,6 +1407,53 @@ class NeuralNetworks {
    */
   getModelName() {
     return this.Model;
+  }
+
+  /**
+   * Dịch prompt tiếng Việt sang tiếng Anh để tối ưu kết quả tạo hình ảnh
+   * @param {string} vietnamesePrompt - Prompt tiếng Việt
+   * @returns {Promise<string>} - Prompt đã được dịch sang tiếng Anh
+   */
+  async translatePrompt(vietnamesePrompt) {
+    try {
+      logger.info('NEURAL', `Đang dịch prompt tiếng Việt: "${vietnamesePrompt}"`);
+      
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+      
+      // Tạo prompt yêu cầu dịch
+      const translateRequest = `
+        Dịch đoạn văn bản sau từ tiếng Việt sang tiếng Anh, giữ nguyên ý nghĩa và các thuật ngữ chuyên ngành.
+        Chỉ trả về bản dịch, không cần giải thích hay thêm bất kỳ thông tin nào khác.
+        
+        Văn bản cần dịch: "${vietnamesePrompt}"
+      `;
+      
+      // Gọi API để dịch
+      const response = await axiosInstance.post('/v1/chat/completions', {
+        model: this.thinkingModel, // Sử dụng model nhẹ hơn để dịch
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: translateRequest
+          }
+        ]
+      });
+      
+      // Trích xuất kết quả dịch
+      const translatedText = response.data.choices[0].message.content.trim();
+      
+      // Loại bỏ dấu ngoặc kép nếu có
+      const cleanTranslation = translatedText.replace(/^["']|["']$/g, '');
+      
+      logger.info('NEURAL', `Đã dịch thành công: "${cleanTranslation}"`);
+      return cleanTranslation;
+    } catch (error) {
+      logger.error('NEURAL', `Lỗi khi dịch prompt: ${error.message}`);
+      // Trả về prompt gốc nếu có lỗi
+      return vietnamesePrompt;
+    }
   }
 }
 

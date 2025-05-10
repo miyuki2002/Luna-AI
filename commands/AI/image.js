@@ -17,8 +17,11 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      await interaction.editReply(`🔍 Đang tạo hình ảnh với chủ đề: "${prompt}". Quá trình này có thể mất từ 10-30 giây...`);
+      await interaction.editReply(`🔍 Đang tạo hình ảnh với chủ đề: "${prompt}". Quá trình này có thể mất từ 15-45 giây...`);
       
+      // Phát hiện xem prompt có tiếng Việt không
+      const hasVietnamese = prompt.match(/[\u00C0-\u1EF9]/);
+
       const imageResult = await NeuralNetworks.generateImage(prompt);
       
       // Tạo attachment từ buffer
@@ -30,6 +33,11 @@ module.exports = {
       // Thêm thông tin về nguồn nếu có
       if (imageResult.source) {
         replyContent += ` (${imageResult.source})`;
+      }
+
+      // Thêm thông báo về việc dịch prompt nếu có tiếng Việt
+      if (hasVietnamese) {
+        replyContent += `\n*(Prompt đã được tự động dịch sang tiếng Anh để tạo hình ảnh tốt hơn)*`;
       }
 
       // Gửi ảnh dưới dạng tệp đính kèm
@@ -51,10 +59,10 @@ module.exports = {
                 error.message && error.message.includes('safety') || 
                 error.message && error.message.includes('inappropriate')) {
         errorMessage += 'Nội dung yêu cầu không tuân thủ nguyên tắc kiểm duyệt. Vui lòng thử chủ đề khác.';
-      } else if (error.message && error.message.includes('API endpoint')) {
+      } else if (error.message && error.message.includes('/generate_image')) {
         errorMessage += 'Không tìm thấy API endpoint phù hợp trong Gradio Space. Space có thể đã thay đổi cấu trúc hoặc đang offline.';
       } else {
-        errorMessage += 'Chi tiết lỗi: ' + error.message;
+        errorMessage += error.message.replace('Không thể tạo hình ảnh: ', '');
       }
       
       await interaction.editReply(errorMessage);
