@@ -1202,14 +1202,6 @@ class NeuralNetworks {
         },
       };
 
-      // Chỉ thêm hf_token vào options nếu nó tồn tại
-      if (hfToken) {
-        options.hf_token = hfToken;
-        logger.info('NEURAL', `Sử dụng hf_token để kết nối đến Space private.`);
-      } else {
-        logger.info('NEURAL', `Không có hf_token. Kết nối đến Space public.`);
-      }
-
       logger.info('NEURAL', `Đang kết nối đến Gradio Space: ${this.gradioImageSpace}`);
       let app;
       try {
