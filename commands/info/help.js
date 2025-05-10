@@ -51,13 +51,13 @@ module.exports = {
       .setTimestamp();
     
     // Gửi tin nhắn với menu và embed
-    const response = await interaction.reply({
+    await interaction.reply({
       embeds: [welcomeEmbed],
-      components: [row],
-      withResponse: true
+      components: [row]
     });
     
-    const message = response;
+    // Lấy message sau khi reply
+    const message = await interaction.fetchReply();
     
     const collector = message.createMessageComponentCollector({ 
       time: 60000,
