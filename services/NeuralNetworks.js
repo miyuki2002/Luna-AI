@@ -2,9 +2,6 @@ const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
 
-export const importDynamic = new Function('modulePath', 'return import(modulePath)');
-const { Client } = await importDynamic('@gradio/client');
-
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 const conversationManager = require('../handlers/conversationManager.js');
@@ -52,6 +49,20 @@ class NeuralNetworks {
     logger.info('NEURAL', `Model chat: ${this.CoreModel} & ${this.Model}`);
     logger.info('NEURAL', `Model tạo hình ảnh: ${this.imageModel}`);
     logger.info('NEURAL', `Gradio image space: ${this.gradioImageSpace}`);
+  }
+
+  /**
+   * Dynamically load the Gradio client (ESM module)
+   * @returns {Promise<Object>} - The Gradio client module
+   */
+  async loadGradioClient() {
+    try {
+      // Use dynamic import for ESM module
+      return await import('@gradio/client');
+    } catch (error) {
+      logger.error('NEURAL', `Lỗi khi tải Gradio client:`, error.message);
+      throw error;
+    }
   }
 
   /**
@@ -1154,6 +1165,10 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang tạo hình ảnh với Gradio Client và space ${this.gradioImageSpace}...`);
       logger.info('NEURAL', `Prompt: ${prompt}`);
 
+      // Use our helper method to load the Gradio client
+      const gradioModule = await this.loadGradioClient();
+      const Client = gradioModule.Client;
+
       // Kiểm tra xem có HF token không
       const options = this.hf_token ? { hf_token: this.hf_token } : {};
 
@@ -1175,10 +1190,6 @@ class NeuralNetworks {
       }
       
       // Gửi yêu cầu tạo hình ảnh và đợi kết quả
-      // Lưu ý: API endpoint và tham số có thể thay đổi tùy thuộc vào Gradio Space
-      // Sử dụng app.view_api() để xem cấu trúc API đầy đủ
-      
-      // Gọi API endpoint tạo ảnh - có thể là "/predict" hoặc khác tùy thuộc vào mô hình
       logger.info('NEURAL', `Đang gửi yêu cầu tạo hình ảnh...`);
       const result = await app.predict("/predict", [prompt, 7.5, "DPM++ 2M Karras", 25]);
 
