@@ -47,12 +47,11 @@ async function initDashboard(client) {
     logger.info('DASHBOARD', '🔄 Khởi tạo dashboard...');
 
     // Check if required directories exist
-    const viewsPath = path.join(__dirname, '../Luna-Dashboard/src/views');
     const publicPath = path.join(__dirname, '../Luna-Dashboard/src/public');
     const themesPath = path.join(__dirname, '../Luna-Dashboard/src/themes');
     
     // Create directories if they don't exist
-    [viewsPath, publicPath, themesPath, path.join(themesPath, 'default')].forEach(dir => {
+    [publicPath, themesPath, path.join(themesPath, 'default')].forEach(dir => {
       if (!fs.existsSync(dir)) {
         logger.warn('DASHBOARD', `⚠️ Directory ${dir} not found, creating it`);
         fs.mkdirSync(dir, { recursive: true });
@@ -74,7 +73,7 @@ async function initDashboard(client) {
 
     // Set up view engine
     dashboardApp.set('view engine', 'ejs');
-    dashboardApp.set('views', viewsPath);
+    dashboardApp.set('views', publicPath);
     
     // Middleware
     dashboardApp.use(bodyParser.json());
@@ -85,7 +84,7 @@ async function initDashboard(client) {
     dashboardApp.use('/themes', express.static(themesPath));
 
     // Create basic error template if it doesn't exist
-    const errorTemplate = path.join(viewsPath, 'error.ejs');
+    const errorTemplate = path.join(publicPath, 'error.ejs');
     if (!fs.existsSync(errorTemplate)) {
       logger.warn('DASHBOARD', '⚠️ Error template not found, creating it');
       const errorEjs = `<!DOCTYPE html>
@@ -135,15 +134,15 @@ async function initDashboard(client) {
     dashboardApp.use(session(sessionConfig));
 
     // Passport setup
-    passport.serializeUser((user, done) => {
-      done(null, user);
-    });
-    
-    passport.deserializeUser((obj, done) => {
-      done(null, obj);
-    });
-
     try {
+      passport.serializeUser((user, done) => {
+        done(null, user);
+      });
+      
+      passport.deserializeUser((obj, done) => {
+        done(null, obj);
+      });
+
       passport.use(new DiscordStrategy({
         clientID: config.clientID,
         clientSecret: config.clientSecret,

@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build": "npm run setup-dashboard && npm run install-deps",
+    "setup-dashboard": "node scripts/fix-dashboard.js",
+    "install-deps": "npm install",
+    "dashboard": "node scripts/fix-dashboard.js"
   },
   "author": {
     "name": "s4ory"
