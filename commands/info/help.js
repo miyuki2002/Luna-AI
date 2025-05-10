@@ -54,10 +54,10 @@ module.exports = {
     const response = await interaction.reply({
       embeds: [welcomeEmbed],
       components: [row],
-      fetchReply: false
+      withResponse: true
     });
     
-    const message = await interaction.fetchReply();
+    const message = response;
     
     const collector = message.createMessageComponentCollector({ 
       time: 60000,
