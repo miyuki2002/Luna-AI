@@ -1189,9 +1189,49 @@ class NeuralNetworks {
         fs.mkdirSync('./temp', { recursive: true });
       }
       
-      // Gửi yêu cầu tạo hình ảnh và đợi kết quả
-      logger.info('NEURAL', `Đang gửi yêu cầu tạo hình ảnh...`);
-      const result = await app.predict("/predict", [prompt, 7.5, "DPM++ 2M Karras", 25]);
+      // First, inspect the available API endpoints
+      logger.info('NEURAL', 'Kiểm tra API endpoints của Gradio space...');
+      const api = app.view_api();
+      logger.info('NEURAL', `API endpoints: ${JSON.stringify(api)}`);
+      
+      // Find the correct endpoint for text-to-image generation
+      let result;
+      try {
+        // Try with "/predict" first (common endpoint name)
+        logger.info('NEURAL', `Đang gửi yêu cầu tạo hình ảnh qua endpoint /predict...`);
+        result = await app.predict("/predict", [prompt, 7.5, "DPM++ 2M Karras", 25]);
+      } catch (endpointError) {
+        logger.error('NEURAL', `Endpoint /predict không tồn tại hoặc không hoạt động: ${endpointError.message}`);
+        
+        try {
+          // Try with fn_index 0 (common default)
+          logger.info('NEURAL', `Đang thử với fn_index 0...`);
+          result = await app.predict(0, [prompt]);
+        } catch (indexError) {
+          logger.error('NEURAL', `fn_index 0 không hoạt động: ${indexError.message}`);
+          
+          // Try with various common endpoint names
+          const endpointNames = ["/txt2img", "/generate", "/run", "/text2image"];
+          let endpointFound = false;
+          
+          for (const endpoint of endpointNames) {
+            try {
+              logger.info('NEURAL', `Đang thử với endpoint ${endpoint}...`);
+              result = await app.predict(endpoint, [prompt]);
+              endpointFound = true;
+              logger.info('NEURAL', `Endpoint ${endpoint} hoạt động!`);
+              break;
+            } catch (err) {
+              logger.warn('NEURAL', `Endpoint ${endpoint} không hoạt động: ${err.message}`);
+            }
+          }
+          
+          if (!endpointFound) {
+            // If all attempts fail, fall back to X.AI API
+            throw new Error("Không tìm thấy API endpoint phù hợp trong Gradio space");
+          }
+        }
+      }
 
       // Xử lý kết quả
       if (!result || !result[0]) {
@@ -1235,11 +1275,14 @@ class NeuralNetworks {
       
       // Fallback về API cũ nếu Gradio thất bại
       if (this.apiKey) {
-        logger.info('NEURAL', `Thử lại với X.AI API...`);
+        logger.info('NEURAL', `Đang chuyển sang sử dụng X.AI API để tạo hình ảnh...`);
         try {
-          return await this.generateImageWithXAI(prompt);
+          const xaiResult = await this.generateImageWithXAI(prompt);
+          logger.info('NEURAL', `Đã tạo hình ảnh thành công bằng X.AI API`);
+          return xaiResult;
         } catch (fallbackError) {
           logger.error('NEURAL', `Cả hai phương thức tạo hình ảnh đều thất bại:`, fallbackError.message);
+          throw new Error(`Không thể tạo hình ảnh từ cả Gradio và X.AI API: ${error.message}, ${fallbackError.message}`);
         }
       }
       
