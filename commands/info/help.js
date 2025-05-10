@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,7 +16,7 @@ module.exports = {
     
     // Tạo select menu cho danh mục
     const select = new StringSelectMenuBuilder()
-      .setCustomId('category')
+      .setCustomId('category-select')
       .setPlaceholder('Chọn danh mục lệnh')
       .addOptions(
         // Thêm option tất cả danh mục
@@ -50,17 +50,17 @@ module.exports = {
     const response = await interaction.reply({
       embeds: [welcomeEmbed],
       components: [row],
-      fetchReply: true
+      fetchReply: false
     });
     
-    // Tạo collector để lắng nghe sự kiện chọn menu
-    const collector = response.createMessageComponentCollector({ 
-      time: 60000, // Thời gian timeout: 1 phút
-      componentType: 2 // Type 2 là SELECT_MENU
+    const message = await interaction.fetchReply();
+    
+    const collector = message.createMessageComponentCollector({ 
+      time: 60000,
+      componentType: ComponentType.StringSelect
     });
     
     collector.on('collect', async i => {
-      // Đảm bảo chỉ người dùng ban đầu mới có thể tương tác
       if (i.user.id !== interaction.user.id) {
         return i.reply({ 
           content: 'Bạn không thể sử dụng menu này, vui lòng sử dụng lệnh `/help` để tạo menu riêng.', 
@@ -72,7 +72,7 @@ module.exports = {
       
       // Tạo embed hiển thị lệnh
       const helpEmbed = new EmbedBuilder()
-        .setColor(0x9B59B6) // Màu tím Luna
+        .setColor(0x9B59B6) // Màu tím
         .setTitle(`📚 Trợ giúp lệnh - ${category === 'all' ? 'Tất cả danh mục' : capitalizeFirstLetter(category)}`)
         .setFooter({ text: 'Luna AI • Developed by s4ory' })
         .setTimestamp();
@@ -122,20 +122,30 @@ module.exports = {
         }
       }
       
-      // Cập nhật tin nhắn với embed mới
       await i.update({ embeds: [helpEmbed], components: [row] });
     });
     
-    collector.on('end', () => {
-      // Vô hiệu hóa menu khi hết thời gian
-      const disabledRow = new ActionRowBuilder().addComponents(
-        select.setDisabled(true)
-      );
-      
-      interaction.editReply({ 
-        content: 'Menu trợ giúp đã hết hạn. Sử dụng `/help` để tạo menu mới.', 
-        components: [disabledRow] 
-      }).catch(console.error);
+    collector.on('end', collected => {
+      try {
+        // Vô hiệu hóa menu khi hết thời gian
+        const disabledRow = new ActionRowBuilder().addComponents(
+          select.setDisabled(true)
+        );
+        
+        if (collected.size === 0) {
+          interaction.editReply({ 
+            content: 'Menu trợ giúp đã hết hạn. Sử dụng `/help` để tạo menu mới.', 
+            components: [disabledRow] 
+          });
+        } else {
+          // Chỉ vô hiệu hóa menu
+          interaction.editReply({
+            components: [disabledRow]
+          });
+        }
+      } catch (error) {
+        console.error('Error when disabling the help menu:', error);
+      }
     });
   },
 };
