@@ -1180,32 +1180,36 @@ class NeuralNetworks {
       const gradioModule = await this.loadGradioClient();
       const Client = gradioModule.Client;
 
-      // Cấu hình options với HF_TOKEN
+      // Kiểm tra trạng thái Space trước
       const options = {
-        hf_token: this.hf_token, // Token cho Space private
+        hf_token: this.hf_token,
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
         },
       };
 
-      // Kết nối đến Space s4ory/luna
-      logger.info('NEURAL', `Đang kết nối đến Gradio Space: ${this.gradioImageSpace}`);
-      const app = await Client.connect(this.gradioImageSpace, options);
+      logger.info('NEURAL', `Đang kiểm tra kết nối đến Gradio Space: ${this.gradioImageSpace}`);
+      let app;
+      try {
+        app = await Client.connect(this.gradioImageSpace, options);
+      } catch (connectError) {
+        logger.error('NEURAL', `Không thể kết nối đến Space ${this.gradioImageSpace}: ${connectError.message}`);
+        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space hoặc HF_TOKEN.`);
+      }
 
       // Kiểm tra API endpoints
       logger.info('NEURAL', `Kiểm tra API endpoints của Gradio Space ${this.gradioImageSpace}...`);
       const api = await app.view_api();
       logger.info('NEURAL', `API endpoints: ${JSON.stringify(api)}`);
 
-      // Tìm endpoint phù hợp cho text-to-image
+      // Tìm endpoint phù hợp
+      const endpoints = ["/predict", "/txt2img", "/generate", "/run", "/text2image"];
       let result;
-      const endpoints = ["/predict", "/txt2img", "/generate", "/run", "/text2image", 0];
       let endpointFound = false;
 
       for (const endpoint of endpoints) {
         try {
           logger.info('NEURAL', `Đang thử với endpoint ${endpoint} trên Space ${this.gradioImageSpace}...`);
-          // Tham số tối ưu cho stable-diffusion-3.5-large
           result = await app.predict(endpoint, [
             prompt,
             7.5, // cfg_scale
@@ -1223,7 +1227,7 @@ class NeuralNetworks {
       }
 
       if (!endpointFound) {
-        throw new Error(`Không tìm thấy API endpoint phù hợp trong Gradio Space ${this.gradioImageSpace}`);
+        throw new Error(`Không tìm thấy API endpoint phù hợp trong Gradio Space ${this.gradioImageSpace}. Vui lòng kiểm tra cấu hình app.py.`);
       }
 
       // Xử lý kết quả
@@ -1231,7 +1235,6 @@ class NeuralNetworks {
         throw new Error("Không nhận được phản hồi từ Gradio API");
       }
 
-      // Tạo tên file duy nhất
       const uniqueFilename = `generated_image_${Date.now()}.png`;
       const outputPath = `./temp/${uniqueFilename}`;
       if (!fs.existsSync('./temp')) {
@@ -1243,7 +1246,7 @@ class NeuralNetworks {
 
       if (typeof result[0] === 'string' && result[0].startsWith('http')) {
         imageUrl = result[0];
-        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 30000 });
         imageBuffer = Buffer.from(imageResponse.data);
         fs.writeFileSync(outputPath, imageBuffer);
       } else if (result[0] && typeof result[0] === 'object') {
@@ -1251,7 +1254,7 @@ class NeuralNetworks {
         if (!imageUrl) {
           throw new Error(`Không thể xác định URL hình ảnh từ kết quả: ${JSON.stringify(result[0])}`);
         }
-        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 30000 });
         imageBuffer = Buffer.from(response.data);
         fs.writeFileSync(outputPath, imageBuffer);
       } else {
