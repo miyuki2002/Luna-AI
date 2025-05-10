@@ -1,6 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const NeuralNetworks = require('../../services/NeuralNetworks');
 const mongoClient = require('../../services/mongoClient');
+const packageJson = require('../../package.json');
+const stringUtils = require('../../utils/string');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -12,82 +14,214 @@ module.exports = {
 		const sent = await interaction.deferReply({ fetchReply: true });
 		const pingLatency = sent.createdTimestamp - interaction.createdTimestamp;
 		
-		// Kiểm tra độ trễ WebSocket API của Discord
-		const wsLatency = interaction.client.ws.ping;
+		// Tạo placeholder embed ban đầu
+		const initialEmbed = createStatusEmbed({
+			ping: pingLatency,
+			ws: interaction.client.ws.ping,
+			mongo: "Đang kiểm tra...",
+			ai: "Đang kiểm tra..."
+		});
 
-		// Kiểm tra kết nối đến MongoDB
-		let mongoStatus = "Đang kiểm tra...";
-		try {
-			const startTime = Date.now();
-			await mongoClient.ping();
-			const mongoLatency = Date.now() - startTime;
-			mongoStatus = `🟢 Kết nối (${mongoLatency}ms)`;
-		} catch (error) {
-			mongoStatus = "🔴 Ngắt kết nối";
-		}
+		// Gửi phản hồi với embed ban đầu
+		const response = await interaction.editReply({
+			embeds: [initialEmbed],
+			components: [createActionRow(false)]
+		});
 
-		// Kiểm tra kết nối đến X.AI API
-		let aiStatus = "Đang kiểm tra...";
-		try {
-			const startTime = Date.now();
-			const connected = await NeuralNetworks.testConnection();
-			const aiLatency = Date.now() - startTime;
-			aiStatus = connected ? `🟢 Kết nối (${aiLatency}ms)` : "🟠 Lỗi";
-		} catch (error) {
-			aiStatus = "🔴 Ngắt kết nối";
-		}
+		// Kiểm tra kết nối database và AI đồng thời
+		const [mongoResult, aiResult] = await Promise.all([
+			checkMongoDB(),
+			checkAIService()
+		]);
 
-		// Tạo một embed đẹp mắt với thông tin về độ trễ và trạng thái
-		const statusEmbed = new EmbedBuilder()
-			.setColor(0x00bfff)
-			.setTitle('📊 Thông tin độ trễ và trạng thái')
-			.addFields(
-				{ 
-					name: '🤖 Bot', 
-					value: `⌛ Độ trễ: ${pingLatency}ms\n📡 WebSocket: ${wsLatency}ms`, 
-					inline: false 
-				},
-				{ 
-					name: '📦 Cơ sở dữ liệu', 
-					value: mongoStatus, 
-					inline: true 
-				},
-				{ 
-					name: '🧠 AI Service', 
-					value: aiStatus, 
-					inline: true 
-				}
-			)
-			.setFooter({ 
-				text: `Luna Bot v1.0.0 • ${getNiceUptime(process.uptime())}`,
-			})
-			.setTimestamp();
+		// Cập nhật embed với thông tin mới
+		const updatedEmbed = createStatusEmbed({
+			ping: pingLatency,
+			ws: interaction.client.ws.ping,
+			mongo: mongoResult,
+			ai: aiResult
+		});
 
-		await interaction.editReply({ embeds: [statusEmbed] });
+		// Cập nhật tin nhắn gốc với embed mới và các nút tương tác
+		await interaction.editReply({
+			embeds: [updatedEmbed],
+			components: [createActionRow(true)]
+		});
+
+		// Tạo collector để xử lý các sự kiện nút nhấn
+		const collector = response.createMessageComponentCollector({
+			componentType: ComponentType.Button,
+			time: 60000
+		});
+
+		collector.on('collect', async (i) => {
+			// Chỉ người dùng ban đầu mới có thể tương tác
+			if (i.user.id !== interaction.user.id) {
+				return i.reply({
+					content: 'Chỉ người dùng lệnh mới có thể sử dụng các nút này.',
+					ephemeral: true
+				});
+			}
+
+			if (i.customId === 'refresh_status') {
+				// Gửi phản hồi tạm thời
+				await i.update({
+					embeds: [createStatusEmbed({
+						ping: pingLatency,
+						ws: interaction.client.ws.ping,
+						mongo: "Đang làm mới...",
+						ai: "Đang làm mới..."
+					})],
+					components: [createActionRow(false)]
+				});
+
+				// Lấy dữ liệu mới
+				const newPingLatency = Date.now() - i.createdTimestamp;
+				const [newMongoResult, newAiResult] = await Promise.all([
+					checkMongoDB(),
+					checkAIService()
+				]);
+
+				// Cập nhật tin nhắn với dữ liệu mới
+				await i.editReply({
+					embeds: [createStatusEmbed({
+						ping: newPingLatency,
+						ws: interaction.client.ws.ping,
+						mongo: newMongoResult,
+						ai: newAiResult
+					})],
+					components: [createActionRow(true)]
+				});
+			} else if (i.customId === 'detailed_info') {
+				// Hiển thị thông tin chi tiết
+				const detailedEmbed = new EmbedBuilder()
+					.setColor(0x9B59B6)
+					.setTitle('📈 Thông tin chi tiết')
+					.addFields(
+						{ name: '🤖 Phiên bản Bot', value: `\`${packageJson.version}\``, inline: true },
+						{ name: '📚 Discord.js', value: `\`${packageJson.dependencies['discord.js'].replace('^', '')}\``, inline: true },
+						{ name: '📦 Node.js', value: `\`${process.version}\``, inline: true },
+						{ name: '🔄 Thời gian hoạt động', value: `\`${stringUtils.formatUptime(process.uptime())}\``, inline: false },
+						{ name: '💾 Sử dụng bộ nhớ', value: `\`${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB\``, inline: true },
+						{ name: '💻 Hệ điều hành', value: `\`${process.platform} ${process.arch}\``, inline: true },
+						{ name: '🧵 Số lượng shards', value: `\`${interaction.client.shard ? interaction.client.shard.count : 1}\``, inline: true }
+					)
+					.setFooter({ text: 'Luna AI • Developed by s4ory' })
+					.setTimestamp();
+
+				await i.reply({
+					embeds: [detailedEmbed],
+					ephemeral: true
+				});
+			}
+		});
+
+		collector.on('end', () => {
+			// Vô hiệu hóa các nút sau khi collector kết thúc
+			const disabledRow = new ActionRowBuilder().addComponents(
+				new ButtonBuilder()
+					.setCustomId('refresh_status')
+					.setLabel('Làm mới')
+					.setEmoji('🔄')
+					.setStyle(ButtonStyle.Secondary)
+					.setDisabled(true),
+				new ButtonBuilder()
+					.setCustomId('detailed_info')
+					.setLabel('Thông tin chi tiết')
+					.setEmoji('ℹ️')
+					.setStyle(ButtonStyle.Secondary)
+					.setDisabled(true)
+			);
+
+			interaction.editReply({ components: [disabledRow] }).catch(() => {});
+		});
 	},
 };
 
 /**
- * Chuyển đổi thời gian hoạt động (giây) thành định dạng dễ đọc
- * @param {number} uptime - Thời gian hoạt động tính bằng giây
- * @returns {string} - Chuỗi thời gian định dạng dễ đọc
+ * Tạo embed hiển thị trạng thái
  */
-function getNiceUptime(uptime) {
-	const days = Math.floor(uptime / 86400);
-	const hours = Math.floor((uptime % 86400) / 3600);
-	const minutes = Math.floor((uptime % 3600) / 60);
-	
-	let uptimeString = '';
-	
-	if (days > 0) {
-		uptimeString += `${days}d `;
+function createStatusEmbed({ ping, ws, mongo, ai }) {
+	// Xác định màu dựa trên ping
+	let statusColor;
+	if (ping < 200) statusColor = 0x57F287; // Xanh lá - tốt
+	else if (ping < 400) statusColor = 0xFEE75C; // Vàng - trung bình
+	else statusColor = 0xED4245; // Đỏ - chậm
+
+	return new EmbedBuilder()
+		.setColor(statusColor)
+		.setAuthor({ 
+			name: 'Luna AI', 
+			iconURL: 'https://cdn.discordapp.com/avatars/1167040553745023047/44b01eced3cfea85ab32eda3ef2bc11b.webp' 
+		})
+		.setTitle('📊 Trạng thái hệ thống')
+		.addFields(
+			{ 
+				name: '🤖 Độ trễ',
+				value: `> **Bot**: \`${ping}ms\`\n> **WebSocket**: \`${ws}ms\``,
+				inline: false 
+			},
+			{ 
+				name: '📦 Cơ sở dữ liệu', 
+				value: mongo, 
+				inline: true 
+			},
+			{ 
+				name: '🧠 Dịch vụ AI', 
+				value: ai, 
+				inline: true 
+			}
+		)
+		.setFooter({ 
+			text: `Luna v${packageJson.version} • ${stringUtils.formatUptime(process.uptime())}`,
+		})
+		.setTimestamp();
+}
+
+/**
+ * Tạo hàng chứa các nút tương tác
+ */
+function createActionRow(enabled = true) {
+	return new ActionRowBuilder().addComponents(
+		new ButtonBuilder()
+			.setCustomId('refresh_status')
+			.setLabel('Làm mới')
+			.setEmoji('🔄')
+			.setStyle(ButtonStyle.Primary)
+			.setDisabled(!enabled),
+		new ButtonBuilder()
+			.setCustomId('detailed_info')
+			.setLabel('Thông tin chi tiết')
+			.setEmoji('ℹ️')
+			.setStyle(ButtonStyle.Secondary)
+			.setDisabled(!enabled)
+	);
+}
+
+/**
+ * Kiểm tra kết nối MongoDB
+ */
+async function checkMongoDB() {
+	try {
+		const startTime = Date.now();
+		await mongoClient.ping();
+		const mongoLatency = Date.now() - startTime;
+		return `🟢 Kết nối (${mongoLatency}ms)`;
+	} catch (error) {
+		return "🔴 Ngắt kết nối";
 	}
-	
-	if (hours > 0 || days > 0) {
-		uptimeString += `${hours}h `;
+}
+
+/**
+ * Kiểm tra kết nối dịch vụ AI
+ */
+async function checkAIService() {
+	try {
+		const startTime = Date.now();
+		const connected = await NeuralNetworks.testConnection();
+		const aiLatency = Date.now() - startTime;
+		return connected ? `🟢 Kết nối (${aiLatency}ms)` : "🟠 Lỗi";
+	} catch (error) {
+		return "🔴 Ngắt kết nối";
 	}
-	
-	uptimeString += `${minutes}m`;
-	
-	return `Uptime: ${uptimeString}`;
 }
