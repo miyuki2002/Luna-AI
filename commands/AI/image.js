@@ -27,7 +27,7 @@ module.exports = {
       const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
 
       // Chuẩn bị nội dung phản hồi
-      let replyContent = `🎨 Bức tranh từ "${prompt}"`;
+      let replyContent = `🎨 Bức tranh theo ý bạn.\n\n > "${prompt}"`;
       
       // Gửi ảnh dưới dạng tệp đính kèm
       await interaction.editReply({
