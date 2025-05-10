@@ -75,19 +75,19 @@ module.exports = {
 			
 			// Vẽ khung thông tin kỹ thuật
 			drawSimpleInfoBox(ctx, 50, 150, 380, 200, 'Thông tin kỹ thuật', [
-				{ icon: '[AI]', label: 'Model AI', value: modelName },
-				{ icon: '[⏰]', label: 'Uptime', value: formatUptime(process.uptime(), false) },
-				{ icon: '[JS]', label: 'Node', value: process.version },
-				{ icon: '[MB]', label: 'Memory', value: `${memoryUsage} MB` },
-				{ icon: '[#]', label: 'Servers', value: serverCount.toString() }
+				{ label: 'Model AI', value: modelName },
+				{ label: 'Uptime', value: formatUptime(process.uptime(), false) },
+				{ label: 'Node', value: process.version },
+				{ label: 'Memory', value: `${memoryUsage} MB` },
+				{ label: 'Servers', value: serverCount.toString() }
 			]);
 			
 			// Vẽ khung tính năng
 			drawSimpleInfoBox(ctx, 450, 150, 400, 200, 'Tính năng', [
-				{ icon: '[>]', label: 'Trò chuyện AI', value: 'Mention @Luna' },
-				{ icon: '[+]', label: 'Tạo hình ảnh', value: 'vẽ [mô tả]' },
-				{ icon: '[<>]', label: 'Lập trình', value: 'code [yêu cầu]' },
-				{ icon: '[x]', label: 'Quản lý tin nhắn', value: 'xóa lịch sử' }
+				{ label: 'Trò chuyện AI', value: 'Mention @Luna' },
+				{ label: 'Tạo hình ảnh', value: 'vẽ [mô tả]' },
+				{ label: 'Lập trình', value: 'code [yêu cầu]' },
+				{ label: 'Quản lý tin nhắn', value: 'xóa lịch sử' }
 			]);
 			
 			// Thông tin liên hệ
