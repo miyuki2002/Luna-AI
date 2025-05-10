@@ -1,91 +1,160 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('help')
-    .setDescription('Hiển thị danh sách lệnh và thông tin trợ giúp')
-    .addStringOption(option => 
-      option.setName('category')
-        .setDescription('Danh mục lệnh cần xem')
-        .setRequired(false)
-        .addChoices(
-          { name: 'Moderation', value: 'moderation' },
-          { name: 'Info', value: 'info' },
-          { name: 'AI', value: 'ai' },
-          { name: 'Setting', value: 'setting' },
-          { name: 'Tất cả', value: 'all' }
-        )),
+    .setDescription('Hiển thị danh sách lệnh và thông tin trợ giúp'),
 
   async execute(interaction) {
-    const category = interaction.options.getString('category') || 'all';
-    
-    // Tạo embed cơ bản
-    const helpEmbed = new EmbedBuilder()
-      .setColor(0x3498DB)
-      .setTitle('📚 Trợ giúp lệnh')
-      .setFooter({ text: 'Sử dụng /help [category] để xem chi tiết từng danh mục' })
-      .setTimestamp();
-    
     // Đọc các thư mục lệnh
     const commandsPath = path.join(__dirname, '../');
     const commandFolders = fs.readdirSync(commandsPath, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
     
-    // Nếu chọn xem tất cả danh mục
-    if (category === 'all') {
-      helpEmbed.setDescription('Danh sách tất cả các danh mục lệnh có sẵn:');
+    // Tạo select menu cho danh mục
+    const select = new StringSelectMenuBuilder()
+      .setCustomId('category')
+      .setPlaceholder('Chọn danh mục lệnh')
+      .addOptions(
+        // Thêm option tất cả danh mục
+        new StringSelectMenuOptionBuilder()
+          .setLabel('Tất cả')
+          .setDescription('Xem tất cả các lệnh')
+          .setValue('all')
+          .setEmoji('📚'),
+        
+        // Thêm option cho từng danh mục
+        ...commandFolders.map(folder => 
+          new StringSelectMenuOptionBuilder()
+            .setLabel(folder.charAt(0).toUpperCase() + folder.slice(1))
+            .setDescription(`Xem lệnh danh mục ${folder}`)
+            .setValue(folder)
+            .setEmoji(getCategoryEmoji(folder))
+        )
+      );
+    
+    const row = new ActionRowBuilder().addComponents(select);
+    
+    // Tạo embed chào mừng ban đầu
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor(0x9B59B6) // Màu tím Luna
+      .setTitle('📚 Trợ giúp lệnh Luna AI')
+      .setDescription('Chọn một danh mục từ menu dropdown bên dưới để xem các lệnh.')
+      .setFooter({ text: 'Luna AI • Developed by s4ory' })
+      .setTimestamp();
+    
+    // Gửi tin nhắn với menu và embed
+    const response = await interaction.reply({
+      embeds: [welcomeEmbed],
+      components: [row],
+      fetchReply: true
+    });
+    
+    // Tạo collector để lắng nghe sự kiện chọn menu
+    const collector = response.createMessageComponentCollector({ 
+      time: 60000, // Thời gian timeout: 1 phút
+      componentType: 2 // Type 2 là SELECT_MENU
+    });
+    
+    collector.on('collect', async i => {
+      // Đảm bảo chỉ người dùng ban đầu mới có thể tương tác
+      if (i.user.id !== interaction.user.id) {
+        return i.reply({ 
+          content: 'Bạn không thể sử dụng menu này, vui lòng sử dụng lệnh `/help` để tạo menu riêng.', 
+          ephemeral: true 
+        });
+      }
       
-      for (const folder of commandFolders) {
-        const folderPath = path.join(commandsPath, folder);
+      const category = i.values[0];
+      
+      // Tạo embed hiển thị lệnh
+      const helpEmbed = new EmbedBuilder()
+        .setColor(0x9B59B6) // Màu tím Luna
+        .setTitle(`📚 Trợ giúp lệnh - ${category === 'all' ? 'Tất cả danh mục' : capitalizeFirstLetter(category)}`)
+        .setFooter({ text: 'Luna AI • Developed by s4ory' })
+        .setTimestamp();
+      
+      // Hiển thị lệnh dựa trên danh mục được chọn
+      if (category === 'all') {
+        helpEmbed.setDescription('Danh sách tất cả các danh mục lệnh có sẵn:');
+        
+        for (const folder of commandFolders) {
+          const folderPath = path.join(commandsPath, folder);
+          const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+          
+          // Tạo danh sách lệnh trong danh mục
+          const commandList = commandFiles.map(file => {
+            const command = require(path.join(folderPath, file));
+            return `\`/${command.data.name}\` - ${command.data.description}`;
+          }).join('\n');
+          
+          helpEmbed.addFields({
+            name: `${getCategoryEmoji(folder)} ${capitalizeFirstLetter(folder)}`,
+            value: commandList || 'Không có lệnh nào trong danh mục này.',
+          });
+        }
+      } else {
+        // Hiển thị lệnh trong danh mục cụ thể
+        const folderPath = path.join(commandsPath, category);
         const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
         
-        // Tạo danh sách lệnh trong danh mục
-        const commandList = commandFiles.map(file => {
+        helpEmbed.setDescription(`Chi tiết các lệnh trong danh mục **${capitalizeFirstLetter(category)}**:`);
+        
+        for (const file of commandFiles) {
           const command = require(path.join(folderPath, file));
-          return `\`/${command.data.name}\` - ${command.data.description}`;
-        }).join('\n');
-        
-        helpEmbed.addFields({
-          name: `📁 ${folder.charAt(0).toUpperCase() + folder.slice(1)}`,
-          value: commandList || 'Không có lệnh nào trong danh mục này.',
-        });
-      }
-    } else {
-      // Nếu chọn xem một danh mục cụ thể
-      if (!commandFolders.includes(category)) {
-        return interaction.reply({
-          content: `Danh mục \`${category}\` không tồn tại.`,
-          ephemeral: true
-        });
-      }
-      
-      const folderPath = path.join(commandsPath, category);
-      const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
-      
-      helpEmbed.setDescription(`Chi tiết các lệnh trong danh mục **${category.charAt(0).toUpperCase() + category.slice(1)}**:`);
-      
-      for (const file of commandFiles) {
-        const command = require(path.join(folderPath, file));
-        
-        // Lấy thông tin về các tùy chọn của lệnh
-        let optionsInfo = '';
-        if (command.data.options && command.data.options.length > 0) {
-          optionsInfo = command.data.options.map(option => {
-            const required = option.required ? '(bắt buộc)' : '(tùy chọn)';
-            return `• \`${option.name}\`: ${option.description} ${required}`;
-          }).join('\n');
+          
+          // Lấy thông tin về các tùy chọn của lệnh
+          let optionsInfo = '';
+          if (command.data.options && command.data.options.length > 0) {
+            optionsInfo = command.data.options.map(option => {
+              const required = option.required ? '(bắt buộc)' : '(tùy chọn)';
+              return `• \`${option.name}\`: ${option.description} ${required}`;
+            }).join('\n');
+          }
+          
+          helpEmbed.addFields({
+            name: `/${command.data.name}`,
+            value: `${command.data.description}\n${optionsInfo || 'Không có tùy chọn.'}`
+          });
         }
-        
-        helpEmbed.addFields({
-          name: `/${command.data.name}`,
-          value: `${command.data.description}\n${optionsInfo || 'Không có tùy chọn.'}`
-        });
       }
-    }
+      
+      // Cập nhật tin nhắn với embed mới
+      await i.update({ embeds: [helpEmbed], components: [row] });
+    });
     
-    await interaction.reply({ embeds: [helpEmbed] });
+    collector.on('end', () => {
+      // Vô hiệu hóa menu khi hết thời gian
+      const disabledRow = new ActionRowBuilder().addComponents(
+        select.setDisabled(true)
+      );
+      
+      interaction.editReply({ 
+        content: 'Menu trợ giúp đã hết hạn. Sử dụng `/help` để tạo menu mới.', 
+        components: [disabledRow] 
+      }).catch(console.error);
+    });
   },
 };
+
+// Hàm hỗ trợ viết hoa chữ cái đầu
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+// Hàm lấy emoji tương ứng cho mỗi danh mục
+function getCategoryEmoji(category) {
+  const emojis = {
+    'moderation': '🛡️',
+    'info': 'ℹ️',
+    'ai': '🤖',
+    'setting': '⚙️',
+    'fun': '🎮',
+    'utility': '🔧'
+  };
+  
+  return emojis[category] || '📁';
+}
