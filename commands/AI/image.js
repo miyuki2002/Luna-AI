@@ -19,7 +19,6 @@ module.exports = {
     try {
       await interaction.editReply(`🔍 Đang tạo hình ảnh với chủ đề: "${prompt}". Quá trình này có thể mất từ 15-45 giây...`);
       
-      // Phát hiện xem prompt có tiếng Việt không
       const hasVietnamese = prompt.match(/[\u00C0-\u1EF9]/);
 
       const imageResult = await NeuralNetworks.generateImage(prompt);
@@ -41,11 +40,7 @@ module.exports = {
       let errorMessage = '❌ Không thể tạo hình ảnh. ';
       
       // Xử lý trường hợp lỗi cụ thể liên quan đến Hugging Face space
-      if (error.message && error.message.includes('NOT_FOUND')) {
-        errorMessage += 'Không tìm thấy Gradio Space. Vui lòng kiểm tra cài đặt HF_TOKEN và GRADIO_IMAGE_SPACE trong file .env.';
-      } else if (error.message && error.message.includes('AUTH_ERROR')) {
-        errorMessage += 'HF_TOKEN không hợp lệ hoặc không có quyền truy cập. Vui lòng kiểm tra token trong file .env.';
-      } else if (error.message && error.message.includes('content moderation') || 
+      if (error.message && error.message.includes('content moderation') || 
                 error.message && error.message.includes('safety') || 
                 error.message && error.message.includes('inappropriate')) {
         errorMessage += 'Nội dung yêu cầu không tuân thủ nguyên tắc kiểm duyệt. Vui lòng thử chủ đề khác.';
