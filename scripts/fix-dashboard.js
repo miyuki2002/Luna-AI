@@ -23,7 +23,6 @@ function createDashboardDirs() {
     path.join(dashboardDir, 'src'),
     path.join(dashboardDir, 'src', 'config'),
     path.join(dashboardDir, 'src', 'routes'),
-    path.join(dashboardDir, 'src', 'views'),
     path.join(dashboardDir, 'src', 'public'),
     path.join(dashboardDir, 'src', 'themes', 'default')
   ];
@@ -131,6 +130,15 @@ function updateDashboardImports() {
   if (fs.existsSync(dashboardJsPath)) {
     let content = fs.readFileSync(dashboardJsPath, 'utf8');
     
+    // Update view engine configuration if needed
+    if (content.includes("set('views', path.join(__dirname, '../Luna-Dashboard/src/views'))")) {
+      content = content.replace(
+        "dashboardApp.set('views', path.join(__dirname, '../Luna-Dashboard/src/views'))",
+        "dashboardApp.set('views', path.join(__dirname, '../Luna-Dashboard/src/public'))"
+      );
+      console.log('Updated view path in dashboard.js');
+    }
+    
     // Update route imports
     const oldImports = `const routes = {
   main: require('../Luna-Dashboard/src/routes/main'),
@@ -170,6 +178,34 @@ Object.entries(routePaths).forEach(([key, path]) => {
   }
 }
 
+// Setup theme with Luna colors
+function setupTheme() {
+  const themePath = path.join(dashboardDir, 'src', 'themes', 'default', 'style.css');
+  
+  // Create default theme directory if it doesn't exist
+  const themeDir = path.join(dashboardDir, 'src', 'themes', 'default');
+  if (!fs.existsSync(themeDir)) {
+    fs.mkdirSync(themeDir, { recursive: true });
+  }
+  
+  // Create or update theme file with Luna colors
+  const cssContent = `:root {
+  --primary: #7F5AF0;
+  --secondary: #d580ff;
+  --success: #72E9B5;
+  --danger: #FF8E8E;
+  --dark: #16161A;
+  --background: #242629;
+  --light: #FFFFFE;
+  --text: #94A1B2;
+  --card-color: #16161A;
+  --border-radius: 0.4rem;
+}`;
+
+  fs.writeFileSync(themePath, cssContent);
+  console.log('Created Luna theme CSS');
+}
+
 // Main fix function
 async function fixDashboard() {
   try {
@@ -189,6 +225,9 @@ async function fixDashboard() {
     
     // Update dashboard.js imports
     updateDashboardImports();
+    
+    // Setup theme
+    setupTheme();
     
     // Install necessary packages
     await installPackages();
