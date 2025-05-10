@@ -1,6 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
+const { Client } = require('@gradio/client');
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 const conversationManager = require('../handlers/conversationManager.js');
@@ -24,6 +25,9 @@ class NeuralNetworks {
       baseURL: 'https://api.x.ai'
     });
 
+    // Hugging Face Token cho Gradio
+    this.hf_token = process.env.HF_TOKEN;
+
     // System Prompt
     this.systemPrompt = prompts.system.main;
 
@@ -31,6 +35,9 @@ class NeuralNetworks {
     this.imageModel = 'grok-2-image-1212';
     this.thinkingModel = 'grok-3-mini';
     this.Model = 'luna-v1-preview';
+
+    // Gradio image generation models
+    this.gradioImageSpace = process.env.GRADIO_IMAGE_SPACE || 'stabilityai/stable-diffusion-xl-base-1.0';
 
     // Cấu hình StorageDB
     storageDB.setMaxConversationLength(30);
@@ -41,6 +48,7 @@ class NeuralNetworks {
 
     logger.info('NEURAL', `Model chat: ${this.CoreModel} & ${this.Model}`);
     logger.info('NEURAL', `Model tạo hình ảnh: ${this.imageModel}`);
+    logger.info('NEURAL', `Gradio image space: ${this.gradioImageSpace}`);
   }
 
   /**
@@ -1134,11 +1142,111 @@ class NeuralNetworks {
   }
 
   /**
-   * Tạo hình ảnh sử dụng API với mô hình riêng
+   * Tạo hình ảnh sử dụng Gradio API
+   * @param {string} prompt - Mô tả hình ảnh cần tạo
+   * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
    */
   async generateImage(prompt) {
     try {
-      console.log(`Đang tạo hình ảnh với mô hình ${this.imageModel}...`);
+      logger.info('NEURAL', `Đang tạo hình ảnh với Gradio Client và space ${this.gradioImageSpace}...`);
+      logger.info('NEURAL', `Prompt: ${prompt}`);
+
+      // Kiểm tra xem có HF token không
+      const options = this.hf_token ? { hf_token: this.hf_token } : {};
+
+      // Thêm callback trạng thái
+      options.status_callback = (status) => {
+        logger.info('NEURAL', `Trạng thái Gradio Space: ${status.status} - ${status.detail || ''}`);
+      }
+
+      // Kết nối đến Gradio Space
+      const app = await Client.connect(this.gradioImageSpace, options);
+      
+      // Tạo tên file duy nhất cho hình ảnh
+      const uniqueFilename = `generated_image_${Date.now()}.png`;
+      const outputPath = `./temp/${uniqueFilename}`;
+      
+      // Đảm bảo thư mục temp tồn tại
+      if (!fs.existsSync('./temp')) {
+        fs.mkdirSync('./temp', { recursive: true });
+      }
+      
+      // Gửi yêu cầu tạo hình ảnh và đợi kết quả
+      // Lưu ý: API endpoint và tham số có thể thay đổi tùy thuộc vào Gradio Space
+      // Sử dụng app.view_api() để xem cấu trúc API đầy đủ
+      
+      // Gọi API endpoint tạo ảnh - có thể là "/predict" hoặc khác tùy thuộc vào mô hình
+      logger.info('NEURAL', `Đang gửi yêu cầu tạo hình ảnh...`);
+      const result = await app.predict("/predict", [prompt, 7.5, "DPM++ 2M Karras", 25]);
+
+      // Xử lý kết quả
+      if (!result || !result[0]) {
+        throw new Error("Không nhận được phản hồi từ Gradio API");
+      }
+      
+      // Kết quả có thể là URL hoặc dữ liệu base64
+      let imageUrl = '';
+      let imageBuffer = null;
+      
+      if (typeof result[0] === 'string' && result[0].startsWith('http')) {
+        // Kết quả là URL trực tiếp
+        imageUrl = result[0];
+        
+        // Tải hình ảnh từ URL
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        imageBuffer = Buffer.from(imageResponse.data);
+        
+        // Lưu hình ảnh vào file
+        fs.writeFileSync(outputPath, imageBuffer);
+      } else if (result[0].name && result[0].data) {
+        // Kết quả là đối tượng file từ Gradio
+        imageUrl = result[0].data;
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        imageBuffer = Buffer.from(response.data);
+        fs.writeFileSync(outputPath, imageBuffer);
+      } else {
+        // Xử lý trường hợp khác (tùy thuộc vào định dạng trả về của mô hình)
+        throw new Error("Định dạng kết quả không được hỗ trợ");
+      }
+      
+      logger.info('NEURAL', `Đã tạo hình ảnh thành công và lưu tại: ${outputPath}`);
+      
+      return {
+        buffer: imageBuffer,
+        url: imageUrl,
+        localPath: outputPath
+      };
+    } catch (error) {
+      logger.error('NEURAL', `Lỗi khi tạo hình ảnh qua Gradio:`, error.message);
+      
+      // Fallback về API cũ nếu Gradio thất bại
+      if (this.apiKey) {
+        logger.info('NEURAL', `Thử lại với X.AI API...`);
+        try {
+          return await this.generateImageWithXAI(prompt);
+        } catch (fallbackError) {
+          logger.error('NEURAL', `Cả hai phương thức tạo hình ảnh đều thất bại:`, fallbackError.message);
+        }
+      }
+      
+      if (error.message.includes("content moderation") || 
+          error.message.includes("safety") || 
+          error.message.includes("inappropriate")) {
+        return "Xin lỗi, mình không thể tạo hình ảnh này. Nội dung bạn yêu cầu không tuân thủ nguyên tắc kiểm duyệt nội dung. Vui lòng thử chủ đề hoặc mô tả khác.";
+      }
+
+      return `Xin lỗi, không thể tạo hình ảnh: ${error.message}`;
+    }
+  }
+
+  /**
+   * Phương thức dự phòng sử dụng X.AI API để tạo hình ảnh
+   * @param {string} prompt - Mô tả hình ảnh
+   * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
+   */
+  async generateImageWithXAI(prompt) {
+    try {
+      logger.info('NEURAL', `Đang tạo hình ảnh với mô hình X.AI ${this.imageModel}...`);
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
@@ -1148,7 +1256,7 @@ class NeuralNetworks {
         n: 1
       });
 
-      console.log('Đã nhận hình ảnh từ API');
+      logger.info('NEURAL', 'Đã nhận hình ảnh từ X.AI API');
       
       const imageUrl = response.data.data[0].url;
       
@@ -1158,24 +1266,25 @@ class NeuralNetworks {
       
       const imageBuffer = Buffer.from(imageResponse.data);
       
+      // Lưu hình ảnh vào file
+      const uniqueFilename = `generated_image_${Date.now()}.png`;
+      const outputPath = `./temp/${uniqueFilename}`;
+      
+      // Đảm bảo thư mục temp tồn tại
+      if (!fs.existsSync('./temp')) {
+        fs.mkdirSync('./temp', { recursive: true });
+      }
+      
+      fs.writeFileSync(outputPath, imageBuffer);
+      
       return {
         buffer: imageBuffer,
-        url: imageUrl
+        url: imageUrl,
+        localPath: outputPath
       };
     } catch (error) {
-      console.error('Lỗi khi tạo hình ảnh:', error.message);
-      if (error.response) {
-        console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
-      }
-
-      if (error.response &&
-        error.response.data &&
-        error.response.data.error &&
-        error.response.data.error.includes("Generated image rejected by content moderation")) {
-        return "Xin lỗi, mình không thể tạo hình ảnh này. Nội dung bạn yêu cầu không tuân thủ nguyên tắc kiểm duyệt nội dung. Vui lòng thử chủ đề hoặc mô tả khác.";
-      }
-
-      return `Xin lỗi, không thể tạo hình ảnh: ${error.message}`;
+      logger.error('NEURAL', `Lỗi khi tạo hình ảnh với X.AI:`, error.message);
+      throw error;
     }
   }
 
