@@ -75,19 +75,19 @@ module.exports = {
 			
 			// Vẽ khung thông tin kỹ thuật
 			drawSimpleInfoBox(ctx, 50, 150, 380, 200, 'Thông tin kỹ thuật', [
-				{ icon: '🤖', label: 'Model AI', value: modelName },
-				{ icon: '⏰', label: 'Uptime', value: formatUptime(process.uptime(), false) },
-				{ icon: '🖥️', label: 'Node', value: process.version },
-				{ icon: '📊', label: 'Memory', value: `${memoryUsage} MB` },
-				{ icon: '🏠', label: 'Servers', value: serverCount.toString() }
+				{ icon: '[AI]', label: 'Model AI', value: modelName },
+				{ icon: '[⏰]', label: 'Uptime', value: formatUptime(process.uptime(), false) },
+				{ icon: '[JS]', label: 'Node', value: process.version },
+				{ icon: '[MB]', label: 'Memory', value: `${memoryUsage} MB` },
+				{ icon: '[#]', label: 'Servers', value: serverCount.toString() }
 			]);
 			
 			// Vẽ khung tính năng
 			drawSimpleInfoBox(ctx, 450, 150, 400, 200, 'Tính năng', [
-				{ icon: '💬', label: 'Trò chuyện AI', value: 'Mention @Luna' },
-				{ icon: '🎨', label: 'Tạo hình ảnh', value: 'vẽ [mô tả]' },
-				{ icon: '🧠', label: 'Lập trình', value: 'code [yêu cầu]' },
-				{ icon: '📋', label: 'Quản lý tin nhắn', value: 'xóa lịch sử' }
+				{ icon: '[>]', label: 'Trò chuyện AI', value: 'Mention @Luna' },
+				{ icon: '[+]', label: 'Tạo hình ảnh', value: 'vẽ [mô tả]' },
+				{ icon: '[<>]', label: 'Lập trình', value: 'code [yêu cầu]' },
+				{ icon: '[x]', label: 'Quản lý tin nhắn', value: 'xóa lịch sử' }
 			]);
 			
 			// Thông tin liên hệ
@@ -157,11 +157,11 @@ module.exports = {
 				.setThumbnail(interaction.client.user.displayAvatarURL({ dynamic: true, size: 512 }))
 				.setDescription('*Luna là trợ lý AI thân thiện, luôn sẵn sàng trò chuyện và giúp đỡ bạn với khả năng trí tuệ nhân tạo tiên tiến.*')
 				.addFields(
-					{ name: '🤖 Model AI', value: NeuralNetworks.Model || "Anthropic Claude", inline: true },
-					{ name: '🔄 Runtime', value: formatUptime(process.uptime(), true), inline: true },
-					{ name: '🏠 Servers', value: `${interaction.client.guilds.cache.size}`, inline: true },
-					{ name: '📦 Memory', value: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`, inline: true },
-					{ name: '🖥️ Node.js', value: process.version, inline: true }
+					{ name: 'Model AI', value: NeuralNetworks.Model || "Anthropic Claude", inline: true },
+					{ name: 'Runtime', value: formatUptime(process.uptime(), true), inline: true },
+					{ name: 'Servers', value: `${interaction.client.guilds.cache.size}`, inline: true },
+					{ name: 'Memory', value: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`, inline: true },
+					{ name: 'Node.js', value: process.version, inline: true }
 				)
 				.setFooter({ text: `Luna Bot v1.0.2 • Developed by s4ory` })
 				.setTimestamp();
@@ -232,3 +232,4 @@ function drawSimpleInfoBox(ctx, x, y, width, height, title, items) {
 		yOffset += 30;
 	});
 }
+
