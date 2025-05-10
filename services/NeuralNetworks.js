@@ -37,16 +37,8 @@ class NeuralNetworks {
     this.Model = 'luna-v1-preview';
 
     // Gradio image generation models
-    this.gradioImageSpace = process.env.GRADIO_IMAGE_SPACE || 's4ory/luna';
+    this.gradioImageSpace = process.env.GRADIO_IMAGE_SPACE || 'stabilityai/stable-diffusion-3-medium';
     
-    // Public fallback Gradio spaces if the configured one fails
-    this.fallbackGradioSpaces = [
-      'stabilityai/stable-diffusion-xl-base-1.0',
-      'runwayml/stable-diffusion-v1-5',
-      'stabilityai/stable-diffusion-2-1',
-      'NoCrypt/SSD-1B'
-    ];
-
     // Cấu hình StorageDB
     storageDB.setMaxConversationLength(30);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
@@ -60,7 +52,7 @@ class NeuralNetworks {
     
     this.testGradioConnection().then(connected => {
       if (!connected) {
-        logger.warn('NEURAL', 'Không thể kết nối đến Gradio Space. Vui lòng kiểm tra HF_TOKEN và Space status.');
+        logger.warn('NEURAL', 'Không thể kết nối đến Gradio Space. Vui lòng kiểm tra Space status.');
       }
     });
   }
@@ -1177,16 +1169,44 @@ class NeuralNetworks {
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
 
-      const gradioModule = await this.loadGradioClient();
-      const Client = gradioModule.Client;
+      let finalPrompt = prompt;
+      if (prompt.match(/[\u00C0-\u1EF9]/)) { // Phát hiện tiếng Việt
+        try {
+          finalPrompt = await this.translatePrompt(prompt);
+          logger.info('NEURAL', `Prompt dịch sang tiếng Anh: "${finalPrompt}"`);
+        } catch (translateError) {
+          logger.warn('NEURAL', `Không thể dịch prompt: ${translateError.message}. Sử dụng prompt gốc.`);
+        }
+      }
 
-      // Kiểm tra trạng thái Space trước
+      const gradioModule = await this.loadGradioClient();
+      const { Client } = gradioModule; // Destructure Client từ module
+
+      // THAY THẾ BẰNG HUGGING FACE TOKEN CỦA BẠN NẾU SPACE LÀ PRIVATE
+      // Sử dụng this.hf_token nếu đã được định nghĩa trong constructor
+      const hfToken = this.hf_token || null;
+
       const options = {
-        hf_token: this.hf_token,
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
+          if (status.status === 'error' && status.detail === 'NOT_FOUND') {
+            throw new Error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
+          }
+          // Xử lý lỗi xác thực
+          if (status.status === 'error' && status.message && status.message.includes("authorization")) {
+            logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
+            throw new Error(`Lỗi xác thực với Space ${this.gradioImageSpace}. Vui lòng kiểm tra hf_token của bạn.`);
+          }
         },
       };
+
+      // Chỉ thêm hf_token vào options nếu nó tồn tại
+      if (hfToken) {
+        options.hf_token = hfToken;
+        logger.info('NEURAL', `Sử dụng hf_token để kết nối đến Space private.`);
+      } else {
+        logger.info('NEURAL', `Không có hf_token. Kết nối đến Space public.`);
+      }
 
       logger.info('NEURAL', `Đang kiểm tra kết nối đến Gradio Space: ${this.gradioImageSpace}`);
       let app;
@@ -1194,46 +1214,54 @@ class NeuralNetworks {
         app = await Client.connect(this.gradioImageSpace, options);
       } catch (connectError) {
         logger.error('NEURAL', `Không thể kết nối đến Space ${this.gradioImageSpace}: ${connectError.message}`);
-        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space hoặc HF_TOKEN.`);
+        // Kiểm tra lỗi cụ thể liên quan đến xác thực
+        if (connectError.message.toLowerCase().includes("authorization") || connectError.message.toLowerCase().includes("private space")) {
+          throw new Error(`Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`);
+        }
+        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space và hf_token (nếu private).`);
       }
 
-      // Kiểm tra API endpoints
       logger.info('NEURAL', `Kiểm tra API endpoints của Gradio Space ${this.gradioImageSpace}...`);
       const api = await app.view_api();
       logger.info('NEURAL', `API endpoints: ${JSON.stringify(api)}`);
 
-      // Tìm endpoint phù hợp
-      const endpoints = ["/predict", "/txt2img", "/generate", "/run", "/text2image"];
-      let result;
-      let endpointFound = false;
-
-      for (const endpoint of endpoints) {
-        try {
-          logger.info('NEURAL', `Đang thử với endpoint ${endpoint} trên Space ${this.gradioImageSpace}...`);
-          result = await app.predict(endpoint, [
-            prompt,
-            7.5, // cfg_scale
-            "DPM++ 2M Karras", // sampler
-            25, // steps
-            512, // width
-            512, // height
-          ]);
-          endpointFound = true;
-          logger.info('NEURAL', `Kết nối thành công đến ${this.gradioImageSpace} với endpoint ${endpoint}!`);
-          break;
-        } catch (err) {
-          logger.warn('NEURAL', `Endpoint ${endpoint} không hoạt động: ${err.message}`);
+      // Kiểm tra xem endpoint có tên là "/generate_image" có tồn tại không
+      if (!api.named_endpoints || !api.named_endpoints["/generate_image"]) {
+        // Nếu không, kiểm tra xem có endpoint không tên (theo index) nào không
+        const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
+        if (!hasUnnamedEndpoint) {
+          throw new Error(`Space ${this.gradioImageSpace} không có endpoint /generate_image hoặc bất kỳ API endpoint nào được định nghĩa. Vui lòng kiểm tra cấu hình app.py.`);
         }
+        logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên /generate_image. Sẽ thử sử dụng endpoint đầu tiên có sẵn (nếu có).`);
       }
 
-      if (!endpointFound) {
-        throw new Error(`Không tìm thấy API endpoint phù hợp trong Gradio Space ${this.gradioImageSpace}. Vui lòng kiểm tra cấu hình app.py.`);
+      logger.info('NEURAL', `Đang gọi endpoint /generate_image trên Space ${this.gradioImageSpace}...`);
+      const result = await app.predict("/generate_image", [
+        finalPrompt, // prompt
+        "", // negative_prompt (giá trị mặc định từ Python là "")
+        0, // seed (giá trị mặc định từ Python là 0)
+        true, // randomize_seed (giá trị mặc định từ Python là True)
+        512, // width (giá trị mặc định từ Python là 512)
+        512, // height (giá trị mặc định từ Python là 512)
+        0.0, // guidance_scale (giá trị mặc định từ Python là 0.0)
+        2, // num_inference_steps (giá trị mặc định từ Python là 2)
+      ]);
+
+      if (!result || !result.data) {
+        logger.error('NEURAL', `Không nhận được phản hồi hợp lệ từ Gradio API. Result: ${JSON.stringify(result)}`);
+        throw new Error("Không nhận được phản hồi hợp lệ từ Gradio API.");
       }
 
-      // Xử lý kết quả
-      if (!result || !result[0]) {
-        throw new Error("Không nhận được phản hồi từ Gradio API");
+      // Mã Python trả về (image, seed_val)
+      // Nên result.data sẽ là một mảng: [imageData, newSeedValue]
+      const imageData = result.data[0];
+
+      if (!imageData || typeof imageData !== 'object') {
+        throw new Error(`Dữ liệu hình ảnh không hợp lệ từ API: ${JSON.stringify(imageData)}`);
       }
+
+      // Tìm URL hình ảnh từ các thuộc tính có thể có
+      let imageUrl = imageData.url || imageData.path || imageData.image;
 
       const uniqueFilename = `generated_image_${Date.now()}.png`;
       const outputPath = `./temp/${uniqueFilename}`;
@@ -1241,36 +1269,33 @@ class NeuralNetworks {
         fs.mkdirSync('./temp', { recursive: true });
       }
 
-      let imageUrl = '';
       let imageBuffer = null;
 
-      if (typeof result[0] === 'string' && result[0].startsWith('http')) {
-        imageUrl = result[0];
-        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 30000 });
+      if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+        logger.info('NEURAL', `Đang tải hình ảnh từ URL: ${imageUrl}`);
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 60000 });
         imageBuffer = Buffer.from(imageResponse.data);
         fs.writeFileSync(outputPath, imageBuffer);
-      } else if (result[0] && typeof result[0] === 'object') {
-        imageUrl = result[0].data || result[0].url || result[0].image || Object.values(result[0]).find(val => typeof val === 'string' && val.startsWith('http'));
-        if (!imageUrl) {
-          throw new Error(`Không thể xác định URL hình ảnh từ kết quả: ${JSON.stringify(result[0])}`);
-        }
-        const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 30000 });
-        imageBuffer = Buffer.from(response.data);
+      } else if (typeof imageUrl === 'string' && imageUrl.startsWith('data:image')) {
+        // Xử lý base64
+        logger.info('NEURAL', 'Nhận được hình ảnh base64.');
+        const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
+        imageBuffer = Buffer.from(base64Data, 'base64');
         fs.writeFileSync(outputPath, imageBuffer);
       } else {
-        throw new Error(`Định dạng kết quả không được hỗ trợ: ${JSON.stringify(result[0])}`);
+        throw new Error(`Định dạng URL hình ảnh không được hỗ trợ hoặc không tìm thấy: ${imageUrl}`);
       }
 
       logger.info('NEURAL', `Đã tạo hình ảnh thành công và lưu tại: ${outputPath}`);
       return {
         buffer: imageBuffer,
-        url: imageUrl,
+        url: imageUrl.startsWith('data:image') ? 'base64_image_data' : imageUrl,
         localPath: outputPath,
         source: `Gradio (${this.gradioImageSpace})`,
       };
     } catch (error) {
-      logger.error('NEURAL', `Lỗi khi tạo hình ảnh với Gradio Space ${this.gradioImageSpace}: ${error.message}`);
-      throw error;
+      logger.error('NEURAL', `Lỗi khi tạo hình ảnh với Gradio Space ${this.gradioImageSpace}: ${error.message}`, error.stack);
+      throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
     }
   }
 
@@ -1281,13 +1306,48 @@ class NeuralNetworks {
   async testGradioConnection() {
     try {
       const gradioModule = await this.loadGradioClient();
-      const Client = gradioModule.Client;
-      const options = { hf_token: this.hf_token };
+      const { Client } = gradioModule;
+      
+      // Sử dụng token nếu có để kết nối đến Space private
+      const hfToken = this.hf_token || null;
+      const options = {
+        status_callback: (status) => {
+          logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
+          if (status.status === 'error' && status.message && status.message.includes("authorization")) {
+            logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
+            return false;
+          }
+        }
+      };
+      
+      // Thêm token nếu có
+      if (hfToken) {
+        options.hf_token = hfToken;
+        logger.info('NEURAL', `Sử dụng hf_token để kiểm tra kết nối đến Space private.`);
+      }
+      
       const app = await Client.connect(this.gradioImageSpace, options);
+      
+      // Kiểm tra API endpoints
+      const api = await app.view_api();
+      if (!api.named_endpoints || !api.named_endpoints["/generate_image"]) {
+        // Kiểm tra xem có endpoint không tên nào không
+        const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
+        if (!hasUnnamedEndpoint) {
+          logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint /generate_image hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`);
+          return false;
+        }
+        logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên /generate_image. Sẽ thử sử dụng endpoint đầu tiên có sẵn.`);
+      }
+      
       logger.info('NEURAL', `Kết nối thành công đến Gradio Space ${this.gradioImageSpace}`);
       return true;
     } catch (error) {
       logger.error('NEURAL', `Lỗi kết nối đến Gradio Space ${this.gradioImageSpace}: ${error.message}`);
+      // Kiểm tra lỗi cụ thể liên quan đến xác thực
+      if (error.message.toLowerCase().includes("authorization") || error.message.toLowerCase().includes("private space")) {
+        logger.error('NEURAL', `Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`);
+      }
       return false;
     }
   }
@@ -1415,6 +1475,53 @@ class NeuralNetworks {
    */
   getModelName() {
     return this.Model;
+  }
+
+  /**
+   * Dịch prompt tiếng Việt sang tiếng Anh để tối ưu kết quả tạo hình ảnh
+   * @param {string} vietnamesePrompt - Prompt tiếng Việt
+   * @returns {Promise<string>} - Prompt đã được dịch sang tiếng Anh
+   */
+  async translatePrompt(vietnamesePrompt) {
+    try {
+      logger.info('NEURAL', `Đang dịch prompt tiếng Việt: "${vietnamesePrompt}"`);
+      
+      // Sử dụng Axios với cấu hình bảo mật
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+      
+      // Tạo prompt yêu cầu dịch
+      const translateRequest = `
+        Dịch đoạn văn bản sau từ tiếng Việt sang tiếng Anh, giữ nguyên ý nghĩa và các thuật ngữ chuyên ngành.
+        Chỉ trả về bản dịch, không cần giải thích hay thêm bất kỳ thông tin nào khác.
+        
+        Văn bản cần dịch: "${vietnamesePrompt}"
+      `;
+      
+      // Gọi API để dịch
+      const response = await axiosInstance.post('/v1/chat/completions', {
+        model: this.thinkingModel, // Sử dụng model nhẹ hơn để dịch
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: translateRequest
+          }
+        ]
+      });
+      
+      // Trích xuất kết quả dịch
+      const translatedText = response.data.choices[0].message.content.trim();
+      
+      // Loại bỏ dấu ngoặc kép nếu có
+      const cleanTranslation = translatedText.replace(/^["']|["']$/g, '');
+      
+      logger.info('NEURAL', `Đã dịch thành công: "${cleanTranslation}"`);
+      return cleanTranslation;
+    } catch (error) {
+      logger.error('NEURAL', `Lỗi khi dịch prompt: ${error.message}`);
+      // Trả về prompt gốc nếu có lỗi
+      return vietnamesePrompt;
+    }
   }
 }
 
