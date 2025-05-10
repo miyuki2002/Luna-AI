@@ -1,7 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
-const { Client } = require('@gradio/client');
+const client = require('@gradio/client');
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 const conversationManager = require('../handlers/conversationManager.js');
@@ -1160,7 +1160,7 @@ class NeuralNetworks {
       }
 
       // Kết nối đến Gradio Space
-      const app = await Client.connect(this.gradioImageSpace, options);
+      const app = await client.Client.connect(this.gradioImageSpace, options);
       
       // Tạo tên file duy nhất cho hình ảnh
       const uniqueFilename = `generated_image_${Date.now()}.png`;
