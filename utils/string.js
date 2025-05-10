@@ -80,5 +80,36 @@ module.exports = {
 
     // Thay thế từng ký tự nếu có trong map
     return text.split('').map(char => specialFontMap[char] || char).join('');
+  },
+
+  /**
+   * Chuyển đổi thời gian hoạt động (giây) thành định dạng dễ đọc
+   * @param {number} uptime - Thời gian hoạt động tính bằng giây
+   * @param {boolean} includePrefix - Có thêm tiền tố "Uptime:" hay không (mặc định là false)
+   * @returns {string} - Chuỗi thời gian định dạng dễ đọc
+   */
+  formatUptime: function(uptime, includePrefix = false) {
+    const days = Math.floor(uptime / 86400);
+    const hours = Math.floor((uptime % 86400) / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    
+    let uptimeString = '';
+    
+    if (days > 0) {
+      uptimeString += `${days}d `;
+    }
+    
+    if (hours > 0 || days > 0) {
+      uptimeString += `${hours}h `;
+    }
+    
+    if (minutes > 0 || hours > 0 || days > 0) {
+      uptimeString += `${minutes}m `;
+    }
+    
+    uptimeString += `${seconds}s`;
+    
+    return includePrefix ? `Uptime: ${uptimeString}` : uptimeString;
   }
 };
