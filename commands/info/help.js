@@ -76,7 +76,7 @@ module.exports = {
       
       if (category === 'setting' && !isOwner) {
         return i.reply({
-          content: 'Bạn không có quyền xem danh mục này. Chỉ chủ bot mới có thể truy cập.',
+          content: 'Bạn không có quyền xem danh mục này.',
           ephemeral: true
         });
       }
