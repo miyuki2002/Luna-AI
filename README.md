@@ -33,6 +33,8 @@ Luna là một bot Discord được hỗ trợ bởi API Anthropic/xAI. Cô ấy
     MONGODB_URI=chuỗi_kết_nối_mongodb_here
     GOOGLE_API_KEY=google_api_key_here
     GOOGLE_CSE_ID=google_cse_id_here
+    HF_TOKEN=huggingface_token_here  
+    GRADIO_IMAGE_SPACE=space_id_here # Mặc định: s4ory/luna 
     ```
 4. Chạy bot với lệnh `npm run start` hoặc `npm run dev`
 
