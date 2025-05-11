@@ -1158,28 +1158,114 @@ class NeuralNetworks {
   }
 
   /**
-   * Tạo hình ảnh sử dụng Gradio API, hỗ trợ cả Space public và private.
-   * @param {string} prompt - Mô tả hình ảnh cần tạo
-   * @param {Object} message - Đối tượng Discord message để hiển thị tiến trình (tùy chọn)
-   * @param {Object} progressTracker - Bộ theo dõi tiến trình đã được khởi tạo trước (tùy chọn)
-   * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
+   * Phân tích nội dung prompt bằng AI để phát hiện nội dung không phù hợp
+   * @param {string} prompt - Prompt cần phân tích
+   * @returns {Promise<Object>} - Kết quả phân tích
    */
+  async analyzeContentWithAI(prompt) {
+    try {
+      logger.info('NEURAL', `Đang phân tích nội dung prompt bằng AI: "${prompt}"`);
+
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+
+      // Tạo prompt cho AI phân tích
+      const analysisPrompt = `Phân tích nội dung sau và xác định xem nó có chứa bất kỳ nội dung nhạy cảm nào trong các danh mục sau không:
+      1. Nội dung người lớn (adult)
+      2. Bạo lực (violence)
+      3. Chính trị nhạy cảm (politics)
+      4. Phân biệt chủng tộc (discrimination)
+      5. Tôn giáo nhạy cảm (religion)
+      6. Ma túy và chất cấm (drugs)
+      7. Vũ khí nguy hiểm (weapons)
+      8. Nội dung lừa đảo (scam)
+      9. Nội dung quấy rối (harassment)
+      10. Nội dung xúc phạm (offensive)
+
+      Nội dung cần phân tích: "${prompt}"
+
+      Trả về kết quả theo định dạng JSON với cấu trúc sau:
+      {
+        "isInappropriate": boolean,
+        "categories": [string],
+        "severity": "low" | "medium" | "high",
+        "explanation": string,
+        "suggestedKeywords": [string]
+      }
+
+      Chỉ trả về JSON, không cần giải thích thêm.`;
+
+      const response = await axiosInstance.post('/v1/chat/completions', {
+        model: this.thinkingModel,
+        max_tokens: 1000,
+        messages: [
+          {
+            role: 'system',
+            content: 'Bạn là một hệ thống phân tích nội dung chuyên nghiệp. Nhiệm vụ của bạn là phân tích và phát hiện nội dung không phù hợp. Luôn trả về kết quả dưới dạng JSON theo cấu trúc được yêu cầu.'
+          },
+          {
+            role: 'user',
+            content: analysisPrompt
+          }
+        ]
+      });
+
+      // Parse kết quả JSON từ phản hồi của AI
+      const content = response.data.choices[0].message.content;
+      const analysisResult = JSON.parse(content);
+
+      logger.info('NEURAL', `Kết quả phân tích AI: ${JSON.stringify(analysisResult)}`);
+
+      return analysisResult;
+    } catch (error) {
+      logger.error('NEURAL', `Lỗi khi phân tích nội dung bằng AI: ${error.message}`);
+      return {
+        isInappropriate: false,
+        categories: [],
+        severity: "low",
+        explanation: "Không thể phân tích do lỗi: " + error.message,
+        suggestedKeywords: []
+      };
+    }
+  }
+
   async generateImage(prompt, message = null, progressTracker = null) {
     progressTracker = progressTracker || (message ? this.trackImageGenerationProgress(message, prompt) : null);
     
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
 
-      // Kiểm tra blacklist trước khi tiếp tục
+      // Kiểm tra blacklist từ database
       const blacklistCheck = await storageDB.checkImageBlacklist(prompt);
-      if (blacklistCheck.isBlocked) {
-        const errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung bị cấm (${blacklistCheck.categories.join(', ')})\nTừ khóa vi phạm: ${blacklistCheck.matchedKeywords.join(', ')}`;
+      
+      // Phân tích nội dung bằng AI
+      const aiAnalysis = await this.analyzeContentWithAI(prompt);
+
+      // Kết hợp kết quả từ cả hai nguồn
+      const isBlocked = blacklistCheck.isBlocked || aiAnalysis.isInappropriate;
+      const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
+      
+      if (isBlocked) {
+        let errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung không phù hợp\n`;
+        
+        if (blacklistCheck.isBlocked) {
+          errorMsg += `\nTừ khóa vi phạm: ${blacklistCheck.matchedKeywords.join(', ')}`;
+          errorMsg += `\nDanh mục vi phạm từ blacklist: ${blacklistCheck.categories.join(', ')}`;
+        }
+        
+        if (aiAnalysis.isInappropriate) {
+          errorMsg += `\nPhân tích AI:`;
+          errorMsg += `\n- Danh mục: ${aiAnalysis.categories.join(', ')}`;
+          errorMsg += `\n- Mức độ: ${aiAnalysis.severity}`;
+          errorMsg += `\n- Lý do: ${aiAnalysis.explanation}`;
+        }
+
         if (progressTracker) {
           await progressTracker.error(errorMsg);
         }
         throw new Error(errorMsg);
       }
-      
+
+      // Nếu nội dung an toàn, tiếp tục quá trình tạo hình ảnh
       if (progressTracker) {
         await progressTracker.update("Đang phân tích prompt", 15);
       }

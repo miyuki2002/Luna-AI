@@ -965,89 +965,94 @@ class StorageDB {
         // Khởi tạo blacklist mặc định
         const defaultBlacklist = [
           // Nội dung người lớn
-          {
-            category: 'adult',
-            keyword: 'nude',
-            description: 'Hình ảnh khỏa thân',
-            severity: 'high'
-          },
-          {
-            category: 'adult',
-            keyword: 'porn',
-            description: 'Nội dung khiêu dâm',
-            severity: 'high'
-          },
-          {
-            category: 'adult',
-            keyword: 'hentai',
-            description: 'Nội dung người lớn anime/manga',
-            severity: 'high'
-          },
+          { keyword: "khỏa thân", category: "adult", description: "Hình ảnh khỏa thân", severity: "high" },
+          { keyword: "nude", category: "adult", description: "Nude content", severity: "high" },
+          { keyword: "erotic", category: "adult", description: "Erotic content", severity: "high" },
+          { keyword: "sexy", category: "adult", description: "Nội dung gợi cảm", severity: "medium" },
+          { keyword: "18+", category: "adult", description: "Nội dung 18+", severity: "high" },
+          { keyword: "nsfw", category: "adult", description: "Not safe for work content", severity: "high" },
+          { keyword: "pornographic", category: "adult", description: "Pornographic content", severity: "high" },
+          { keyword: "khiêu dâm", category: "adult", description: "Nội dung khiêu dâm", severity: "high" },
 
           // Bạo lực
-          {
-            category: 'violence',
-            keyword: 'gore',
-            description: 'Bạo lực đẫm máu',
-            severity: 'high'
-          },
-          {
-            category: 'violence',
-            keyword: 'murder',
-            description: 'Giết người',
-            severity: 'high'
-          },
+          { keyword: "blood", category: "violence", description: "Blood content", severity: "high" },
+          { keyword: "gore", category: "violence", description: "Gore content", severity: "high" },
+          { keyword: "máu me", category: "violence", description: "Cảnh máu me", severity: "high" },
+          { keyword: "bạo lực", category: "violence", description: "Nội dung bạo lực", severity: "high" },
+          { keyword: "giết", category: "violence", description: "Hành động giết chóc", severity: "high" },
+          { keyword: "đánh đập", category: "violence", description: "Hành vi bạo lực", severity: "high" },
+          { keyword: "tử vong", category: "violence", description: "Cảnh tử vong", severity: "high" },
+          { keyword: "tai nạn", category: "violence", description: "Cảnh tai nạn", severity: "medium" },
 
           // Chính trị nhạy cảm
-          {
-            category: 'politics',
-            keyword: 'extremist',
-            description: 'Nội dung cực đoan',
-            severity: 'high'
-          },
-          {
-            category: 'politics',
-            keyword: 'terrorist',
-            description: 'Khủng bố',
-            severity: 'high'
-          },
+          { keyword: "chính trị", category: "politics", description: "Nội dung chính trị nhạy cảm", severity: "medium" },
+          { keyword: "đảng phái", category: "politics", description: "Nội dung về đảng phái", severity: "medium" },
+          { keyword: "biểu tình", category: "politics", description: "Cảnh biểu tình", severity: "medium" },
+          { keyword: "bạo động", category: "politics", description: "Cảnh bạo động chính trị", severity: "high" },
+          { keyword: "cách mạng", category: "politics", description: "Nội dung về cách mạng", severity: "medium" },
+          { keyword: "chống đối", category: "politics", description: "Nội dung chống đối", severity: "high" },
 
           // Phân biệt chủng tộc
-          {
-            category: 'racism',
-            keyword: 'racist',
-            description: 'Phân biệt chủng tộc',
-            severity: 'high'
-          },
-          {
-            category: 'racism',
-            keyword: 'hate',
-            description: 'Phát ngôn thù ghét',
-            severity: 'high'
-          },
+          { keyword: "phân biệt", category: "discrimination", description: "Phân biệt đối xử", severity: "high" },
+          { keyword: "racist", category: "discrimination", description: "Racist content", severity: "high" },
+          { keyword: "kỳ thị", category: "discrimination", description: "Kỳ thị chủng tộc", severity: "high" },
+          { keyword: "phân biệt chủng tộc", category: "discrimination", description: "Phân biệt chủng tộc", severity: "high" },
+          { keyword: "phân biệt màu da", category: "discrimination", description: "Phân biệt màu da", severity: "high" },
 
           // Tôn giáo nhạy cảm
-          {
-            category: 'religion',
-            keyword: 'blasphemy',
-            description: 'Xúc phạm tôn giáo',
-            severity: 'high'
-          },
-          {
-            category: 'religion',
-            keyword: 'sacrilege',
-            description: 'Phạm thánh',
-            severity: 'high'
-          }
+          { keyword: "tôn giáo", category: "religion", description: "Nội dung tôn giáo nhạy cảm", severity: "medium" },
+          { keyword: "blasphemy", category: "religion", description: "Blasphemous content", severity: "high" },
+          { keyword: "xúc phạm tôn giáo", category: "religion", description: "Xúc phạm tôn giáo", severity: "high" },
+          { keyword: "phỉ báng", category: "religion", description: "Phỉ báng tôn giáo", severity: "high" },
+          { keyword: "báng bổ", category: "religion", description: "Báng bổ tôn giáo", severity: "high" },
+
+          // Ma túy và chất cấm
+          { keyword: "ma túy", category: "drugs", description: "Nội dung về ma túy", severity: "high" },
+          { keyword: "drugs", category: "drugs", description: "Drug content", severity: "high" },
+          { keyword: "cocaine", category: "drugs", description: "Cocaine reference", severity: "high" },
+          { keyword: "heroin", category: "drugs", description: "Heroin reference", severity: "high" },
+          { keyword: "cần sa", category: "drugs", description: "Nội dung về cần sa", severity: "high" },
+          { keyword: "chất gây nghiện", category: "drugs", description: "Chất gây nghiện", severity: "high" },
+
+          // Vũ khí nguy hiểm
+          { keyword: "vũ khí", category: "weapons", description: "Nội dung về vũ khí", severity: "medium" },
+          { keyword: "súng", category: "weapons", description: "Hình ảnh súng đạn", severity: "medium" },
+          { keyword: "đạn", category: "weapons", description: "Đạn dược", severity: "medium" },
+          { keyword: "bom", category: "weapons", description: "Chất nổ", severity: "high" },
+          { keyword: "mìn", category: "weapons", description: "Mìn nổ", severity: "high" },
+          { keyword: "weapons", category: "weapons", description: "Weapon content", severity: "medium" },
+
+          // Nội dung lừa đảo
+          { keyword: "lừa đảo", category: "scam", description: "Nội dung lừa đảo", severity: "high" },
+          { keyword: "scam", category: "scam", description: "Scam content", severity: "high" },
+          { keyword: "hack", category: "scam", description: "Hack content", severity: "medium" },
+          { keyword: "cheat", category: "scam", description: "Cheat content", severity: "medium" },
+          { keyword: "gian lận", category: "scam", description: "Nội dung gian lận", severity: "high" },
+
+          // Nội dung quấy rối
+          { keyword: "quấy rối", category: "harassment", description: "Nội dung quấy rối", severity: "high" },
+          { keyword: "harassment", category: "harassment", description: "Harassment content", severity: "high" },
+          { keyword: "bắt nạt", category: "harassment", description: "Nội dung bắt nạt", severity: "high" },
+          { keyword: "bullying", category: "harassment", description: "Bullying content", severity: "high" },
+          { keyword: "stalking", category: "harassment", description: "Stalking content", severity: "high" },
+
+          // Nội dung xúc phạm
+          { keyword: "xúc phạm", category: "offensive", description: "Nội dung xúc phạm", severity: "medium" },
+          { keyword: "offensive", category: "offensive", description: "Offensive content", severity: "medium" },
+          { keyword: "chửi bới", category: "offensive", description: "Ngôn từ chửi bới", severity: "medium" },
+          { keyword: "thô tục", category: "offensive", description: "Ngôn từ thô tục", severity: "medium" },
+          { keyword: "nhạy cảm", category: "offensive", description: "Nội dung nhạy cảm", severity: "medium" }
         ];
 
+        // Thêm vào database
         await db.collection('image_blacklist').insertMany(defaultBlacklist);
-        logger.info('DATABASE', 'Đã khởi tạo blacklist mặc định cho generateImage');
+        logger.info('DATABASE', `Đã thêm ${defaultBlacklist.length} từ khóa vào blacklist`);
       }
 
-      logger.info('DATABASE', 'Hệ thống blacklist cho generateImage đã sẵn sàng');
+      return true;
     } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi khởi tạo blacklist cho generateImage:', error);
+      logger.error('DATABASE', 'Lỗi khi khởi tạo image blacklist:', error);
+      return false;
     }
   }
 
