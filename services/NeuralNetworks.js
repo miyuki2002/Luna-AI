@@ -1169,6 +1169,16 @@ class NeuralNetworks {
     
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
+
+      // Kiểm tra blacklist trước khi tiếp tục
+      const blacklistCheck = await storageDB.checkImageBlacklist(prompt);
+      if (blacklistCheck.isBlocked) {
+        const errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung bị cấm (${blacklistCheck.categories.join(', ')})\nTừ khóa vi phạm: ${blacklistCheck.matchedKeywords.join(', ')}`;
+        if (progressTracker) {
+          await progressTracker.error(errorMsg);
+        }
+        throw new Error(errorMsg);
+      }
       
       if (progressTracker) {
         await progressTracker.update("Đang phân tích prompt", 15);
