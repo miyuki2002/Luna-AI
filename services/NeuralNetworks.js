@@ -25,9 +25,6 @@ class NeuralNetworks {
       baseURL: 'https://api.x.ai'
     });
 
-    // Hugging Face Token cho Gradio
-    this.hf_token = process.env.HF_TOKEN;
-
     // System Prompt
     this.systemPrompt = prompts.system.main;
 
@@ -1161,13 +1158,22 @@ class NeuralNetworks {
   }
 
   /**
-   * Tạo hình ảnh sử dụng Gradio API
+   * Tạo hình ảnh sử dụng Gradio API, hỗ trợ cả Space public và private.
    * @param {string} prompt - Mô tả hình ảnh cần tạo
+   * @param {Object} message - Đối tượng Discord message để hiển thị tiến trình (tùy chọn)
    * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
    */
-  async generateImage(prompt) {
+  async generateImage(prompt, message = null) {
+    // Khởi tạo bộ theo dõi tiến trình nếu có message object
+    const progressTracker = message ? this.trackImageGenerationProgress(message, prompt) : null;
+    
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
+      
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang phân tích prompt
+        await progressTracker.update("Đang phân tích prompt", 10);
+      }
 
       let finalPrompt = prompt;
       if (prompt.match(/[\u00C0-\u1EF9]/)) { // Phát hiện tiếng Việt
@@ -1179,30 +1185,47 @@ class NeuralNetworks {
         }
       }
 
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang khởi tạo
+        await progressTracker.update("Đang khởi tạo", 20);
+      }
+
       const gradioModule = await this.loadGradioClient();
       const { Client } = gradioModule;
 
-      // Đặt hf_token để kết nối đến Space private nếu có
-      const hfToken = this.hf_token || null;
+      // Sử dụng options không cần hfToken cho space public
       const options = {
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
+          
+          // Cập nhật tiến trình dựa trên trạng thái
+          if (progressTracker) {
+            if (status.status === 'running') {
+              progressTracker.update("Đang tạo concept", 30);
+            } else if (status.status === 'processing') {
+              progressTracker.update("Đang tạo hình ảnh sơ bộ", 40);
+            }
+          }
+          
           if (status.status === 'error' && status.detail === 'NOT_FOUND') {
+            if (progressTracker) progressTracker.error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
             throw new Error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
           }
-          // Xử lý lỗi xác thực và các lỗi khác
+          // Xử lý các lỗi khác
           if (status.status === 'error') {
-            if (status.message && status.message.includes("authorization")) {
-              logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
-              throw new Error(`Lỗi xác thực với Space ${this.gradioImageSpace}. Vui lòng kiểm tra hf_token của bạn.`);
-            } else {
-              logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
-            }
+            logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
+            if (progressTracker) progressTracker.update("Đang xử lý lỗi", 30);
           }
         },
       };
 
-      logger.info('NEURAL', `Đang kết nối đến Gradio Space: ${this.gradioImageSpace}`);
+      logger.info('NEURAL', `Đang kết nối đến Gradio Space public: ${this.gradioImageSpace}`);
+      
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang kết nối
+        await progressTracker.update("Đang tạo concept", 35);
+      }
+      
       let app;
       try {
         app = await Client.connect(this.gradioImageSpace, options);
@@ -1210,9 +1233,13 @@ class NeuralNetworks {
         logger.error('NEURAL', `Không thể kết nối đến Space ${this.gradioImageSpace}: ${connectError.message}`);
         // Kiểm tra lỗi cụ thể liên quan đến xác thực
         if (connectError.message.toLowerCase().includes("authorization") || connectError.message.toLowerCase().includes("private space")) {
-          throw new Error(`Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`);
+          const errorMsg = `Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`;
+          if (progressTracker) progressTracker.error(errorMsg);
+          throw new Error(errorMsg);
         }
-        throw new Error(`Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space.`);
+        const errorMsg = `Space ${this.gradioImageSpace} không khả dụng. Vui lòng kiểm tra trạng thái Space.`;
+        if (progressTracker) progressTracker.error(errorMsg);
+        throw new Error(errorMsg);
       }
 
       logger.info('NEURAL', `Kiểm tra API endpoints của Gradio Space ${this.gradioImageSpace}...`);
@@ -1225,9 +1252,19 @@ class NeuralNetworks {
         // Nếu không có endpoint có tên, kiểm tra các endpoint không tên
         const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
         if (!hasUnnamedEndpoint) {
-          throw new Error(`Space ${this.gradioImageSpace} không có endpoint ${apiEndpointName} hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`);
+          const errorMsg = `Space ${this.gradioImageSpace} không có endpoint ${apiEndpointName} hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`;
+          if (progressTracker) progressTracker.error(errorMsg);
+          throw new Error(errorMsg);
         }
         logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint có tên ${apiEndpointName}. Sẽ thử sử dụng endpoint đầu tiên có sẵn.`);
+        if (progressTracker) {
+          await progressTracker.update("Đang tìm endpoint thay thế", 40);
+        }
+      }
+
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang bắt đầu tạo hình ảnh
+        await progressTracker.update("Đang tạo hình ảnh sơ bộ", 50);
       }
 
       logger.info('NEURAL', `Đang gọi endpoint ${apiEndpointName} trên Space ${this.gradioImageSpace}...`);
@@ -1242,16 +1279,30 @@ class NeuralNetworks {
         2,            // num_inference_steps
       ]);
 
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đã tạo xong hình ảnh, đang xử lý
+        await progressTracker.update("Đang tinh chỉnh chi tiết", 75);
+      }
+
       if (!result || !result.data) {
         logger.error('NEURAL', `Không nhận được phản hồi hợp lệ từ Gradio API. Result: ${JSON.stringify(result)}`);
-        throw new Error("Không nhận được phản hồi hợp lệ từ Gradio API.");
+        const errorMsg = "Không nhận được phản hồi hợp lệ từ Gradio API.";
+        if (progressTracker) progressTracker.error(errorMsg);
+        throw new Error(errorMsg);
       }
 
       const imageData = result.data[0]; // Ảnh là phần tử đầu tiên trong mảng data trả về
       // const newSeed = result.data[1]; // Seed là phần tử thứ hai (nếu có)
 
       if (!imageData || typeof imageData !== 'object') {
-        throw new Error(`Dữ liệu hình ảnh không hợp lệ từ API: ${JSON.stringify(imageData)}`);
+        const errorMsg = `Dữ liệu hình ảnh không hợp lệ từ API: ${JSON.stringify(imageData)}`;
+        if (progressTracker) progressTracker.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang hoàn thiện
+        await progressTracker.update("Đang hoàn thiện hình ảnh", 85);
       }
 
       // Tìm URL hình ảnh từ các thuộc tính có thể có
@@ -1264,6 +1315,11 @@ class NeuralNetworks {
       }
 
       let imageBuffer = null;
+
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang xử lý kết quả
+        await progressTracker.update("Đang xử lý kết quả", 90);
+      }
 
       if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
         logger.info('NEURAL', `Đang tải hình ảnh từ URL: ${imageUrl}`);
@@ -1285,10 +1341,23 @@ class NeuralNetworks {
         imageBuffer = Buffer.from(imageResponse.data);
         fs.writeFileSync(outputPath, imageBuffer);
       } else {
-        throw new Error(`Định dạng URL hình ảnh không được hỗ trợ hoặc không tìm thấy: ${imageUrl}`);
+        const errorMsg = `Định dạng URL hình ảnh không được hỗ trợ hoặc không tìm thấy: ${imageUrl}`;
+        if (progressTracker) progressTracker.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (progressTracker) {
+        // Cập nhật trạng thái: Đang lưu hình ảnh
+        await progressTracker.update("Đang lưu hình ảnh", 95);
       }
 
       logger.info('NEURAL', `Đã tạo hình ảnh thành công và lưu tại: ${outputPath}`);
+      
+      // Đánh dấu hoàn thành nếu có progress tracker
+      if (progressTracker) {
+        await progressTracker.complete();
+      }
+      
       return {
         buffer: imageBuffer,
         url: imageUrl.startsWith('data:image') ? 'base64_image_data' : imageUrl,
@@ -1300,13 +1369,33 @@ class NeuralNetworks {
       // Nếu lỗi là từ Space Gradio, thử phương pháp dự phòng với X.AI nếu có
       if (this.apiKey) {
         logger.info('NEURAL', 'Thử sử dụng X.AI API như phương pháp dự phòng...');
+        
+        if (progressTracker) {
+          await progressTracker.update("Đang chuyển sang phương pháp dự phòng", 30);
+        }
+        
         try {
-          return await this.generateImageWithXAI(prompt);
+          const result = await this.generateImageWithXAI(prompt, message);
+          
+          // Đánh dấu hoàn thành nếu có progress tracker
+          if (progressTracker) {
+            await progressTracker.complete();
+          }
+          
+          return result;
         } catch (xaiError) {
           logger.error('NEURAL', `Phương pháp dự phòng cũng thất bại: ${xaiError.message}`);
-          throw new Error(`Không thể tạo hình ảnh với cả Gradio và X.AI: ${error.message}`);
+          
+          const errorMsg = `Không thể tạo hình ảnh với cả Gradio và X.AI: ${error.message}`;
+          if (progressTracker) progressTracker.error(errorMsg);
+          
+          throw new Error(errorMsg);
         }
       }
+      
+      // Nếu không có phương pháp dự phòng hoặc đã thử nhưng thất bại
+      if (progressTracker) progressTracker.error(error.message);
+      
       throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
     }
   }
@@ -1320,27 +1409,15 @@ class NeuralNetworks {
       const gradioModule = await this.loadGradioClient();
       const { Client } = gradioModule;
       
-      // Sử dụng token nếu có để kết nối đến Space private
-      const hfToken = this.hf_token || null;
+      // Sử dụng options đơn giản cho Space public
       const options = {
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
           if (status.status === 'error') {
-            if (status.message && status.message.includes("authorization")) {
-              logger.error('NEURAL', `Lỗi xác thực với Gradio Space ${this.gradioImageSpace}. Kiểm tra hf_token.`);
-              return false;
-            } else {
-              logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
-            }
+            logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
           }
         }
       };
-      
-      // Thêm token nếu có
-      if (hfToken) {
-        options.hf_token = hfToken;
-        logger.info('NEURAL', `Sử dụng hf_token để kiểm tra kết nối đến Space private.`);
-      }
       
       const app = await Client.connect(this.gradioImageSpace, options);
       
@@ -1362,10 +1439,6 @@ class NeuralNetworks {
       return true;
     } catch (error) {
       logger.error('NEURAL', `Lỗi kết nối đến Gradio Space ${this.gradioImageSpace}: ${error.message}`);
-      // Kiểm tra lỗi cụ thể liên quan đến xác thực
-      if (error.message.toLowerCase().includes("authorization") || error.message.toLowerCase().includes("private space")) {
-        logger.error('NEURAL', `Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`);
-      }
       return false;
     }
   }
@@ -1373,13 +1446,25 @@ class NeuralNetworks {
   /**
    * Phương thức dự phòng sử dụng X.AI API để tạo hình ảnh
    * @param {string} prompt - Mô tả hình ảnh
+   * @param {Object} message - Đối tượng Discord message để hiển thị tiến trình (tùy chọn)
    * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
    */
-  async generateImageWithXAI(prompt) {
+  async generateImageWithXAI(prompt, message = null) {
+    // Khởi tạo bộ theo dõi tiến trình nếu có message object
+    const progressTracker = message ? this.trackImageGenerationProgress(message, prompt) : null;
+    
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với mô hình X.AI ${this.imageModel}...`);
+      
+      if (progressTracker) {
+        await progressTracker.update("Đang khởi tạo", 20);
+      }
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
+
+      if (progressTracker) {
+        await progressTracker.update("Đang gửi yêu cầu tới X.AI API", 40);
+      }
 
       const response = await axiosInstance.post('/v1/images/generations', {
         model: this.imageModel,
@@ -1389,7 +1474,15 @@ class NeuralNetworks {
 
       logger.info('NEURAL', 'Đã nhận hình ảnh từ X.AI API');
       
+      if (progressTracker) {
+        await progressTracker.update("Đang xử lý kết quả", 70);
+      }
+      
       const imageUrl = response.data.data[0].url;
+      
+      if (progressTracker) {
+        await progressTracker.update("Đang tải hình ảnh", 80);
+      }
       
       const imageResponse = await this.createSecureAxiosInstance().get(imageUrl, { 
         responseType: 'arraybuffer' 
@@ -1401,6 +1494,10 @@ class NeuralNetworks {
       const uniqueFilename = `generated_image_${Date.now()}.png`;
       const outputPath = `./temp/${uniqueFilename}`;
       
+      if (progressTracker) {
+        await progressTracker.update("Đang lưu hình ảnh", 90);
+      }
+      
       // Đảm bảo thư mục temp tồn tại
       if (!fs.existsSync('./temp')) {
         fs.mkdirSync('./temp', { recursive: true });
@@ -1408,13 +1505,23 @@ class NeuralNetworks {
       
       fs.writeFileSync(outputPath, imageBuffer);
       
+      if (progressTracker) {
+        await progressTracker.complete();
+      }
+      
       return {
         buffer: imageBuffer,
         url: imageUrl,
-        localPath: outputPath
+        localPath: outputPath,
+        source: `X.AI (${this.imageModel})`
       };
     } catch (error) {
       logger.error('NEURAL', `Lỗi khi tạo hình ảnh với X.AI:`, error.message);
+      
+      if (progressTracker) {
+        await progressTracker.error(`Lỗi khi tạo hình ảnh với X.AI: ${error.message}`);
+      }
+      
       throw error;
     }
   }
@@ -1540,6 +1647,214 @@ class NeuralNetworks {
       // Trả về prompt gốc nếu có lỗi
       return vietnamesePrompt;
     }
+  }
+
+  /**
+   * Theo dõi tiến trình của quá trình tạo hình ảnh
+   * @param {Object} messageOrInteraction - Discord message hoặc interaction object để gửi cập nhật tiến trình
+   * @param {string} prompt - Prompt đang được sử dụng
+   * @returns {Object} - Controller object để cập nhật và dừng hiển thị tiến trình
+   */
+  trackImageGenerationProgress(messageOrInteraction, prompt) {
+    // Các giai đoạn xử lý có thể xảy ra khi tạo hình ảnh
+    const stages = [
+      "Đang khởi tạo",
+      "Đang phân tích prompt",
+      "Đang tạo concept",
+      "Đang tạo hình ảnh sơ bộ",
+      "Đang tinh chỉnh chi tiết",
+      "Đang hoàn thiện hình ảnh",
+      "Đang xử lý kết quả",
+      "Đang lưu hình ảnh"
+    ];
+    
+    let currentStage = 0;
+    let shouldContinue = true;
+    let progressMessage = null;
+    
+    // Xác định nếu đối tượng là interaction hay message
+    const isInteraction = messageOrInteraction.replied !== undefined || 
+                         messageOrInteraction.deferred !== undefined;
+    
+    // Hàm tạo emoji loading animation
+    const getLoadingAnimation = (step) => {
+      const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      return frames[step % frames.length];
+    };
+    
+    // Hàm tạo progress bar
+    const getProgressBar = (percent) => {
+      const completed = Math.floor(percent / 10);
+      const remaining = 10 - completed;
+      return `[${'█'.repeat(completed)}${' '.repeat(remaining)}] ${percent}%`;
+    };
+    
+    // Hiển thị thông tin ban đầu
+    const startTime = Date.now();
+    const promptPreview = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+    
+    // Hàm cập nhật thông báo tiến trình
+    const updateProgress = async (step = 0) => {
+      if (!shouldContinue || !messageOrInteraction) return;
+      
+      // Thời gian đã trôi qua
+      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      
+      // Cập nhật giai đoạn sau mỗi khoảng thời gian
+      if (step % 15 === 0 && currentStage < stages.length - 1) {
+        currentStage++;
+      }
+      
+      // Tính toán phần trăm tiến trình ước lượng 
+      // (dựa trên thời gian và giai đoạn vì không có thông tin thực tế từ Gradio)
+      const percentComplete = Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
+      
+      const loadingEmoji = getLoadingAnimation(step);
+      const progressBar = getProgressBar(percentComplete);
+      
+      const content = `### ${loadingEmoji} Đang tạo hình ảnh...\n` +
+                      `> "${promptPreview}"\n\n` +
+                      `**Tiến trình:** ${progressBar}\n` +
+                      `**Đang thực hiện:** ${stages[currentStage]}\n` +
+                      `**Thời gian:** ${elapsedTime}s`;
+      
+      try {
+        if (isInteraction) {
+          // Xử lý đối tượng interaction (slash command)
+          if (!progressMessage) {
+            // Nếu là tương tác mới, dùng deferReply để hiển thị đang xử lý
+            if (!messageOrInteraction.deferred && !messageOrInteraction.replied) {
+              await messageOrInteraction.deferReply();
+            }
+            // Sau đó chỉnh sửa phản hồi để hiển thị tiến trình
+            progressMessage = await messageOrInteraction.editReply(content);
+          } else {
+            // Cập nhật thông báo tiến trình hiện có
+            await messageOrInteraction.editReply(content);
+          }
+        } else {
+          // Xử lý đối tượng message (tin nhắn thông thường)
+          if (!progressMessage) {
+            // Tạo thông báo mới nếu chưa có
+            progressMessage = await messageOrInteraction.reply(content);
+          } else {
+            // Cập nhật thông báo hiện có
+            await progressMessage.edit(content);
+          }
+        }
+      } catch (err) {
+        logger.error('NEURAL', `Lỗi khi cập nhật tin nhắn tiến trình: ${err.message}`);
+        // Không throw error vì đây chỉ là tính năng hiển thị
+      }
+    };
+    
+    // Bắt đầu hiển thị tiến trình
+    let step = 0;
+    const progressInterval = setInterval(() => {
+      if (!shouldContinue) {
+        clearInterval(progressInterval);
+        return;
+      }
+      updateProgress(step++);
+    }, 1500); // Cập nhật mỗi 1.5 giây
+    
+    // Trả về controller để cập nhật tiến trình từ bên ngoài
+    return {
+      // Đánh dấu tiến trình hoàn tất
+      complete: async (imageUrl) => {
+        shouldContinue = false;
+        clearInterval(progressInterval);
+        
+        try {
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+          const content = `### ✅ Đã tạo xong hình ảnh!\n` +
+                         `> "${promptPreview}"\n\n` +
+                         `**Tiến trình:** ${getProgressBar(100)}\n` +
+                         `**Hoàn thành trong:** ${elapsedTime}s`;
+          
+          if (isInteraction) {
+            await messageOrInteraction.editReply(content);
+          } else if (progressMessage) {
+            await progressMessage.edit(content);
+          }
+        } catch (err) {
+          logger.error('NEURAL', `Lỗi khi cập nhật thông báo hoàn tất: ${err.message}`);
+        }
+        
+        return true;
+      },
+      
+      // Thông báo lỗi
+      error: async (errorMessage) => {
+        shouldContinue = false;
+        clearInterval(progressInterval);
+        
+        try {
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+          let errorContent = `### ❌ Không thể tạo hình ảnh\n` +
+                         `> "${promptPreview}"\n\n`;
+          
+          // Xử lý trường hợp lỗi cụ thể
+          if (errorMessage.includes('content moderation') || 
+              errorMessage.includes('safety') || 
+              errorMessage.includes('inappropriate')) {
+            errorContent += `**Lỗi:** Nội dung yêu cầu không tuân thủ nguyên tắc kiểm duyệt. Vui lòng thử chủ đề khác.\n`;
+          } else if (errorMessage.includes('/generate_image')) {
+            errorContent += `**Lỗi:** Không tìm thấy API endpoint phù hợp trong Gradio Space. Space có thể đã thay đổi cấu trúc hoặc đang offline.\n`;
+          } else {
+            errorContent += `**Lỗi:** ${errorMessage.replace('Không thể tạo hình ảnh: ', '')}\n`;
+          }
+          
+          errorContent += `**Thời gian đã trôi qua:** ${elapsedTime}s`;
+          
+          if (isInteraction) {
+            if (messageOrInteraction.deferred || messageOrInteraction.replied) {
+              await messageOrInteraction.editReply(errorContent);
+            } else {
+              await messageOrInteraction.reply(errorContent);
+            }
+          } else if (progressMessage) {
+            await progressMessage.edit(errorContent);
+          } else if (messageOrInteraction) {
+            await messageOrInteraction.reply(errorContent);
+          }
+        } catch (err) {
+          logger.error('NEURAL', `Lỗi khi cập nhật thông báo lỗi: ${err.message}`);
+        }
+        
+        return false;
+      },
+      
+      // Cập nhật tiến trình thủ công
+      update: async (stage, percent) => {
+        if (!shouldContinue) return;
+        
+        if (stage && stages.includes(stage)) {
+          currentStage = stages.indexOf(stage);
+        }
+        
+        const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        const actualPercent = percent || Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
+        
+        const content = `### ⏳ Đang tạo hình ảnh...\n` +
+                      `> "${promptPreview}"\n\n` +
+                      `**Tiến trình:** ${getProgressBar(actualPercent)}\n` +
+                      `**Đang thực hiện:** ${stages[currentStage]}\n` +
+                      `**Thời gian:** ${elapsedTime}s`;
+        
+        try {
+          if (isInteraction) {
+            if (messageOrInteraction.deferred || messageOrInteraction.replied) {
+              await messageOrInteraction.editReply(content);
+            }
+          } else if (progressMessage) {
+            await progressMessage.edit(content);
+          }
+        } catch (err) {
+          logger.error('NEURAL', `Lỗi khi cập nhật tin nhắn tiến trình: ${err.message}`);
+        }
+      }
+    };
   }
 }
 
