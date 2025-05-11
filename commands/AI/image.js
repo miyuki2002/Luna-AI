@@ -31,22 +31,6 @@ module.exports = {
       });
     } catch (error) {
       logger.error('COMMAND', 'Lỗi khi tạo hình ảnh:', error);
-      
-      try {
-        if (progressTracker && typeof progressTracker.error === 'function') {
-          await progressTracker.error(`Lỗi khi tạo hình ảnh: ${error.message}`);
-        } else {
-          if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'Đã xảy ra lỗi khi tạo hình ảnh!', ephemeral: true });
-          } else if (interaction.deferred) {
-            await interaction.editReply('Đã xảy ra lỗi khi tạo hình ảnh!');
-          } else {
-            await interaction.followUp({ content: 'Đã xảy ra lỗi khi tạo hình ảnh!', ephemeral: true });
-          }
-        }
-      } catch (followupError) {
-        logger.error('COMMAND', 'Lỗi khi hiển thị thông báo lỗi:', followupError);
-      }
     }
   },
 };
