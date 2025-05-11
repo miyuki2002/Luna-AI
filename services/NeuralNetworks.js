@@ -1440,7 +1440,7 @@ class NeuralNetworks {
         buffer: imageBuffer,
         url: imageUrl.startsWith('data:image') ? 'base64_image_data' : imageUrl,
         localPath: outputPath,
-        source: `Gradio (${this.gradioImageSpace})`,
+        source: `Luna-image`,
       };
     } catch (error) {
       logger.error('NEURAL', `Lỗi khi tạo hình ảnh: ${error.message}`, error.stack);
