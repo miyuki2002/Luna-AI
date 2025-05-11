@@ -1725,7 +1725,7 @@ class NeuralNetworks {
       const loadingEmoji = getLoadingAnimation(step);
       const progressBar = getProgressBar(percentComplete);
       
-      const content = `### 🖼️ Đang Tạo Hình Ảnh...\n` +
+      const content = `### ${loadingEmoji} Đang Tạo Hình Ảnh...\n` +
                       `> "${promptPreview}"\n` +
                       `**Tiến trình:** ${progressBar}\n` +
                       `**Đang thực hiện:** ${stages[currentStage]}\n` +
@@ -1834,8 +1834,9 @@ class NeuralNetworks {
         
         const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
         const actualPercent = percent !== undefined ? percent : Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
+        const loadingEmoji = getLoadingAnimation(step);
         
-        const content = `### 🖼️ Đang Tạo Hình Ảnh...\n` +
+        const content = `### ${loadingEmoji} Đang Tạo Hình Ảnh...\n` +
                       `> "${promptPreview}"\n` +
                       `**Tiến trình:** ${getProgressBar(actualPercent)}\n` +
                       `**Đang thực hiện:** ${stages[currentStage]}\n` +
