@@ -1169,21 +1169,21 @@ class NeuralNetworks {
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       // Tạo prompt cho AI phân tích
-      const analysisPrompt = `Phân tích nội dung sau và xác định xem nó có chứa bất kỳ nội dung nhạy cảm nào trong các danh mục sau không:
-      1. Nội dung người lớn (adult)
-      2. Bạo lực (violence)
-      3. Chính trị nhạy cảm (politics)
-      4. Phân biệt chủng tộc (discrimination)
-      5. Tôn giáo nhạy cảm (religion)
-      6. Ma túy và chất cấm (drugs)
-      7. Vũ khí nguy hiểm (weapons)
-      8. Nội dung lừa đảo (scam)
-      9. Nội dung quấy rối (harassment)
-      10. Nội dung xúc phạm (offensive)
+      const analysisPrompt = `Analyze the following content and determine if it contains any sensitive content in these categories:
+      1. Adult content (adult)
+      2. Violence (violence) 
+      3. Sensitive political content (politics)
+      4. Racial discrimination (discrimination)
+      5. Sensitive religious content (religion)
+      6. Drugs and prohibited substances (drugs)
+      7. Dangerous weapons (weapons)
+      8. Scam content (scam)
+      9. Harassment content (harassment)
+      10. Offensive content (offensive)
 
-      Nội dung cần phân tích: "${prompt}"
+      Content to analyze: "${prompt}"
 
-      Trả về kết quả theo định dạng JSON với cấu trúc sau:
+      Return results in JSON format with the following structure:
       {
         "isInappropriate": boolean,
         "categories": [string],
@@ -1192,7 +1192,7 @@ class NeuralNetworks {
         "suggestedKeywords": [string]
       }
 
-      Chỉ trả về JSON, không cần giải thích thêm.`;
+      Return JSON only, no additional explanation needed.`;
 
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.thinkingModel,
@@ -1200,7 +1200,7 @@ class NeuralNetworks {
         messages: [
           {
             role: 'system',
-            content: 'Bạn là một hệ thống phân tích nội dung chuyên nghiệp. Nhiệm vụ của bạn là phân tích và phát hiện nội dung không phù hợp. Luôn trả về kết quả dưới dạng JSON theo cấu trúc được yêu cầu.'
+            content: 'You are a professional content analysis system. Your task is to analyze and detect inappropriate content. Always return results in the requested JSON format.'
           },
           {
             role: 'user',
@@ -1234,20 +1234,17 @@ class NeuralNetworks {
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
 
-      // Kiểm tra blacklist từ database
       const blacklistCheck = await storageDB.checkImageBlacklist(prompt);
       
-      // Phân tích nội dung bằng AI
       const aiAnalysis = await this.analyzeContentWithAI(prompt);
 
-      // Kết hợp kết quả từ cả hai nguồn
       const isBlocked = blacklistCheck.isBlocked || aiAnalysis.isInappropriate;
       const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
       
       if (isBlocked) {
         let errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung không phù hợp\n`;
         
-        if (blacklistCheck.isBlocked) {
+      if (blacklistCheck.isBlocked) {
           errorMsg += `\nTừ khóa vi phạm: ${blacklistCheck.matchedKeywords.join(', ')}`;
           errorMsg += `\nDanh mục vi phạm từ blacklist: ${blacklistCheck.categories.join(', ')}`;
         }
@@ -1258,13 +1255,13 @@ class NeuralNetworks {
           errorMsg += `\n- Mức độ: ${aiAnalysis.severity}`;
           errorMsg += `\n- Lý do: ${aiAnalysis.explanation}`;
         }
-
+        
         if (progressTracker) {
           await progressTracker.error(errorMsg);
         }
         throw new Error(errorMsg);
       }
-
+      
       // Nếu nội dung an toàn, tiếp tục quá trình tạo hình ảnh
       if (progressTracker) {
         await progressTracker.update("Đang phân tích prompt", 15);
@@ -1279,8 +1276,8 @@ class NeuralNetworks {
           logger.warn('NEURAL', `Không thể dịch prompt: ${translateError.message}. Sử dụng prompt gốc.`);
         }
       }
-
-      if (progressTracker) {
+        
+        if (progressTracker) {
         // Cập nhật trạng thái: Đang khởi tạo
         await progressTracker.update("Đang khởi tạo", 20);
       }
@@ -1443,32 +1440,11 @@ class NeuralNetworks {
         buffer: imageBuffer,
         url: imageUrl.startsWith('data:image') ? 'base64_image_data' : imageUrl,
         localPath: outputPath,
-        source: `Gradio (${this.gradioImageSpace})`,
+        source: `Luna-image`,
       };
     } catch (error) {
-      logger.error('NEURAL', `Lỗi khi tạo hình ảnh với Gradio Space ${this.gradioImageSpace}: ${error.message}`, error.stack);
-      if (this.apiKey) {
-        logger.info('NEURAL', 'Thử sử dụng X.AI API như phương pháp dự phòng...');
-        
-        if (progressTracker) {
-          await progressTracker.update("Đang khởi tạo", 5);
-        }
-        
-        try {
-          const result = await this.generateImageWithXAI(prompt, message, progressTracker);
-          return result;
-        } catch (xaiError) {
-          logger.error('NEURAL', `Phương pháp dự phòng cũng thất bại: ${xaiError.message}`);
-          
-          const errorMsg = `Không thể tạo hình ảnh với cả Gradio và X.AI: ${error.message}`;
-          if (progressTracker) progressTracker.error(errorMsg);
-          
-          throw new Error(errorMsg);
-        }
-      }
-      
+      logger.error('NEURAL', `Lỗi khi tạo hình ảnh: ${error.message}`, error.stack);
       if (progressTracker) progressTracker.error(error.message);
-      
       throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
     }
   }
@@ -1509,118 +1485,6 @@ class NeuralNetworks {
       return true;
     } catch (error) {
       logger.error('NEURAL', `Lỗi kết nối đến Gradio Space ${this.gradioImageSpace}: ${error.message}`);
-      return false;
-    }
-  }
-
-  /**
-   * Phương thức dự phòng sử dụng X.AI API để tạo hình ảnh
-   * @param {string} prompt - Mô tả hình ảnh
-   * @param {Object} message - Đối tượng Discord message để hiển thị tiến trình (tùy chọn)
-   * @param {Object} progressTracker - Bộ theo dõi tiến trình đã được khởi tạo trước (tùy chọn)
-   * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
-   */
-  async generateImageWithXAI(prompt, message = null, progressTracker = null) {
-    progressTracker = progressTracker || (message ? this.trackImageGenerationProgress(message, prompt) : null);
-    
-    try {
-      logger.info('NEURAL', `Đang tạo hình ảnh với mô hình X.AI ${this.imageModel}...`);
-      
-      if (progressTracker) {
-        await progressTracker.update("Đang khởi tạo", 5);
-      }
-
-      if (progressTracker) {
-        await progressTracker.update("Đang phân tích prompt", 15);
-      }
-      
-      if (progressTracker) {
-        await progressTracker.update("Đang tạo concept", 30);
-      }
-
-      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-
-      if (progressTracker) {
-        await progressTracker.update("Đang gửi yêu cầu tới X.AI API", 40);
-      }
-
-      const response = await axiosInstance.post('/v1/images/generations', {
-        model: this.imageModel,
-        prompt: prompt,
-        n: 1
-      });
-
-      logger.info('NEURAL', 'Đã nhận hình ảnh từ X.AI API');
-      
-      if (progressTracker) {
-        await progressTracker.update("Đang xử lý kết quả", 70);
-      }
-      
-      const imageUrl = response.data.data[0].url;
-      
-      if (progressTracker) {
-        await progressTracker.update("Đang tải hình ảnh", 80);
-      }
-      
-      const imageResponse = await this.createSecureAxiosInstance().get(imageUrl, { 
-        responseType: 'arraybuffer' 
-      });
-      
-      const imageBuffer = Buffer.from(imageResponse.data);
-      
-      const uniqueFilename = `generated_image_${Date.now()}.png`;
-      const outputPath = `./temp/${uniqueFilename}`;
-      
-      if (progressTracker) {
-        await progressTracker.update("Đang lưu hình ảnh", 90);
-      }
-      
-      if (!fs.existsSync('./temp')) {
-        fs.mkdirSync('./temp', { recursive: true });
-      }
-      
-      fs.writeFileSync(outputPath, imageBuffer);
-      
-      if (progressTracker) {
-        await progressTracker.complete();
-      }
-      
-      return {
-        buffer: imageBuffer,
-        url: imageUrl,
-        localPath: outputPath,
-        source: `X.AI (${this.imageModel})`
-      };
-    } catch (error) {
-      logger.error('NEURAL', `Lỗi khi tạo hình ảnh với X.AI:`, error.message);
-      
-      if (progressTracker) {
-        await progressTracker.error(`Lỗi khi tạo hình ảnh với X.AI: ${error.message}`);
-      }
-      
-      throw error;
-    }
-  }
-
-  /**
-   * Kiểm tra kết nối API
-   */
-  async testConnection() {
-    try {
-      console.log(`Đang kiểm tra kết nối tới X.AI API...`);
-
-      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
-      const response = await axiosInstance.get('/v1/models');
-      if (response.data && response.data.data) {
-        console.log('Kết nối thành công với X.AI API!');
-      }
-
-      return true;
-    } catch (error) {
-      console.error(`Không thể kết nối tới X.AI API:`, error.message);
-      if (error.response) {
-        console.error('Chi tiết lỗi:', JSON.stringify(error.response.data, null, 2));
-      }
       return false;
     }
   }
