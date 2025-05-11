@@ -1172,7 +1172,7 @@ class NeuralNetworks {
       
       if (progressTracker) {
         // Cập nhật trạng thái: Đang phân tích prompt
-        await progressTracker.update("Đang phân tích prompt", 10);
+        await progressTracker.update("Đang phân tích prompt", 0);
       }
 
       let finalPrompt = prompt;
@@ -1371,7 +1371,7 @@ class NeuralNetworks {
         logger.info('NEURAL', 'Thử sử dụng X.AI API như phương pháp dự phòng...');
         
         if (progressTracker) {
-          await progressTracker.update("Đang chuyển sang phương pháp dự phòng", 30);
+          await progressTracker.update("Đang chuyển sang phương pháp dự phòng", 0);
         }
         
         try {
@@ -1457,7 +1457,7 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang tạo hình ảnh với mô hình X.AI ${this.imageModel}...`);
       
       if (progressTracker) {
-        await progressTracker.update("Đang khởi tạo", 20);
+        await progressTracker.update("Đang khởi tạo", 0);
       }
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -1834,7 +1834,7 @@ class NeuralNetworks {
         }
         
         const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-        const actualPercent = percent || Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
+        const actualPercent = percent !== undefined ? percent : Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
         
         const content = `### ⏳ Đang tạo hình ảnh...\n` +
                       `> "${promptPreview}"\n\n` +
