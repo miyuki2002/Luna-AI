@@ -1161,22 +1161,21 @@ class NeuralNetworks {
    * Tạo hình ảnh sử dụng Gradio API, hỗ trợ cả Space public và private.
    * @param {string} prompt - Mô tả hình ảnh cần tạo
    * @param {Object} message - Đối tượng Discord message để hiển thị tiến trình (tùy chọn)
+   * @param {Object} progressTracker - Bộ theo dõi tiến trình đã được khởi tạo trước (tùy chọn)
    * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
    */
-  async generateImage(prompt, message = null) {
-    // Khởi tạo bộ theo dõi tiến trình nếu có message object
-    const progressTracker = message ? this.trackImageGenerationProgress(message, prompt) : null;
+  async generateImage(prompt, message = null, progressTracker = null) {
+    progressTracker = progressTracker || (message ? this.trackImageGenerationProgress(message, prompt) : null);
     
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
       
       if (progressTracker) {
-        // Cập nhật trạng thái: Đang phân tích prompt
-        await progressTracker.update("Đang phân tích prompt", 0);
+        await progressTracker.update("Đang phân tích prompt", 15);
       }
 
       let finalPrompt = prompt;
-      if (prompt.match(/[\u00C0-\u1EF9]/)) { // Phát hiện tiếng Việt
+      if (prompt.match(/[\u00C0-\u1EF9]/)) {
         try {
           finalPrompt = await this.translatePrompt(prompt);
           logger.info('NEURAL', `Prompt dịch sang tiếng Anh: "${finalPrompt}"`);
@@ -1193,12 +1192,10 @@ class NeuralNetworks {
       const gradioModule = await this.loadGradioClient();
       const { Client } = gradioModule;
 
-      // Sử dụng options không cần hfToken cho space public
       const options = {
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
           
-          // Cập nhật tiến trình dựa trên trạng thái
           if (progressTracker) {
             if (status.status === 'running') {
               progressTracker.update("Đang tạo concept", 30);
@@ -1211,7 +1208,6 @@ class NeuralNetworks {
             if (progressTracker) progressTracker.error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
             throw new Error(`Space ${this.gradioImageSpace} không tồn tại hoặc không khả dụng.`);
           }
-          // Xử lý các lỗi khác
           if (status.status === 'error') {
             logger.error('NEURAL', `Lỗi từ Gradio Space ${this.gradioImageSpace}: ${status.message || status.detail}`);
             if (progressTracker) progressTracker.update("Đang xử lý lỗi", 30);
@@ -1222,7 +1218,6 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang kết nối đến Gradio Space public: ${this.gradioImageSpace}`);
       
       if (progressTracker) {
-        // Cập nhật trạng thái: Đang kết nối
         await progressTracker.update("Đang tạo concept", 35);
       }
       
@@ -1231,7 +1226,6 @@ class NeuralNetworks {
         app = await Client.connect(this.gradioImageSpace, options);
       } catch (connectError) {
         logger.error('NEURAL', `Không thể kết nối đến Space ${this.gradioImageSpace}: ${connectError.message}`);
-        // Kiểm tra lỗi cụ thể liên quan đến xác thực
         if (connectError.message.toLowerCase().includes("authorization") || connectError.message.toLowerCase().includes("private space")) {
           const errorMsg = `Không thể kết nối đến Space private ${this.gradioImageSpace}. Vui lòng cung cấp hf_token hợp lệ.`;
           if (progressTracker) progressTracker.error(errorMsg);
@@ -1247,9 +1241,7 @@ class NeuralNetworks {
       
       const apiEndpointName = "/generate_image"; // Tên API standard
 
-      // Kiểm tra endpoint có tên
       if (!api.named_endpoints || !api.named_endpoints[apiEndpointName]) {
-        // Nếu không có endpoint có tên, kiểm tra các endpoint không tên
         const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
         if (!hasUnnamedEndpoint) {
           const errorMsg = `Space ${this.gradioImageSpace} không có endpoint ${apiEndpointName} hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`;
@@ -1263,7 +1255,6 @@ class NeuralNetworks {
       }
 
       if (progressTracker) {
-        // Cập nhật trạng thái: Đang bắt đầu tạo hình ảnh
         await progressTracker.update("Đang tạo hình ảnh sơ bộ", 50);
       }
 
@@ -1280,7 +1271,6 @@ class NeuralNetworks {
       ]);
 
       if (progressTracker) {
-        // Cập nhật trạng thái: Đã tạo xong hình ảnh, đang xử lý
         await progressTracker.update("Đang tinh chỉnh chi tiết", 75);
       }
 
@@ -1291,8 +1281,8 @@ class NeuralNetworks {
         throw new Error(errorMsg);
       }
 
-      const imageData = result.data[0]; // Ảnh là phần tử đầu tiên trong mảng data trả về
-      // const newSeed = result.data[1]; // Seed là phần tử thứ hai (nếu có)
+      const imageData = result.data[0]; 
+      // const newSeed = result.data[1];
 
       if (!imageData || typeof imageData !== 'object') {
         const errorMsg = `Dữ liệu hình ảnh không hợp lệ từ API: ${JSON.stringify(imageData)}`;
@@ -1301,11 +1291,9 @@ class NeuralNetworks {
       }
 
       if (progressTracker) {
-        // Cập nhật trạng thái: Đang hoàn thiện
         await progressTracker.update("Đang hoàn thiện hình ảnh", 85);
       }
 
-      // Tìm URL hình ảnh từ các thuộc tính có thể có
       let imageUrl = imageData.url || imageData.path || imageData.image;
 
       const uniqueFilename = `generated_image_${Date.now()}.png`;
@@ -1317,7 +1305,6 @@ class NeuralNetworks {
       let imageBuffer = null;
 
       if (progressTracker) {
-        // Cập nhật trạng thái: Đang xử lý kết quả
         await progressTracker.update("Đang xử lý kết quả", 90);
       }
 
@@ -1347,13 +1334,11 @@ class NeuralNetworks {
       }
 
       if (progressTracker) {
-        // Cập nhật trạng thái: Đang lưu hình ảnh
         await progressTracker.update("Đang lưu hình ảnh", 95);
       }
 
       logger.info('NEURAL', `Đã tạo hình ảnh thành công và lưu tại: ${outputPath}`);
       
-      // Đánh dấu hoàn thành nếu có progress tracker
       if (progressTracker) {
         await progressTracker.complete();
       }
@@ -1366,22 +1351,15 @@ class NeuralNetworks {
       };
     } catch (error) {
       logger.error('NEURAL', `Lỗi khi tạo hình ảnh với Gradio Space ${this.gradioImageSpace}: ${error.message}`, error.stack);
-      // Nếu lỗi là từ Space Gradio, thử phương pháp dự phòng với X.AI nếu có
       if (this.apiKey) {
         logger.info('NEURAL', 'Thử sử dụng X.AI API như phương pháp dự phòng...');
         
         if (progressTracker) {
-          await progressTracker.update("Đang chuyển sang phương pháp dự phòng", 0);
+          await progressTracker.update("Đang khởi tạo", 5);
         }
         
         try {
-          const result = await this.generateImageWithXAI(prompt, message);
-          
-          // Đánh dấu hoàn thành nếu có progress tracker
-          if (progressTracker) {
-            await progressTracker.complete();
-          }
-          
+          const result = await this.generateImageWithXAI(prompt, message, progressTracker);
           return result;
         } catch (xaiError) {
           logger.error('NEURAL', `Phương pháp dự phòng cũng thất bại: ${xaiError.message}`);
@@ -1393,7 +1371,6 @@ class NeuralNetworks {
         }
       }
       
-      // Nếu không có phương pháp dự phòng hoặc đã thử nhưng thất bại
       if (progressTracker) progressTracker.error(error.message);
       
       throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
@@ -1409,7 +1386,6 @@ class NeuralNetworks {
       const gradioModule = await this.loadGradioClient();
       const { Client } = gradioModule;
       
-      // Sử dụng options đơn giản cho Space public
       const options = {
         status_callback: (status) => {
           logger.info('NEURAL', `Trạng thái Gradio Space ${this.gradioImageSpace}: ${status.status} - ${status.detail || ''}`);
@@ -1421,12 +1397,10 @@ class NeuralNetworks {
       
       const app = await Client.connect(this.gradioImageSpace, options);
       
-      // Kiểm tra API endpoints
       const api = await app.view_api();
-      const apiEndpointName = "/generate_image"; // Tên API standard
+      const apiEndpointName = "/generate_image";
       
       if (!api.named_endpoints || !api.named_endpoints[apiEndpointName]) {
-        // Kiểm tra xem có endpoint không tên nào không
         const hasUnnamedEndpoint = api.unnamed_endpoints && Object.keys(api.unnamed_endpoints).length > 0;
         if (!hasUnnamedEndpoint) {
           logger.warn('NEURAL', `Space ${this.gradioImageSpace} không có endpoint ${apiEndpointName} hoặc bất kỳ API endpoint nào. Vui lòng kiểm tra cấu hình app.py.`);
@@ -1447,17 +1421,25 @@ class NeuralNetworks {
    * Phương thức dự phòng sử dụng X.AI API để tạo hình ảnh
    * @param {string} prompt - Mô tả hình ảnh
    * @param {Object} message - Đối tượng Discord message để hiển thị tiến trình (tùy chọn)
+   * @param {Object} progressTracker - Bộ theo dõi tiến trình đã được khởi tạo trước (tùy chọn)
    * @returns {Promise<Object>} - Đối tượng chứa buffer và URL của hình ảnh
    */
-  async generateImageWithXAI(prompt, message = null) {
-    // Khởi tạo bộ theo dõi tiến trình nếu có message object
-    const progressTracker = message ? this.trackImageGenerationProgress(message, prompt) : null;
+  async generateImageWithXAI(prompt, message = null, progressTracker = null) {
+    progressTracker = progressTracker || (message ? this.trackImageGenerationProgress(message, prompt) : null);
     
     try {
       logger.info('NEURAL', `Đang tạo hình ảnh với mô hình X.AI ${this.imageModel}...`);
       
       if (progressTracker) {
-        await progressTracker.update("Đang khởi tạo", 0);
+        await progressTracker.update("Đang khởi tạo", 5);
+      }
+
+      if (progressTracker) {
+        await progressTracker.update("Đang phân tích prompt", 15);
+      }
+      
+      if (progressTracker) {
+        await progressTracker.update("Đang tạo concept", 30);
       }
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -1490,7 +1472,6 @@ class NeuralNetworks {
       
       const imageBuffer = Buffer.from(imageResponse.data);
       
-      // Lưu hình ảnh vào file
       const uniqueFilename = `generated_image_${Date.now()}.png`;
       const outputPath = `./temp/${uniqueFilename}`;
       
@@ -1498,7 +1479,6 @@ class NeuralNetworks {
         await progressTracker.update("Đang lưu hình ảnh", 90);
       }
       
-      // Đảm bảo thư mục temp tồn tại
       if (!fs.existsSync('./temp')) {
         fs.mkdirSync('./temp', { recursive: true });
       }
@@ -1533,7 +1513,6 @@ class NeuralNetworks {
     try {
       console.log(`Đang kiểm tra kết nối tới X.AI API...`);
 
-      // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       const response = await axiosInstance.get('/v1/models');
       if (response.data && response.data.data) {
@@ -1611,10 +1590,8 @@ class NeuralNetworks {
     try {
       logger.info('NEURAL', `Đang dịch prompt tiếng Việt: "${vietnamesePrompt}"`);
       
-      // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
-      // Tạo prompt yêu cầu dịch
       const translateRequest = `
         Dịch đoạn văn bản sau từ tiếng Việt sang tiếng Anh, giữ nguyên ý nghĩa và các thuật ngữ chuyên ngành.
         Chỉ trả về bản dịch, không cần giải thích hay thêm bất kỳ thông tin nào khác.
@@ -1622,9 +1599,8 @@ class NeuralNetworks {
         Văn bản cần dịch: "${vietnamesePrompt}"
       `;
       
-      // Gọi API để dịch
       const response = await axiosInstance.post('/v1/chat/completions', {
-        model: this.thinkingModel, // Sử dụng model nhẹ hơn để dịch
+        model: this.thinkingModel,
         max_tokens: 1024,
         messages: [
           {
@@ -1634,17 +1610,14 @@ class NeuralNetworks {
         ]
       });
       
-      // Trích xuất kết quả dịch
       const translatedText = response.data.choices[0].message.content.trim();
       
-      // Loại bỏ dấu ngoặc kép nếu có
       const cleanTranslation = translatedText.replace(/^["']|["']$/g, '');
       
       logger.info('NEURAL', `Đã dịch thành công: "${cleanTranslation}"`);
       return cleanTranslation;
     } catch (error) {
       logger.error('NEURAL', `Lỗi khi dịch prompt: ${error.message}`);
-      // Trả về prompt gốc nếu có lỗi
       return vietnamesePrompt;
     }
   }
@@ -1656,7 +1629,6 @@ class NeuralNetworks {
    * @returns {Object} - Controller object để cập nhật và dừng hiển thị tiến trình
    */
   trackImageGenerationProgress(messageOrInteraction, prompt) {
-    // Các giai đoạn xử lý có thể xảy ra khi tạo hình ảnh
     const stages = [
       "Đang khởi tạo",
       "Đang phân tích prompt",
@@ -1672,7 +1644,7 @@ class NeuralNetworks {
     let shouldContinue = true;
     let progressMessage = null;
     
-    // Xác định nếu đối tượng là interaction hay message
+
     const isInteraction = messageOrInteraction.replied !== undefined || 
                          messageOrInteraction.deferred !== undefined;
     
@@ -1682,73 +1654,105 @@ class NeuralNetworks {
       return frames[step % frames.length];
     };
     
-    // Hàm tạo progress bar
-    const getProgressBar = (percent) => {
-      const completed = Math.floor(percent / 10);
-      const remaining = 10 - completed;
-      return `[${'█'.repeat(completed)}${' '.repeat(remaining)}] ${percent}%`;
+
+    const getProgressBar = (percent) => {      const TOTAL_LENGTH = 25; 
+      const completed = Math.floor((percent / 100) * TOTAL_LENGTH);
+      const remaining = TOTAL_LENGTH - completed;
+      
+  
+      let statusIcon;
+      if (percent === 0) {
+        statusIcon = '⬛';
+      } else if (percent < 25) {
+        statusIcon = '▶️';
+      } else if (percent < 50) {
+        statusIcon = '⏩';
+      } else if (percent < 75) {
+        statusIcon = '🔆';
+      } else if (percent < 100) {
+        statusIcon = '⏭️';
+      } else {
+        statusIcon = '✅';
+      }
+      
+      const filledChar = '█'; 
+      const emptyChar = '▒';
+      
+      let progressBar = '';
+      
+      progressBar += '│';
+      
+      if (completed > 0) {
+        progressBar += filledChar.repeat(completed);
+      }
+      
+      if (remaining > 0) {
+        progressBar += emptyChar.repeat(remaining);
+      }
+      
+      progressBar += '│';
+      
+      const percentText = `${percent.toString().padStart(3, ' ')}%`;
+      
+      return `${statusIcon} ${progressBar} ${percentText}`;
     };
     
-    // Hiển thị thông tin ban đầu
     const startTime = Date.now();
     const promptPreview = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
     
-    // Hàm cập nhật thông báo tiến trình
     const updateProgress = async (step = 0) => {
       if (!shouldContinue || !messageOrInteraction) return;
       
-      // Thời gian đã trôi qua
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       
-      // Cập nhật giai đoạn sau mỗi khoảng thời gian
-      if (step % 15 === 0 && currentStage < stages.length - 1) {
-        currentStage++;
-      }
+      // if (step % 15 === 0 && currentStage < stages.length - 1) {
+      //   currentStage++;
+      // }
       
-      // Tính toán phần trăm tiến trình ước lượng 
-      // (dựa trên thời gian và giai đoạn vì không có thông tin thực tế từ Gradio)
-      const percentComplete = Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
+      const stagePercentMap = {
+        0: 5,    // Đang khởi tạo
+        1: 15,   // Đang phân tích prompt
+        2: 30,   // Đang tạo concept
+        3: 45,   // Đang tạo hình ảnh sơ bộ
+        4: 60,   // Đang tinh chỉnh chi tiết
+        5: 75,   // Đang hoàn thiện hình ảnh
+        6: 90,   // Đang xử lý kết quả
+        7: 95    // Đang lưu hình ảnh
+      };
+      
+      const percentComplete = stagePercentMap[currentStage] || Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
       
       const loadingEmoji = getLoadingAnimation(step);
       const progressBar = getProgressBar(percentComplete);
       
-      const content = `### ${loadingEmoji} Đang tạo hình ảnh...\n` +
-                      `> "${promptPreview}"\n\n` +
+      const content = `### ${loadingEmoji} Đang Tạo Hình Ảnh...\n` +
+                      `> "${promptPreview}"\n` +
                       `**Tiến trình:** ${progressBar}\n` +
                       `**Đang thực hiện:** ${stages[currentStage]}\n` +
                       `**Thời gian:** ${elapsedTime}s`;
       
       try {
         if (isInteraction) {
-          // Xử lý đối tượng interaction (slash command)
           if (!progressMessage) {
-            // Nếu là tương tác mới, dùng deferReply để hiển thị đang xử lý
             if (!messageOrInteraction.deferred && !messageOrInteraction.replied) {
               await messageOrInteraction.deferReply();
             }
-            // Sau đó chỉnh sửa phản hồi để hiển thị tiến trình
             progressMessage = await messageOrInteraction.editReply(content);
           } else {
-            // Cập nhật thông báo tiến trình hiện có
             await messageOrInteraction.editReply(content);
           }
         } else {
-          // Xử lý đối tượng message (tin nhắn thông thường)
           if (!progressMessage) {
-            // Tạo thông báo mới nếu chưa có
             progressMessage = await messageOrInteraction.reply(content);
           } else {
-            // Cập nhật thông báo hiện có
             await progressMessage.edit(content);
           }
         }
       } catch (err) {
         logger.error('NEURAL', `Lỗi khi cập nhật tin nhắn tiến trình: ${err.message}`);
-        // Không throw error vì đây chỉ là tính năng hiển thị
       }
     };
     
-    // Bắt đầu hiển thị tiến trình
     let step = 0;
     const progressInterval = setInterval(() => {
       if (!shouldContinue) {
@@ -1756,19 +1760,17 @@ class NeuralNetworks {
         return;
       }
       updateProgress(step++);
-    }, 1500); // Cập nhật mỗi 1.5 giây
+    }, 1500);
     
-    // Trả về controller để cập nhật tiến trình từ bên ngoài
     return {
-      // Đánh dấu tiến trình hoàn tất
       complete: async (imageUrl) => {
         shouldContinue = false;
         clearInterval(progressInterval);
         
         try {
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-          const content = `### ✅ Đã tạo xong hình ảnh!\n` +
-                         `> "${promptPreview}"\n\n` +
+          const content = `### 🎨 Hình Ảnh Đã Tạo Thành Công!\n` +
+                         `> "${promptPreview}"\n` +
                          `**Tiến trình:** ${getProgressBar(100)}\n` +
                          `**Hoàn thành trong:** ${elapsedTime}s`;
           
@@ -1784,17 +1786,15 @@ class NeuralNetworks {
         return true;
       },
       
-      // Thông báo lỗi
       error: async (errorMessage) => {
         shouldContinue = false;
         clearInterval(progressInterval);
         
         try {
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-          let errorContent = `### ❌ Không thể tạo hình ảnh\n` +
+          let errorContent = `### ⚠️ Không Thể Tạo Hình Ảnh\n` +
                          `> "${promptPreview}"\n\n`;
           
-          // Xử lý trường hợp lỗi cụ thể
           if (errorMessage.includes('content moderation') || 
               errorMessage.includes('safety') || 
               errorMessage.includes('inappropriate')) {
@@ -1825,7 +1825,6 @@ class NeuralNetworks {
         return false;
       },
       
-      // Cập nhật tiến trình thủ công
       update: async (stage, percent) => {
         if (!shouldContinue) return;
         
@@ -1835,9 +1834,10 @@ class NeuralNetworks {
         
         const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
         const actualPercent = percent !== undefined ? percent : Math.min(Math.floor((currentStage / (stages.length - 1)) * 100), 99);
+        const loadingEmoji = getLoadingAnimation(step);
         
-        const content = `### ⏳ Đang tạo hình ảnh...\n` +
-                      `> "${promptPreview}"\n\n` +
+        const content = `### ${loadingEmoji} Đang Tạo Hình Ảnh...\n` +
+                      `> "${promptPreview}"\n` +
                       `**Tiến trình:** ${getProgressBar(actualPercent)}\n` +
                       `**Đang thực hiện:** ${stages[currentStage]}\n` +
                       `**Thời gian:** ${elapsedTime}s`;

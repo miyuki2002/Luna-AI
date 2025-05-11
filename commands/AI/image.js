@@ -12,21 +12,25 @@ module.exports = {
         .setRequired(true)),
 
   async execute(interaction) {
+    await interaction.deferReply();
     const prompt = interaction.options.getString('prompt');
-
+    
+    let progressTracker = null;
+    
     try {
-      // Truyền đối tượng interaction vào generateImage để hiển thị tiến trình
-      const imageResult = await NeuralNetworks.generateImage(prompt, interaction);
+      progressTracker = NeuralNetworks.trackImageGenerationProgress(interaction, prompt);
+
+      await progressTracker.update("Đang khởi tạo", 5);
+
+      const imageResult = await NeuralNetworks.generateImage(prompt, interaction, progressTracker);
+      
       const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
-      let replyContent = `🎨 Bức tranh theo ý bạn.\n\n > "${prompt}"`;
       
       await interaction.followUp({
-        content: replyContent,
         files: [attachment]
       });
     } catch (error) {
       logger.error('COMMAND', 'Lỗi khi tạo hình ảnh:', error);
-      
     }
   },
 };
