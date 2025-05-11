@@ -21,18 +21,15 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-client.features = ['EXPERIENCE_POINTS']; // Kích hoạt tính năng XP
-client.logs = []; // Mảng để lưu các log
+client.features = ['EXPERIENCE_POINTS']; 
+client.logs = []; 
 
-// Sử dụng handler cho sự kiện ready - mọi khởi tạo sẽ diễn ra ở đây
 startbot(client, () => loadCommands(client));
 
 // Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
 setupGuildHandlers(client);
 
-// Đăng ký sự kiện tin nhắn - sử dụng handler mới
 client.on(Events.MessageCreate, async message => {
-  // Delegate the entire mention handling logic to the handler
   await handleMentionMessage(message, client);
 });
 

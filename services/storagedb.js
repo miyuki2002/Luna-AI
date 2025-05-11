@@ -104,6 +104,7 @@ class StorageDB {
         await db.createCollection('monitor_settings');
         await db.createCollection('monitor_logs');
         await db.createCollection('mod_settings');
+        await db.createCollection('image_blacklist');
         logger.info('DATABASE', 'Đã tạo các collection cho hệ thống giám sát và moderation');
       } catch (error) {
         logger.info('DATABASE', 'Các collection cho hệ thống giám sát đã tồn tại hoặc không thể tạo');
@@ -115,6 +116,8 @@ class StorageDB {
         await db.collection('monitor_logs').createIndex({ guildId: 1, timestamp: -1 });
         await db.collection('monitor_logs').createIndex({ userId: 1 });
         await db.collection('mod_settings').createIndex({ guildId: 1 }, { unique: true });
+        await db.collection('image_blacklist').createIndex({ category: 1 });
+        await db.collection('image_blacklist').createIndex({ keyword: 1 });
         logger.info('DATABASE', 'Đã tạo các chỉ mục cho hệ thống giám sát và moderation');
       } catch (error) {
         logger.error('DATABASE', 'Lỗi khi tạo chỉ mục cho hệ thống giám sát:', error);
@@ -141,7 +144,8 @@ class StorageDB {
         'greetingPatterns',
         'monitor_settings',
         'monitor_logs',
-        'mod_settings'
+        'mod_settings',
+        'image_blacklist'
       ];
 
       // Xóa từng collection
@@ -164,6 +168,7 @@ class StorageDB {
       await this.initializeConversationHistory();
       await this.initializeDefaultGreetingPatterns();
       await this.initializeProfiles();
+      await this.initializeImageBlacklist();
 
       logger.info('DATABASE', 'Đã xóa và tạo lại cơ sở dữ liệu thành công');
       return true;
@@ -186,6 +191,7 @@ class StorageDB {
         await this.initializeConversationHistory();
         await this.initializeDefaultGreetingPatterns();
         await this.initializeProfiles();
+        await this.initializeImageBlacklist();
       } catch (setupError) {
         logger.error('DATABASE', 'Lỗi khi thiết lập cơ sở dữ liệu:', setupError);
 
@@ -931,6 +937,221 @@ class StorageDB {
     } catch (error) {
       logger.error('DATABASE', 'Lỗi khi tạo profile card:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Khởi tạo blacklist cho generateImage
+   * @returns {Promise<void>}
+   */
+  async initializeImageBlacklist() {
+    try {
+      const db = mongoClient.getDb();
+
+      // Tạo collection nếu chưa có
+      const collections = await db.listCollections({ name: 'image_blacklist' }).toArray();
+      if (collections.length === 0) {
+        await db.createCollection('image_blacklist');
+        logger.info('DATABASE', 'Đã tạo collection image_blacklist');
+      }
+
+      // Tạo indexes
+      await db.collection('image_blacklist').createIndex({ category: 1 });
+      await db.collection('image_blacklist').createIndex({ keyword: 1 });
+
+      // Kiểm tra xem đã có dữ liệu chưa
+      const count = await db.collection('image_blacklist').countDocuments();
+      if (count === 0) {
+        // Khởi tạo blacklist mặc định
+        const defaultBlacklist = [
+          // Nội dung người lớn
+          {
+            category: 'adult',
+            keyword: 'nude',
+            description: 'Hình ảnh khỏa thân',
+            severity: 'high'
+          },
+          {
+            category: 'adult',
+            keyword: 'porn',
+            description: 'Nội dung khiêu dâm',
+            severity: 'high'
+          },
+          {
+            category: 'adult',
+            keyword: 'hentai',
+            description: 'Nội dung người lớn anime/manga',
+            severity: 'high'
+          },
+
+          // Bạo lực
+          {
+            category: 'violence',
+            keyword: 'gore',
+            description: 'Bạo lực đẫm máu',
+            severity: 'high'
+          },
+          {
+            category: 'violence',
+            keyword: 'murder',
+            description: 'Giết người',
+            severity: 'high'
+          },
+
+          // Chính trị nhạy cảm
+          {
+            category: 'politics',
+            keyword: 'extremist',
+            description: 'Nội dung cực đoan',
+            severity: 'high'
+          },
+          {
+            category: 'politics',
+            keyword: 'terrorist',
+            description: 'Khủng bố',
+            severity: 'high'
+          },
+
+          // Phân biệt chủng tộc
+          {
+            category: 'racism',
+            keyword: 'racist',
+            description: 'Phân biệt chủng tộc',
+            severity: 'high'
+          },
+          {
+            category: 'racism',
+            keyword: 'hate',
+            description: 'Phát ngôn thù ghét',
+            severity: 'high'
+          },
+
+          // Tôn giáo nhạy cảm
+          {
+            category: 'religion',
+            keyword: 'blasphemy',
+            description: 'Xúc phạm tôn giáo',
+            severity: 'high'
+          },
+          {
+            category: 'religion',
+            keyword: 'sacrilege',
+            description: 'Phạm thánh',
+            severity: 'high'
+          }
+        ];
+
+        await db.collection('image_blacklist').insertMany(defaultBlacklist);
+        logger.info('DATABASE', 'Đã khởi tạo blacklist mặc định cho generateImage');
+      }
+
+      logger.info('DATABASE', 'Hệ thống blacklist cho generateImage đã sẵn sàng');
+    } catch (error) {
+      logger.error('DATABASE', 'Lỗi khi khởi tạo blacklist cho generateImage:', error);
+    }
+  }
+
+  /**
+   * Kiểm tra từ khóa có trong blacklist không
+   * @param {string} text - Văn bản cần kiểm tra
+   * @returns {Promise<Object>} - Kết quả kiểm tra blacklist
+   */
+  async checkImageBlacklist(text) {
+    try {
+      const db = mongoClient.getDb();
+      const blacklist = await db.collection('image_blacklist').find().toArray();
+
+      // Chuyển text về chữ thường để so sánh
+      const lowerText = text.toLowerCase();
+
+      // Lưu các từ khóa và danh mục vi phạm
+      const matchedKeywords = [];
+      const categories = new Set();
+
+      // Kiểm tra từng từ khóa trong blacklist
+      for (const item of blacklist) {
+        if (lowerText.includes(item.keyword.toLowerCase())) {
+          matchedKeywords.push(item.keyword);
+          categories.add(item.category);
+        }
+      }
+
+      return {
+        isBlocked: matchedKeywords.length > 0,
+        matchedKeywords,
+        categories: Array.from(categories)
+      };
+    } catch (error) {
+      logger.error('DATABASE', 'Lỗi khi kiểm tra blacklist:', error);
+      return {
+        isBlocked: false,
+        matchedKeywords: [],
+        categories: []
+      };
+    }
+  }
+
+  /**
+   * Thêm từ khóa mới vào blacklist
+   * @param {string} keyword - Từ khóa cần thêm
+   * @param {string} category - Danh mục (adult, violence, politics, racism, religion)
+   * @param {string} description - Mô tả
+   * @param {string} severity - Mức độ nghiêm trọng (low, medium, high)
+   * @returns {Promise<boolean>} - Kết quả thêm mới
+   */
+  async addToImageBlacklist(keyword, category, description, severity = 'medium') {
+    try {
+      const db = mongoClient.getDb();
+
+      // Kiểm tra xem từ khóa đã tồn tại chưa
+      const existing = await db.collection('image_blacklist').findOne({ keyword });
+      if (existing) {
+        return false;
+      }
+
+      // Thêm từ khóa mới
+      await db.collection('image_blacklist').insertOne({
+        keyword,
+        category,
+        description,
+        severity,
+        createdAt: new Date()
+      });
+
+      return true;
+    } catch (error) {
+      logger.error('DATABASE', 'Lỗi khi thêm từ khóa vào blacklist:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Xóa từ khóa khỏi blacklist
+   * @param {string} keyword - Từ khóa cần xóa
+   * @returns {Promise<boolean>} - Kết quả xóa
+   */
+  async removeFromImageBlacklist(keyword) {
+    try {
+      const db = mongoClient.getDb();
+      const result = await db.collection('image_blacklist').deleteOne({ keyword });
+      return result.deletedCount > 0;
+    } catch (error) {
+      logger.error('DATABASE', 'Lỗi khi xóa từ khóa khỏi blacklist:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Lấy toàn bộ blacklist
+   * @returns {Promise<Array>} - Danh sách các từ khóa trong blacklist
+   */
+  async getImageBlacklist() {
+    try {
+      const db = mongoClient.getDb();
+      return await db.collection('image_blacklist').find().toArray();
+    } catch (error) {
+      logger.error('DATABASE', 'Lỗi khi lấy danh sách blacklist:', error);
+      return [];
     }
   }
 }

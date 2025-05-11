@@ -159,6 +159,7 @@ async function handleCodeRequest(message, prompt) {
   await message.channel.sendTyping();
 
   try {
+    await this.testConnection(); 
     const codeResponse = await NeuralNetworks.getCodeCompletion(prompt, message);
 
     let formattedResponse = codeResponse;
