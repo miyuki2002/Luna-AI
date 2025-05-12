@@ -26,6 +26,7 @@ module.exports = {
       
       if (imageResult && imageResult.buffer) {
         const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
+        
         await interaction.followUp({
           files: [attachment]
         });
