@@ -1223,6 +1223,7 @@ class NeuralNetworks {
       const blacklistCheck = await storageDB.checkImageBlacklist(prompt);
       const aiAnalysis = await this.analyzeContentWithAI(prompt);
       const isBlocked = blacklistCheck.isBlocked || aiAnalysis.isInappropriate;
+
       //  const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
       
       if (isBlocked) {
@@ -1232,8 +1233,7 @@ class NeuralNetworks {
           errorReason.push(
             `Phân tích AI:`,
             `- Danh mục: ${aiAnalysis.categories.join(', ')}`,
-            `- Mức độ: ${aiAnalysis.severity}`,
-            `- Lý do: ${aiAnalysis.explanation}`
+            `- Mức độ: ${aiAnalysis.severity}`
           );
         }
 
@@ -1242,10 +1242,7 @@ class NeuralNetworks {
         if (progressTracker) {
           await progressTracker.error(errorMsg);
         }
-        
-        const error = new Error(errorMsg);
-        error.isContentModeration = true;
-        throw error;
+        return logger.warn('NEURAL', errorMsg);
       }
       
       // Nếu nội dung an toàn, tiếp tục quá trình tạo hình ảnh
@@ -1429,9 +1426,14 @@ class NeuralNetworks {
         source: `Luna-image`,
       };
     } catch (error) {
-      logger.error('NEURAL', `Lỗi khi tạo hình ảnh: ${error.message}`, error.stack);
-      if (progressTracker) progressTracker.error(error.message);
-      throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
+      
+      if (!this.generateImage.isBlocked) {
+        logger.error('NEURAL', `Lỗi khi tạo hình ảnh: ${error.message}`, error.stack);
+        if (progressTracker) progressTracker.error(error.message);
+        throw new Error(`Không thể tạo hình ảnh: ${error.message}`);
+      } else {
+        throw new Error(`Prompt chứa nội dung không phù hợp`);
+      }
     }
   }
 
