@@ -115,7 +115,7 @@ class NeuralNetworks {
    */
   checkTLSSecurity() {
     if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
-      logger.warn('SYSTEM', '⚠️ CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0 ⚠️');
+      logger.warn('SYSTEM', 'CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0');
       logger.warn('SYSTEM', 'Cài đặt này làm vô hiệu hóa xác minh chứng chỉ SSL/TLS, khiến tất cả kết nối HTTPS không an toàn!');
       logger.warn('SYSTEM', 'Điều này chỉ nên được sử dụng trong môi trường phát triển, KHÔNG BAO GIỜ trong sản xuất.');
       logger.warn('SYSTEM', 'Để khắc phục, hãy xóa biến môi trường NODE_TLS_REJECT_UNAUTHORIZED=0 hoặc sử dụng giải pháp bảo mật hơn.');
@@ -1085,16 +1085,13 @@ class NeuralNetworks {
       let userId;
       
       if (message?.author?.id) {
-        // Từ tin nhắn Discord
         userId = message.author.id;
-        // Thêm thông tin kênh để phân biệt DM và guild chat
         if (message.channel && message.channel.type === 'DM') {
-          userId = `DM-${userId}`; // Cuộc trò chuyện DM
+          userId = `DM-${userId}`; 
         } else if (message.guildId) {
-          userId = `${message.guildId}-${userId}`; // Cuộc trò chuyện trong guild
+          userId = `${message.guildId}-${userId}`; 
         }
       } else {
-        // Từ nguồn khác hoặc không xác định được
         userId = 'anonymous-code-user';
         logger.warn('NEURAL', 'Không thể xác định userId cho yêu cầu mã, sử dụng ID mặc định');
       }
@@ -1102,7 +1099,6 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang xử lý yêu cầu code completion cho userId: ${userId}`);
       logger.debug('NEURAL', `Prompt: "${prompt.substring(0, 50)}..."`);
 
-      // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       // Thêm hướng dẫn cụ thể cho code completion
@@ -1112,7 +1108,7 @@ class NeuralNetworks {
       await conversationManager.addMessage(userId, 'user', enhancedPrompt);
 
       // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+      // const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
 
       // Tạo mảng tin nhắn với prefill hệ thống + lịch sử cuộc trò chuyện
       const messages = [
@@ -1252,7 +1248,7 @@ class NeuralNetworks {
       const aiAnalysis = await this.analyzeContentWithAI(prompt);
 
       const isBlocked = blacklistCheck.isBlocked || aiAnalysis.isInappropriate;
-      const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
+      //  const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
       
       if (isBlocked) {
         let errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung không phù hợp\n`;
@@ -1566,10 +1562,10 @@ class NeuralNetworks {
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
       const translateRequest = `
-        Dịch đoạn văn bản sau từ tiếng Việt sang tiếng Anh, giữ nguyên ý nghĩa và các thuật ngữ chuyên ngành.
-        Chỉ trả về bản dịch, không cần giải thích hay thêm bất kỳ thông tin nào khác.
+        Translate the following text from Vietnamese to English, preserving the meaning and technical terms.
+        Only return the translation, no explanation or additional information needed.
         
-        Văn bản cần dịch: "${vietnamesePrompt}"
+        Text to translate: "${vietnamesePrompt}"
       `;
       
       const response = await axiosInstance.post('/v1/chat/completions', {
@@ -1621,18 +1617,15 @@ class NeuralNetworks {
     const isInteraction = messageOrInteraction.replied !== undefined || 
                          messageOrInteraction.deferred !== undefined;
     
-    // Hàm tạo emoji loading animation
     const getLoadingAnimation = (step) => {
       const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       return frames[step % frames.length];
     };
-    
-
+  
     const getProgressBar = (percent) => {      const TOTAL_LENGTH = 25; 
       const completed = Math.floor((percent / 100) * TOTAL_LENGTH);
       const remaining = TOTAL_LENGTH - completed;
-      
-  
+        
       let statusIcon;
       if (percent === 0) {
         statusIcon = '⬛';
@@ -1741,11 +1734,8 @@ class NeuralNetworks {
         clearInterval(progressInterval);
         
         try {
-          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
           const content = `### 🎨 Hình Ảnh Đã Tạo Thành Công!\n` +
-                         `> "${promptPreview}"\n` +
-                         `**Tiến trình:** ${getProgressBar(100)}\n` +
-                         `**Hoàn thành trong:** ${elapsedTime}s`;
+                         `> "${promptPreview}"`;
           
           if (isInteraction) {
             await messageOrInteraction.editReply(content);
@@ -1765,7 +1755,7 @@ class NeuralNetworks {
         
         try {
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-          let errorContent = `### ⚠️ Không Thể Tạo Hình Ảnh\n` +
+          let errorContent = `### <:oops:735756879761899521> Không Thể Tạo Hình Ảnh\n` +
                          `> "${promptPreview}"\n\n`;
           
           if (errorMessage.includes('content moderation') || 
@@ -1773,7 +1763,7 @@ class NeuralNetworks {
               errorMessage.includes('inappropriate')) {
             errorContent += `**Lỗi:** Nội dung yêu cầu không tuân thủ nguyên tắc kiểm duyệt. Vui lòng thử chủ đề khác.\n`;
           } else if (errorMessage.includes('/generate_image')) {
-            errorContent += `**Lỗi:** Không tìm thấy API endpoint phù hợp trong Gradio Space. Space có thể đã thay đổi cấu trúc hoặc đang offline.\n`;
+            errorContent += `**Lỗi:** Không tìm thấy API endpoint phù hợp trong Space. Space có thể đang offline.\n`;
           } else {
             errorContent += `**Lỗi:** ${errorMessage.replace('Không thể tạo hình ảnh: ', '')}\n`;
           }

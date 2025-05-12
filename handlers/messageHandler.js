@@ -106,7 +106,7 @@ async function handleChatRequest(message, content) {
     logger.error('MESSAGE', `Lỗi khi nhận phản hồi trò chuyện cho ${message.author.tag}:`, error);
 
     if (error.code === 'EPROTO' || error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
-      await message.reply('Xin lỗi, tôi đang gặp vấn đề kết nối với dịch vụ AI. Vui lòng thử lại sau hoặc liên hệ quản trị viên để được hỗ trợ.');
+      await message.reply('Xin lỗi, tôi đang gặp vấn đề xử lý yêu cầu của bạn. Vui lòng thử lại sau hoặc liên hệ quản trị viên để được hỗ trợ.');
     } else {
       await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo phản hồi. Vui lòng thử lại sau.');
     }
