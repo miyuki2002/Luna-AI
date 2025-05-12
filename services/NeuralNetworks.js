@@ -1178,30 +1178,7 @@ class NeuralNetworks {
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       // Tạo prompt cho AI phân tích
-      const analysisPrompt = `Analyze the following content and determine if it contains any sensitive content in these categories:
-      1. Adult content (adult)
-      2. Violence (violence) 
-      3. Sensitive political content (politics)
-      4. Racial discrimination (discrimination)
-      5. Sensitive religious content (religion)
-      6. Drugs and prohibited substances (drugs)
-      7. Dangerous weapons (weapons)
-      8. Scam content (scam)
-      9. Harassment content (harassment)
-      10. Offensive content (offensive)
-
-      Content to analyze: "${prompt}"
-
-      Return results in JSON format with the following structure:
-      {
-        "isInappropriate": boolean,
-        "categories": [string],
-        "severity": "low" | "medium" | "high",
-        "explanation": string,
-        "suggestedKeywords": [string]
-      }
-
-      Return JSON only, no additional explanation needed.`;
+      const analysisPrompt = prompts.system.analysis.replace('${promptText}', prompt);
 
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.thinkingModel,
@@ -1209,7 +1186,7 @@ class NeuralNetworks {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional content analysis system. Your task is to analyze and detect inappropriate content. Always return results in the requested JSON format.'
+            content: prompts.system.format
           },
           {
             role: 'user',
@@ -1244,31 +1221,31 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
 
       const blacklistCheck = await storageDB.checkImageBlacklist(prompt);
-      
       const aiAnalysis = await this.analyzeContentWithAI(prompt);
-
       const isBlocked = blacklistCheck.isBlocked || aiAnalysis.isInappropriate;
       //  const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
       
       if (isBlocked) {
-        let errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung không phù hợp\n`;
-        
-      if (blacklistCheck.isBlocked) {
-          errorMsg += `\nTừ khóa vi phạm: ${blacklistCheck.matchedKeywords.join(', ')}`;
-          errorMsg += `\nDanh mục vi phạm từ blacklist: ${blacklistCheck.categories.join(', ')}`;
-        }
+        const errorReason = [];
         
         if (aiAnalysis.isInappropriate) {
-          errorMsg += `\nPhân tích AI:`;
-          errorMsg += `\n- Danh mục: ${aiAnalysis.categories.join(', ')}`;
-          errorMsg += `\n- Mức độ: ${aiAnalysis.severity}`;
-          errorMsg += `\n- Lý do: ${aiAnalysis.explanation}`;
+          errorReason.push(
+            `Phân tích AI:`,
+            `- Danh mục: ${aiAnalysis.categories.join(', ')}`,
+            `- Mức độ: ${aiAnalysis.severity}`,
+            `- Lý do: ${aiAnalysis.explanation}`
+          );
         }
+
+        const errorMsg = `Prompt chứa nội dung không phù hợp\n${errorReason.join('\n')}`;
         
         if (progressTracker) {
           await progressTracker.error(errorMsg);
         }
-        throw new Error(errorMsg);
+        
+        const error = new Error(errorMsg);
+        error.isContentModeration = true;
+        throw error;
       }
       
       // Nếu nội dung an toàn, tiếp tục quá trình tạo hình ảnh
