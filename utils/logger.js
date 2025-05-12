@@ -3,6 +3,9 @@
  * Cho phép bật/tắt log và phân loại log theo mức độ
  */
 
+const fs = require('fs');
+const path = require('path');
+
 // Sử dụng cấu hình từ file cấu hình
 const loggerConfig = require('../config/loggerConfig.js');
 
@@ -16,6 +19,75 @@ const LOG_LEVELS = {
 
 // Reset màu
 const RESET_COLOR = '\x1b[0m';
+
+// Biến lưu trữ writeStream cho file log
+let logStream = null;
+
+/**
+ * Khởi tạo hệ thống ghi log vào file
+ */
+async function initializeFileLogging() {
+  try {
+    const config = loggerConfig.getConfig();
+    if (!config.fileLogging.enabled) return;
+
+    // Tạo thư mục logs nếu chưa tồn tại
+    const logDir = path.join(process.cwd(), config.fileLogging.directory);
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+
+    const currentLogFile = path.join(logDir, config.fileLogging.filename);
+    
+    // Nếu file log cũ tồn tại và cấu hình cho phép rotate
+    if (fs.existsSync(currentLogFile) && config.fileLogging.rotateOnStartup) {
+      const stats = fs.statSync(currentLogFile);
+      const oldTimestamp = stats.mtime.toISOString().replace(/[:.]/g, '-');
+      const oldLogFile = path.join(logDir, `console_${oldTimestamp}.old`);
+      fs.renameSync(currentLogFile, oldLogFile);
+      info('SYSTEM', `Đã đổi tên file log cũ thành: ${oldLogFile}`);
+    }
+
+    // Tạo writeStream để ghi log
+    logStream = fs.createWriteStream(currentLogFile, { flags: 'a' });
+    
+    // Ghi thông tin khởi động
+    const startupMessage = `\n=== LUNA AI STARTUP LOG ===\nStartup Time: ${new Date().toISOString()}\nEnvironment: ${process.env.NODE_ENV || 'development'}\n=========================\n\n`;
+    logStream.write(startupMessage);
+
+    // Xử lý khi process kết thúc
+    process.on('exit', () => {
+      if (logStream) {
+        logStream.end('\n=== LUNA AI SHUTDOWN ===\n');
+      }
+    });
+
+    process.on('SIGINT', () => {
+      if (logStream) {
+        logStream.end('\n=== LUNA AI INTERRUPTED ===\n');
+      }
+      process.exit();
+    });
+
+    info('SYSTEM', 'Đã khởi tạo hệ thống ghi log vào file thành công');
+  } catch (error) {
+    console.error('Lỗi khi khởi tạo hệ thống ghi log vào file:', error.message);
+  }
+}
+
+/**
+ * Ghi log vào file
+ * @param {string} level - Mức độ log
+ * @param {string} message - Nội dung log
+ */
+function writeToFile(level, message) {
+  if (!logStream) return;
+
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] ${level.toUpperCase()}: ${message}\n`;
+  
+  logStream.write(logEntry);
+}
 
 /**
  * Ghi log với định dạng và màu sắc
@@ -48,21 +120,30 @@ function log(category, level, message, ...args) {
   const categoryStr = category ? `[${category}] ` : '';
   const prefix = `${timestamp}${levelColor}${level.toUpperCase()}${RESET_COLOR} ${categoryStr}`;
 
+  // Chuẩn bị nội dung log
+  const logContent = `${prefix}${message}`;
+
   // Ghi log với console tương ứng
   switch (level) {
     case 'error':
-      console.error(prefix, message, ...args);
+      console.error(logContent, ...args);
       break;
     case 'warn':
-      console.warn(prefix, message, ...args);
+      console.warn(logContent, ...args);
       break;
     case 'debug':
-      console.debug(prefix, message, ...args);
+      console.debug(logContent, ...args);
       break;
     case 'info':
     default:
-      console.log(prefix, message, ...args);
+      console.log(logContent, ...args);
       break;
+  }
+
+  // Ghi vào file nếu được bật
+  if (config.fileLogging?.enabled && logStream) {
+    const fileContent = `${categoryStr}${message}`;
+    writeToFile(level, fileContent);
   }
 }
 
@@ -167,5 +248,6 @@ module.exports = {
   setLevel,
   setCategoryEnabled,
   getConfig,
-  resetConfig
+  resetConfig,
+  initializeFileLogging
 };

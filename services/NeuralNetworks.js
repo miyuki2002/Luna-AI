@@ -1,17 +1,18 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 const conversationManager = require('../handlers/conversationManager.js');
 const logger = require('../utils/logger.js');
-// const malAPI = require('./MyAnimeListAPI.js');
 const prompts = require('../config/prompts.js');
 
 class NeuralNetworks {
   constructor() {
     this.checkTLSSecurity();
+    this.initializeLogging();
 
     // Lấy API key từ biến môi trường
     this.apiKey = process.env.XAI_API_KEY;
@@ -52,6 +53,19 @@ class NeuralNetworks {
         logger.warn('NEURAL', 'Không thể kết nối đến Gradio Space. Vui lòng kiểm tra Space status.');
       }
     });
+  }
+
+  /**
+   * Khởi tạo hệ thống logging khi bot khởi động
+   */
+  async initializeLogging() {
+    try {
+      // Khởi tạo hệ thống ghi log vào file
+      await logger.initializeFileLogging();
+      logger.info('SYSTEM', 'Đã khởi tạo hệ thống logging thành công');
+    } catch (error) {
+      logger.error('SYSTEM', `Lỗi khi khởi tạo hệ thống logging: ${error.message}`);
+    }
   }
 
   /**
@@ -257,7 +271,6 @@ class NeuralNetworks {
     // Trích xuất từ khóa chính từ truy vấn
     const keywords = this.extractKeywords(query);
 
-    // Tính điểm liên quan cho mỗi kết quả
     const scoredResults = results.map(result => {
       let score = 0;
 
@@ -1624,15 +1637,15 @@ class NeuralNetworks {
       if (percent === 0) {
         statusIcon = '⬛';
       } else if (percent < 25) {
-        statusIcon = '▶️';
+        statusIcon = '<:thinking:1050344785153626122>';
       } else if (percent < 50) {
-        statusIcon = '⏩';
+        statusIcon = '<:wao:1050344773698977853>';
       } else if (percent < 75) {
         statusIcon = '🔆';
       } else if (percent < 100) {
         statusIcon = '⏭️';
       } else {
-        statusIcon = '✅';
+        statusIcon = '<:like:1049784377103622218>';
       }
       
       const filledChar = '█'; 
