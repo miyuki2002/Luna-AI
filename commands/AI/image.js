@@ -14,9 +14,9 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
     const prompt = interaction.options.getString('prompt');
-    
+
     let progressTracker = null;
-    
+
     try {
       progressTracker = NeuralNetworks.trackImageGenerationProgress(interaction, prompt);
 
@@ -24,11 +24,15 @@ module.exports = {
 
       const imageResult = await NeuralNetworks.generateImage(prompt, interaction, progressTracker);
       
-      const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
-      
-      await interaction.followUp({
-        files: [attachment]
-      });
+      if (imageResult && imageResult.buffer) {
+        const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });
+        
+        await interaction.followUp({
+          files: [attachment]
+        });
+      } else {
+        return logger.warn('IMAGE', 'Không nhận được dữ liệu hình ảnh');
+      }
     } catch (error) {
       logger.error('COMMAND', 'Lỗi khi tạo hình ảnh:', error);
     }
