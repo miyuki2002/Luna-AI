@@ -1,10 +1,9 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
+const logger = require('../utils/logger.js');
 
-// Log khi module được tải (chỉ in một lần)
-console.log('🔄 GuildProfileDB module đã được tải vào hệ thống');
+logger.info('SYSTEM', 'GuildProfileDB module đã được tải vào hệ thống');
 
-// Cache đã tạo profile để tránh tạo lại nhiều lần
 const profileCache = new Set();
 
 /**
@@ -51,7 +50,7 @@ const getGuildProfileCollection = async () => {
     // Bỏ thông báo debug để tránh spam console
     return db.collection('guild_profiles');
   } catch (error) {
-    console.error('❌ Lỗi khi truy cập collection guild_profiles:', error);
+    logger.error('SYSTEM', 'Lỗi khi truy cập collection guild_profiles:', error);
     throw error;
   }
 };
@@ -64,7 +63,7 @@ const getGuildProfileCollection = async () => {
 const createDefaultGuildProfile = (guildId) => {
   // Chỉ in thông báo khi thực sự tạo mới, không phải khi hàm được gọi
   if (!profileCache.has(guildId)) {
-    console.log(`🆕 Tạo profile mới cho guild: ${guildId}`);
+    logger.info('SYSTEM', `Tạo profile mới cho guild: ${guildId}`);
     profileCache.add(guildId);
   }
   
@@ -83,7 +82,7 @@ const getAllGuildProfiles = async () => {
     const collection = await getGuildProfileCollection();
     return await collection.find({}).toArray();
   } catch (error) {
-    console.error('❌ Lỗi khi lấy tất cả hồ sơ guild:', error);
+    logger.error('SYSTEM', 'Lỗi khi lấy tất cả hồ sơ guild:', error);
     return [];
   }
 };
@@ -111,7 +110,7 @@ const getGuildProfile = async (guildId) => {
     
     return profile;
   } catch (error) {
-    console.error(`❌ Lỗi khi lấy hồ sơ guild ${guildId}:`, error);
+    logger.error('SYSTEM', `Lỗi khi lấy hồ sơ guild ${guildId}:`, error);
     throw error;
   }
 };
@@ -135,7 +134,7 @@ const updateGuildProfile = async (guildId, updateData) => {
     
     return result.acknowledged;
   } catch (error) {
-    console.error(`❌ Lỗi khi cập nhật hồ sơ guild ${guildId}:`, error);
+    logger.error('SYSTEM', `Lỗi khi cập nhật hồ sơ guild ${guildId}:`, error);
     return false;
   }
 };
@@ -171,7 +170,7 @@ const setXpChannelException = async (guildId, channelId, isException) => {
     
     return await updateGuildProfile(guildId, { xp: profile.xp });
   } catch (error) {
-    console.error(`❌ Lỗi khi thiết lập ngoại lệ XP cho guild ${guildId}:`, error);
+    logger.error('SYSTEM', `Lỗi khi thiết lập ngoại lệ XP cho guild ${guildId}:`, error);
     return false;
   }
 };
@@ -194,7 +193,7 @@ const toggleXpSystem = async (guildId, isActive) => {
     
     return await updateGuildProfile(guildId, { xp: profile.xp });
   } catch (error) {
-    console.error(`❌ Lỗi khi ${isActive ? 'bật' : 'tắt'} XP cho guild ${guildId}:`, error);
+    logger.error('SYSTEM', `Lỗi khi ${isActive ? 'bật' : 'tắt'} XP cho guild ${guildId}:`, error);
     return false;
   }
 };
@@ -209,9 +208,9 @@ const setupGuildProfileIndexes = async () => {
     // Tạo index cho collections
     await db.collection('guild_profiles').createIndex({ '_id': 1 });
     
-    console.log('✅ Đã thiết lập indexes cho collection guild_profiles');
+    logger.info('SYSTEM', 'Đã thiết lập indexes cho collection guild_profiles');
   } catch (error) {
-    console.error('❌ Lỗi khi thiết lập indexes cho guild_profiles:', error);
+    logger.error('SYSTEM', 'Lỗi khi thiết lập indexes cho guild_profiles:', error);
     throw error;
   }
 };

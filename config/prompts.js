@@ -5,7 +5,32 @@ const prompts = {
     coding: " You are also a programming assistant with model name ${modelName}. Provide code examples and explanations. Always present code in code blocks with comprehensive comments.",
     codingThinking: " You are also a programming assistant with model name ${modelName}.\nPlease explain your thinking process before writing code.\n\nUse this format:\n[THINKING] - Problem analysis and approach\n[CODE] - Complete code with full comments\n[EXPLANATION] - Detailed explanation of the code",
     monitoring: "Bạn là trợ lý phân tích tin nhắn. Nhiệm vụ của bạn là phân tích tin nhắn và xác định xem nó có vi phạm quy tắc nào không.\n\nQUAN TRỌNG: Hãy phân tích kỹ lưỡng và chính xác. Nếu tin nhắn có chứa chính xác nội dung bị cấm trong quy tắc, hãy trả lời \"VIOLATION: Có\". Nếu không, trả lời \"VIOLATION: Không\".\n\nVí dụ: Nếu quy tắc là \"không chat s4ory\" và tin nhắn chứa \"s4ory\", thì đó là vi phạm.\n\nTrả lời theo định dạng chính xác sau:\nVIOLATION: Có/Không\nRULE: [Số thứ tự quy tắc hoặc \"Không có\"]\nSEVERITY: Thấp/Trung bình/Cao/Không có\nFAKE: Có/Không\nACTION: Không cần hành động/Cảnh báo/Xóa tin nhắn/Mute/Kick/Ban\nREASON: [Giải thích ngắn gọn]",
-    malAnalysis: "Bạn là trợ lý phân tích yêu cầu tìm kiếm anime và manga. Hãy phân tích chính xác và trả về định dạng JSON theo yêu cầu."
+    malAnalysis: "Bạn là trợ lý phân tích yêu cầu tìm kiếm anime và manga. Hãy phân tích chính xác và trả về định dạng JSON theo yêu cầu.",
+    format: "You are a professional content analysis system. Your task is to analyze and detect inappropriate content. Always return results in the requested JSON format.",
+    analysis: `Phân tích nội dung sau và xác định xem nó có chứa nội dung nhạy cảm trong các danh mục sau không:
+      1. Nội dung người lớn (adult)
+      2. Bạo lực (violence)
+      3. Nội dung chính trị nhạy cảm (politics) 
+      4. Phân biệt chủng tộc (discrimination)
+      5. Nội dung tôn giáo nhạy cảm (religion)
+      6. Ma túy và chất cấm (drugs)
+      7. Vũ khí nguy hiểm (weapons)
+      8. Nội dung lừa đảo (scam)
+      9. Nội dung quấy rối (harassment)
+      10. Nội dung xúc phạm (offensive)
+
+      Content to analyze: "\${promptText}"
+
+      Return results in JSON format with the following structure:
+      {
+        "isInappropriate": boolean,
+        "categories": [string],
+        "severity": "low" | "medium" | "high",
+        "explanation": string,
+        "suggestedKeywords": [string]
+      }
+
+      Return JSON only, no additional explanation needed.`
   },
   anime: {
     analysisPrompt: `Phân tích nội dung sau và xác định xem có phải là yêu cầu tìm kiếm thông tin anime/manga không: 

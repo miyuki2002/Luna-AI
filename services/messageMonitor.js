@@ -37,12 +37,12 @@ class MessageMonitor {
 
       // Đánh dấu đã khởi tạo
       this.isInitialized = true;
-      logger.info('MONITOR', '✅ Đã khởi tạo hệ thống giám sát tin nhắn thành công');
-      logger.info('MONITOR', `🔑 Bot ID: ${client.user.id}`);
-      logger.info('MONITOR', '📝 Chức năng monitor sẽ đọc tất cả tin nhắn khi được bật');
-      logger.info('MONITOR', '🔔 Chức năng monitor và trò chuyện sẽ hoạt động song song');
+      logger.info('MONITOR', 'Đã khởi tạo hệ thống giám sát tin nhắn thành công');
+      logger.info('MONITOR', `Bot ID: ${client.user.id}`);
+      logger.info('MONITOR', 'Chức năng monitor sẽ đọc tất cả tin nhắn khi được bật');
+      logger.info('MONITOR', 'Chức năng monitor và trò chuyện sẽ hoạt động song song');
     } catch (error) {
-      logger.error('MONITOR', '❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
+      logger.error('MONITOR', 'Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
     }
   }
 
@@ -85,9 +85,9 @@ class MessageMonitor {
         // logger.debug('MONITOR', `Số quy tắc: ${setting.rules.length}, Số kênh bỏ qua: ${(setting.ignoredChannels || []).length}, Số vai trò bỏ qua: ${(setting.ignoredRoles || []).length}`);
       }
 
-      logger.info('MONITOR', `✅ Đã tải ${settings.length} cài đặt giám sát từ cơ sở dữ liệu thành công`);
+      logger.info('MONITOR', `Đã tải ${settings.length} cài đặt giám sát từ cơ sở dữ liệu thành công`);
     } catch (error) {
-      logger.error('MONITOR', '❌ Lỗi khi tải cài đặt giám sát:', error);
+      logger.error('MONITOR', 'Lỗi khi tải cài đặt giám sát:', error);
     }
   }
 

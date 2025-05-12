@@ -8,6 +8,13 @@ const defaultConfig = {
   enabled: true,         // Bật/tắt toàn bộ log
   level: 'info',         // Mức độ log mặc định: debug, info, warn, error
   showTimestamp: true,   // Hiển thị thời gian
+  fileLogging: {         // Cấu hình ghi log vào file
+    enabled: true,       // Bật/tắt ghi log vào file
+    directory: 'logs',   // Thư mục chứa file log
+    filename: 'console.txt', // Tên file log mặc định
+    rotateOnStartup: true,  // Đổi tên file log cũ khi khởi động
+    keepOldLogs: true      // Giữ lại các file log cũ
+  },
   categories: {          // Bật/tắt log theo danh mục
     MONITOR: true,       // Hệ thống giám sát tin nhắn
     NEURAL: true,        // Hệ thống AI/NeuralNetworks
@@ -43,6 +50,18 @@ function updateConfig(newConfig) {
     currentConfig.categories = { ...currentConfig.categories, ...newConfig.categories };
   }
   
+  return getConfig();
+}
+
+/**
+ * Cập nhật cấu hình ghi log vào file
+ * @param {Object} fileConfig - Cấu hình ghi file mới
+ * @returns {Object} - Cấu hình sau khi cập nhật
+ */
+function updateFileLogging(fileConfig) {
+  if (fileConfig) {
+    currentConfig.fileLogging = { ...currentConfig.fileLogging, ...fileConfig };
+  }
   return getConfig();
 }
 
@@ -97,5 +116,6 @@ module.exports = {
   setEnabled,
   setLevel,
   setCategoryEnabled,
-  resetToDefault
+  resetToDefault,
+  updateFileLogging
 };

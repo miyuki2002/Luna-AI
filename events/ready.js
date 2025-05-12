@@ -19,61 +19,61 @@ async function startbot(client, loadCommands) {
     `);
 
     try {
-      logger.info('SYSTEM', `🔄 Đang kết nối đến MongoDB...`);
+      logger.info('SYSTEM', `Đang kết nối đến MongoDB...`);
       await mongoClient.connect();
       await storageDB.setupCollections();
       initSystem.markReady('mongodb');
-      logger.info('SYSTEM', `✅ Đã kết nối thành công đến MongoDB!`);
+      logger.info('SYSTEM', `Đã kết nối thành công đến MongoDB!`);
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo kết nối MongoDB:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo kết nối MongoDB:', error);
       initSystem.markReady('mongodb');
-      logger.warn('SYSTEM', '⚠️ Bot sẽ hoạt động mà không có khả năng lưu trữ lâu dài. Một số tính năng có thể không hoạt động chính xác.');
+      logger.warn('SYSTEM', 'Bot sẽ hoạt động mà không có khả năng lưu trữ lâu dài. Một số tính năng có thể không hoạt động chính xác.');
     }
 
     try {
       await storageDB.initializeConversationHistory();
-      logger.info('SYSTEM', '✅ Đã khởi tạo cấu trúc lịch sử cuộc trò chuyện');
+      logger.info('SYSTEM', 'Đã khởi tạo cấu trúc lịch sử cuộc trò chuyện');
       initSystem.markReady('conversationHistory');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
       initSystem.markReady('conversationHistory');
     }
 
     try {
-      logger.info('SYSTEM', '🔄 Đang khởi tạo hệ thống profile người dùng...');
+      logger.info('SYSTEM', 'Đang khởi tạo hệ thống profile người dùng...');
       await storageDB.initializeProfiles();
 
       const profileCollection = await ProfileDB.getProfileCollection();
-      logger.info('SYSTEM', '✅ Đã thiết lập collection user_profiles và cấu trúc dữ liệu');
+      logger.info('SYSTEM', 'Đã thiết lập collection user_profiles và cấu trúc dữ liệu');
 
       const db = mongoClient.getDb();
       await db.collection('user_profiles').createIndex({ 'data.global_xp': -1 });
       await db.collection('user_profiles').createIndex({ 'data.xp.id': 1 });
-      logger.info('SYSTEM', '✅ Đã khởi tạo các index cho collection user_profiles');
+      logger.info('SYSTEM', 'Đã khởi tạo các index cho collection user_profiles');
 
       initSystem.markReady('profiles');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống profile người dùng:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo hệ thống profile người dùng:', error);
       initSystem.markReady('profiles');
     }
 
     try {
-      logger.info('SYSTEM', '🔄 Đang khởi tạo hệ thống profile guild...');
+      logger.info('SYSTEM', 'Đang khởi tạo hệ thống profile guild...');
       await GuildProfileDB.setupGuildProfileIndexes();
 
       for (const [guildId, guild] of client.guilds.cache) {
         try {
           const guildProfile = await GuildProfileDB.getGuildProfile(guildId);
-          logger.info('SYSTEM', `✅ Đã tải cấu hình XP cho guild ${guild.name}`);
+          logger.info('SYSTEM', `Đã tải cấu hình XP cho guild ${guild.name}`);
         } catch (err) {
-          logger.error('SYSTEM', `❌ Lỗi khi tải cấu hình guild ${guild.name}:`, err);
+          logger.error('SYSTEM', `Lỗi khi tải cấu hình guild ${guild.name}:`, err);
         }
       }
 
-      logger.info('SYSTEM', '✅ Đã khởi tạo hệ thống profile guild');
+      logger.info('SYSTEM', 'Đã khởi tạo hệ thống profile guild');
       initSystem.markReady('guildProfiles');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống profile guild:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo hệ thống profile guild:', error);
       initSystem.markReady('guildProfiles');
     }
 
@@ -81,7 +81,7 @@ async function startbot(client, loadCommands) {
       await NeuralNetworks.initializeGreetingPatterns();
       initSystem.markReady('greetingPatterns');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo mẫu lời chào:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo mẫu lời chào:', error);
       initSystem.markReady('greetingPatterns');
     }
 
@@ -90,17 +90,19 @@ async function startbot(client, loadCommands) {
       logger.info('SYSTEM', `Đã tải tổng cộng ${commandCount} lệnh!`);
       initSystem.markReady('commands');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi tải commands:', error);
+      logger.error('SYSTEM', 'Lỗi khi tải commands:', error);
       initSystem.markReady('commands');
     }
 
+    /**
     try {
       const connected = await NeuralNetworks.testConnection();
       initSystem.markReady('api');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi kết nối đến X.AI API:', error);
+      logger.error('SYSTEM', 'Lỗi khi kết nối đến X.AI API:', error);
       initSystem.markReady('api');
     }
+    */
 
     // TẠM THỜI VÔ HIỆU HÓA HỆ THỐNG GIÁM SÁT TIN NHẮN
     /**
@@ -111,25 +113,25 @@ async function startbot(client, loadCommands) {
       console.log('✅ Đã khởi tạo hệ thống giám sát tin nhắn');
       initSystem.markReady('messageMonitor');
     } catch (error) {
-      console.error('❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
+      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
       initSystem.markReady('messageMonitor'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
     }
     */
 
-    logger.warn('SYSTEM', '🔒 Hệ thống giám sát tin nhắn đã bị tạm thời vô hiệu hóa');
+    logger.warn('SYSTEM', 'Hệ thống giám sát tin nhắn đã bị tạm thời vô hiệu hóa');
     initSystem.markReady('messageMonitor');
 
     // Khởi tạo Dashboard
     /** 
     try {
-      logger.info('SYSTEM', '🔄 Đang khởi tạo Web Dashboard...');
+      logger.info('SYSTEM', 'Đang khởi tạo Web Dashboard...');
       const dashboard = await initDashboard(client);
       if (dashboard) {
-        logger.info('SYSTEM', '✅ Đã khởi tạo Web Dashboard thành công!');
+        logger.info('SYSTEM', 'Đã khởi tạo Web Dashboard thành công!');
       }
       initSystem.markReady('dashboard');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo Web Dashboard:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo Web Dashboard:', error);
       initSystem.markReady('dashboard');
     }
     */
@@ -140,7 +142,7 @@ async function startbot(client, loadCommands) {
       status: 'online'
     });
 
-    logger.info('SYSTEM', `✅ Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
+    logger.info('SYSTEM', `Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
   });
 }
 

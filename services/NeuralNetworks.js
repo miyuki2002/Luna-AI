@@ -1,17 +1,18 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 
 const messageHandler = require('../handlers/messageHandler.js');
 const storageDB = require('./storagedb.js');
 const conversationManager = require('../handlers/conversationManager.js');
 const logger = require('../utils/logger.js');
-// const malAPI = require('./MyAnimeListAPI.js');
 const prompts = require('../config/prompts.js');
 
 class NeuralNetworks {
   constructor() {
     this.checkTLSSecurity();
+    this.initializeLogging();
 
     // Lấy API key từ biến môi trường
     this.apiKey = process.env.XAI_API_KEY;
@@ -52,6 +53,19 @@ class NeuralNetworks {
         logger.warn('NEURAL', 'Không thể kết nối đến Gradio Space. Vui lòng kiểm tra Space status.');
       }
     });
+  }
+
+  /**
+   * Khởi tạo hệ thống logging khi bot khởi động
+   */
+  async initializeLogging() {
+    try {
+      // Khởi tạo hệ thống ghi log vào file
+      await logger.initializeFileLogging();
+      logger.info('SYSTEM', 'Đã khởi tạo hệ thống logging thành công');
+    } catch (error) {
+      logger.error('SYSTEM', `Lỗi khi khởi tạo hệ thống logging: ${error.message}`);
+    }
   }
 
   /**
@@ -101,7 +115,7 @@ class NeuralNetworks {
    */
   checkTLSSecurity() {
     if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
-      logger.warn('SYSTEM', '⚠️ CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0 ⚠️');
+      logger.warn('SYSTEM', 'CẢNH BÁO BẢO MẬT: NODE_TLS_REJECT_UNAUTHORIZED=0');
       logger.warn('SYSTEM', 'Cài đặt này làm vô hiệu hóa xác minh chứng chỉ SSL/TLS, khiến tất cả kết nối HTTPS không an toàn!');
       logger.warn('SYSTEM', 'Điều này chỉ nên được sử dụng trong môi trường phát triển, KHÔNG BAO GIỜ trong sản xuất.');
       logger.warn('SYSTEM', 'Để khắc phục, hãy xóa biến môi trường NODE_TLS_REJECT_UNAUTHORIZED=0 hoặc sử dụng giải pháp bảo mật hơn.');
@@ -257,7 +271,6 @@ class NeuralNetworks {
     // Trích xuất từ khóa chính từ truy vấn
     const keywords = this.extractKeywords(query);
 
-    // Tính điểm liên quan cho mỗi kết quả
     const scoredResults = results.map(result => {
       let score = 0;
 
@@ -1072,16 +1085,13 @@ class NeuralNetworks {
       let userId;
       
       if (message?.author?.id) {
-        // Từ tin nhắn Discord
         userId = message.author.id;
-        // Thêm thông tin kênh để phân biệt DM và guild chat
         if (message.channel && message.channel.type === 'DM') {
-          userId = `DM-${userId}`; // Cuộc trò chuyện DM
+          userId = `DM-${userId}`; 
         } else if (message.guildId) {
-          userId = `${message.guildId}-${userId}`; // Cuộc trò chuyện trong guild
+          userId = `${message.guildId}-${userId}`; 
         }
       } else {
-        // Từ nguồn khác hoặc không xác định được
         userId = 'anonymous-code-user';
         logger.warn('NEURAL', 'Không thể xác định userId cho yêu cầu mã, sử dụng ID mặc định');
       }
@@ -1089,7 +1099,6 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang xử lý yêu cầu code completion cho userId: ${userId}`);
       logger.debug('NEURAL', `Prompt: "${prompt.substring(0, 50)}..."`);
 
-      // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       // Thêm hướng dẫn cụ thể cho code completion
@@ -1099,7 +1108,7 @@ class NeuralNetworks {
       await conversationManager.addMessage(userId, 'user', enhancedPrompt);
 
       // Lấy lịch sử cuộc trò chuyện hiện có
-      const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
+      // const conversationHistory = await conversationManager.loadConversationHistory(userId, this.systemPrompt, this.Model);
 
       // Tạo mảng tin nhắn với prefill hệ thống + lịch sử cuộc trò chuyện
       const messages = [
@@ -1169,30 +1178,7 @@ class NeuralNetworks {
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
       // Tạo prompt cho AI phân tích
-      const analysisPrompt = `Analyze the following content and determine if it contains any sensitive content in these categories:
-      1. Adult content (adult)
-      2. Violence (violence) 
-      3. Sensitive political content (politics)
-      4. Racial discrimination (discrimination)
-      5. Sensitive religious content (religion)
-      6. Drugs and prohibited substances (drugs)
-      7. Dangerous weapons (weapons)
-      8. Scam content (scam)
-      9. Harassment content (harassment)
-      10. Offensive content (offensive)
-
-      Content to analyze: "${prompt}"
-
-      Return results in JSON format with the following structure:
-      {
-        "isInappropriate": boolean,
-        "categories": [string],
-        "severity": "low" | "medium" | "high",
-        "explanation": string,
-        "suggestedKeywords": [string]
-      }
-
-      Return JSON only, no additional explanation needed.`;
+      const analysisPrompt = prompts.system.analysis.replace('${promptText}', prompt);
 
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.thinkingModel,
@@ -1200,7 +1186,7 @@ class NeuralNetworks {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional content analysis system. Your task is to analyze and detect inappropriate content. Always return results in the requested JSON format.'
+            content: prompts.system.format
           },
           {
             role: 'user',
@@ -1235,31 +1221,31 @@ class NeuralNetworks {
       logger.info('NEURAL', `Đang tạo hình ảnh với prompt: "${prompt}"`);
 
       const blacklistCheck = await storageDB.checkImageBlacklist(prompt);
-      
       const aiAnalysis = await this.analyzeContentWithAI(prompt);
-
       const isBlocked = blacklistCheck.isBlocked || aiAnalysis.isInappropriate;
-      const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
+      //  const categories = [...new Set([...blacklistCheck.categories, ...aiAnalysis.categories])];
       
       if (isBlocked) {
-        let errorMsg = `Không thể tạo hình ảnh: Prompt chứa nội dung không phù hợp\n`;
-        
-      if (blacklistCheck.isBlocked) {
-          errorMsg += `\nTừ khóa vi phạm: ${blacklistCheck.matchedKeywords.join(', ')}`;
-          errorMsg += `\nDanh mục vi phạm từ blacklist: ${blacklistCheck.categories.join(', ')}`;
-        }
+        const errorReason = [];
         
         if (aiAnalysis.isInappropriate) {
-          errorMsg += `\nPhân tích AI:`;
-          errorMsg += `\n- Danh mục: ${aiAnalysis.categories.join(', ')}`;
-          errorMsg += `\n- Mức độ: ${aiAnalysis.severity}`;
-          errorMsg += `\n- Lý do: ${aiAnalysis.explanation}`;
+          errorReason.push(
+            `Phân tích AI:`,
+            `- Danh mục: ${aiAnalysis.categories.join(', ')}`,
+            `- Mức độ: ${aiAnalysis.severity}`,
+            `- Lý do: ${aiAnalysis.explanation}`
+          );
         }
+
+        const errorMsg = `Prompt chứa nội dung không phù hợp\n${errorReason.join('\n')}`;
         
         if (progressTracker) {
           await progressTracker.error(errorMsg);
         }
-        throw new Error(errorMsg);
+        
+        const error = new Error(errorMsg);
+        error.isContentModeration = true;
+        throw error;
       }
       
       // Nếu nội dung an toàn, tiếp tục quá trình tạo hình ảnh
@@ -1553,10 +1539,10 @@ class NeuralNetworks {
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
       
       const translateRequest = `
-        Dịch đoạn văn bản sau từ tiếng Việt sang tiếng Anh, giữ nguyên ý nghĩa và các thuật ngữ chuyên ngành.
-        Chỉ trả về bản dịch, không cần giải thích hay thêm bất kỳ thông tin nào khác.
+        Translate the following text from Vietnamese to English, preserving the meaning and technical terms.
+        Only return the translation, no explanation or additional information needed.
         
-        Văn bản cần dịch: "${vietnamesePrompt}"
+        Text to translate: "${vietnamesePrompt}"
       `;
       
       const response = await axiosInstance.post('/v1/chat/completions', {
@@ -1608,31 +1594,28 @@ class NeuralNetworks {
     const isInteraction = messageOrInteraction.replied !== undefined || 
                          messageOrInteraction.deferred !== undefined;
     
-    // Hàm tạo emoji loading animation
     const getLoadingAnimation = (step) => {
       const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       return frames[step % frames.length];
     };
-    
-
+  
     const getProgressBar = (percent) => {      const TOTAL_LENGTH = 25; 
       const completed = Math.floor((percent / 100) * TOTAL_LENGTH);
       const remaining = TOTAL_LENGTH - completed;
-      
-  
+        
       let statusIcon;
       if (percent === 0) {
         statusIcon = '⬛';
       } else if (percent < 25) {
-        statusIcon = '▶️';
+        statusIcon = '<:thinking:1050344785153626122>';
       } else if (percent < 50) {
-        statusIcon = '⏩';
+        statusIcon = '<:wao:1050344773698977853>';
       } else if (percent < 75) {
         statusIcon = '🔆';
       } else if (percent < 100) {
         statusIcon = '⏭️';
       } else {
-        statusIcon = '✅';
+        statusIcon = '<:like:1049784377103622218>';
       }
       
       const filledChar = '█'; 
@@ -1728,11 +1711,8 @@ class NeuralNetworks {
         clearInterval(progressInterval);
         
         try {
-          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
           const content = `### 🎨 Hình Ảnh Đã Tạo Thành Công!\n` +
-                         `> "${promptPreview}"\n` +
-                         `**Tiến trình:** ${getProgressBar(100)}\n` +
-                         `**Hoàn thành trong:** ${elapsedTime}s`;
+                         `> "${promptPreview}"`;
           
           if (isInteraction) {
             await messageOrInteraction.editReply(content);
@@ -1752,7 +1732,7 @@ class NeuralNetworks {
         
         try {
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-          let errorContent = `### ⚠️ Không Thể Tạo Hình Ảnh\n` +
+          let errorContent = `### <:oops:735756879761899521> Không Thể Tạo Hình Ảnh\n` +
                          `> "${promptPreview}"\n\n`;
           
           if (errorMessage.includes('content moderation') || 
@@ -1760,7 +1740,7 @@ class NeuralNetworks {
               errorMessage.includes('inappropriate')) {
             errorContent += `**Lỗi:** Nội dung yêu cầu không tuân thủ nguyên tắc kiểm duyệt. Vui lòng thử chủ đề khác.\n`;
           } else if (errorMessage.includes('/generate_image')) {
-            errorContent += `**Lỗi:** Không tìm thấy API endpoint phù hợp trong Gradio Space. Space có thể đã thay đổi cấu trúc hoặc đang offline.\n`;
+            errorContent += `**Lỗi:** Không tìm thấy API endpoint phù hợp trong Space. Space có thể đang offline.\n`;
           } else {
             errorContent += `**Lỗi:** ${errorMessage.replace('Không thể tạo hình ảnh: ', '')}\n`;
           }

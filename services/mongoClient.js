@@ -1,5 +1,6 @@
 const { MongoClient } = require('mongodb');
 const initSystem = require('./initSystem.js');
+const logger = require('../utils/logger.js');
 
 class MongoDBClient {
   constructor() {
@@ -16,12 +17,12 @@ class MongoDBClient {
   async connect() {
     try {
       if (this.db) {
-        console.log('Đã kết nối đến MongoDB rồi.');
+        logger.info('SYSTEM', 'Đã kết nối đến MongoDB rồi.');
         return this.db;
       }
 
       if (this.isConnecting) {
-        console.log('Đang trong quá trình kết nối đến MongoDB...');
+        logger.info('SYSTEM', 'Đang trong quá trình kết nối đến MongoDB...');
         while (!this.db) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -32,7 +33,7 @@ class MongoDBClient {
       await this.client.connect();
       this.db = this.client.db();
       this.isConnecting = false;
-      console.log('Đã kết nối thành công đến MongoDB');
+      logger.info('SYSTEM', 'Đã kết nối thành công đến MongoDB');
 
       // Chú ý: Các indexes sẽ được tạo trong storageDB.setupCollections()
       // Để tránh xung đột, không tạo indexes ở đây
@@ -46,7 +47,7 @@ class MongoDBClient {
       return this.db;
     } catch (error) {
       this.isConnecting = false;
-      console.error('Lỗi khi kết nối đến MongoDB:', error);
+      logger.error('SYSTEM', 'Lỗi khi kết nối đến MongoDB:', error);
       throw error;
     }
   }
@@ -54,9 +55,9 @@ class MongoDBClient {
   async close() {
     try {
       await this.client.close();
-      console.log('Đã đóng kết nối MongoDB');
+      logger.info('SYSTEM', 'Đã đóng kết nối MongoDB');
     } catch (error) {
-      console.error('Lỗi khi đóng kết nối MongoDB:', error);
+      logger.error('SYSTEM', 'Lỗi khi đóng kết nối MongoDB:', error);
     }
   }
 
@@ -72,7 +73,7 @@ class MongoDBClient {
       try {
         await this.connect();
       } catch (error) {
-        console.error('Không thể kết nối đến MongoDB:', error);
+        logger.error('SYSTEM', 'Không thể kết nối đến MongoDB:', error);
         throw new Error('Không thể kết nối đến MongoDB. Vui lòng kiểm tra kết nối và cấu hình.');
       }
     }

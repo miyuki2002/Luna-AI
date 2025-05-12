@@ -1,7 +1,8 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoClient = require('./mongoClient.js');
+const logger = require('../utils/logger.js');
 
-console.log('🔄 ProfileDB module đã được tải vào hệ thống');
+logger.info('SYSTEM', 'ProfileDB module đã được tải vào hệ thống');
 
 // Cache các userId đã tạo profile
 const userProfileCache = new Set();
@@ -69,7 +70,7 @@ const getProfileCollection = async () => {
 // Tạo profile mới với giá trị mặc định
 const createDefaultProfile = (userId) => {
   if (!userProfileCache.has(userId)) {
-    console.log(`🆕 Tạo profile mới cho người dùng: ${userId}`);
+    logger.info('SYSTEM', `Tạo profile mới cho người dùng: ${userId}`);
     userProfileCache.add(userId);
   }
   
