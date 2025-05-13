@@ -33,6 +33,7 @@ temp/
 *.sublime-project
 *.sublime-workspace
 .history/
+.idx/
 
 # OS files
 .DS_Store
