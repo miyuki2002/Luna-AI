@@ -1340,10 +1340,10 @@ class NeuralNetworks {
         "",           // negative_prompt
         0,            // seed
         true,         // randomize_seed
-        512,          // width
-        512,          // height
-        0.0,          // guidance_scale
-        2,            // num_inference_steps
+        768,          // width
+        768,          // height
+        2.0,          // guidance_scale
+        1,            // num_inference_steps
       ]);
 
       if (progressTracker) {

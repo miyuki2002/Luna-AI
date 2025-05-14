@@ -22,7 +22,6 @@ const client = new Client({
 
 client.commands = new Collection();
 client.features = ['EXPERIENCE_POINTS']; 
-client.logs = []; 
 
 startbot(client, () => loadCommands(client));
 

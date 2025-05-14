@@ -62,11 +62,7 @@ async function processXp(message, commandExecuted, execute) {
       'RECENTLY_TALKED'       // Người gửi vừa nói gần đây
     ].includes(response.reason)) {
       // Ghi log lỗi nếu có
-      if (message.client.logs) {
-        message.client.logs.push(`Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
-      } else {
-        logger.error('XP', `Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
-      }
+      logger.error('XP', `Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
     }
 
     // Nếu người dùng lên cấp, có thể hiển thị thông báo
@@ -159,7 +155,6 @@ async function handleCodeRequest(message, prompt) {
   await message.channel.sendTyping();
 
   try {
-    await this.testConnection(); 
     const codeResponse = await NeuralNetworks.getCodeCompletion(prompt, message);
 
     let formattedResponse = codeResponse;
