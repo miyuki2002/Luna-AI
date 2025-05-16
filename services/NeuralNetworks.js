@@ -619,6 +619,9 @@ class NeuralNetworks {
     // Các từ khóa về studio và nhà sản xuất
     const studioKeywords = /(ghibli|kyoto animation|shaft|madhouse|bones|ufotable|a-1 pictures|wit studio|mappa|trigger|toei animation|pierrot|production i\.g|sunrise|gainax|hoạt hình 3d|cgi animation|3d animation)/i;
 
+    // Các từ khóa tìm kiếm tên và danh tính
+    const nameKeywords = /(tên thật|tên đầy đủ|tên khai sinh|tên thường gọi|biệt danh|nickname|tên riêng|tên nghệ sĩ|stage name|real name|full name|birth name|given name|alias|streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|artist|actor|actress|singer|performer|gamer|content creator)/i;
+
     // Nếu có từ khóa chỉ ý kiến cá nhân, không cần tìm kiếm
     if (opinionKeywords.test(prompt)) return false;
 
@@ -628,6 +631,7 @@ class NeuralNetworks {
     if (animeKeywords.test(prompt)) return true;
     if (genreKeywords.test(prompt)) return true;
     if (studioKeywords.test(prompt)) return true;
+    if (nameKeywords.test(prompt)) return true;
     return informationKeywords.test(prompt) || detailKeywords.test(prompt) || factsKeywords.test(prompt);
   }
 
