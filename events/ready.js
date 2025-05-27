@@ -4,6 +4,7 @@ const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');
 const ProfileDB = require('../services/profiledb.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
+const ownerService = require('../services/ownerService.js');
 // const { initDashboard } = require('./dashboard.js');
 // const messageMonitor = require('../services/messageMonitor.js');
 const logger = require('../utils/logger.js');
@@ -83,6 +84,14 @@ async function startbot(client, loadCommands) {
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo mẫu lời chào:', error);
       initSystem.markReady('greetingPatterns');
+    }
+
+    try {
+      logger.info('SYSTEM', 'Đang khởi tạo OwnerService...');
+      ownerService.initialize(client);
+      logger.info('SYSTEM', 'Đã khởi tạo OwnerService thành công!');
+    } catch (error) {
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo OwnerService:', error);
     }
 
     try {

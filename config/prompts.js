@@ -100,6 +100,11 @@ const prompts = {
   },
   memory: {
     memoryContext: `[Thông tin từ cuộc trò chuyện trước: \${relevantMessagesText}] `
+  },
+  owner: {
+    mentionResponse: `Create a friendly and respectful response when someone mentions \${ownerUsername} (\${ownerDisplayName}) - my creator. Reference their role as my creator and express gratitude. The response should be brief (1-2 sentences), use appropriate emojis, and show pride in my creator.
+
+    Conversation context: \${context}`
   }
 };
 
