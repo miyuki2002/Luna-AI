@@ -969,12 +969,10 @@ class NeuralNetworks {
       .filter((msg) => msg.role === "user")
       .map((msg) => msg.content);
 
-    // Chọn tin nhắn có độ dài vừa phải và không quá ngắn
     const significantMessages = userMessages.filter(
       (msg) => msg.length > 10 && msg.length < 200
     );
 
-    // Nếu không có tin nhắn thỏa điều kiện, trả về một số tin nhắn bất kỳ
     if (significantMessages.length === 0) {
       return userMessages.slice(-3).map((msg) => {
         if (msg.length > 100) return msg.substring(0, 100) + "...";
@@ -982,7 +980,6 @@ class NeuralNetworks {
       });
     }
 
-    // Trả về các tin nhắn quan trọng (tối đa 5)
     return significantMessages.slice(-5).map((msg) => {
       if (msg.length > 100) return msg.substring(0, 100) + "...";
       return msg;
@@ -997,7 +994,6 @@ class NeuralNetworks {
   identifyMainTopics(history) {
     if (!history || history.length === 0) return ["Chưa có đủ dữ liệu"];
 
-    // Thu thập tất cả từ khóa từ các tin nhắn của người dùng
     const allKeywords = [];
 
     history.forEach((msg) => {
@@ -1007,7 +1003,6 @@ class NeuralNetworks {
       }
     });
 
-    // Đếm tần suất xuất hiện của các từ khóa
     const keywordFrequency = {};
     allKeywords.forEach((keyword) => {
       if (!keywordFrequency[keyword]) {
@@ -1017,12 +1012,10 @@ class NeuralNetworks {
       }
     });
 
-    // Sắp xếp từ khóa theo tần suất xuất hiện
     const sortedKeywords = Object.entries(keywordFrequency)
       .sort((a, b) => b[1] - a[1])
       .map((entry) => entry[0]);
 
-    // Trả về các chủ đề phổ biến nhất (tối đa 5)
     return sortedKeywords.slice(0, 5);
   }
 
