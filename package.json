@@ -1,6 +1,6 @@
 {
   "name": "luna",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Bot Discord hỗ trợ trò chuyện AI và tạo hình ảnh",
   "main": "index.js",
   "scripts": {
