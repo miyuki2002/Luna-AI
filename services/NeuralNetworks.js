@@ -48,6 +48,7 @@ class NeuralNetworks {
     logger.info('NEURAL', `Model chat: ${this.CoreModel} & ${this.Model}`);
     logger.info('NEURAL', `Model tạo hình ảnh: ${this.imageModel}`);
     logger.info('NEURAL', `Gradio image space: ${this.gradioImageSpace}`);
+    logger.info('NEURAL', `Live Search: Enabled`);
 
     this.testGradioConnection().then(connected => {
       if (!connected) {
@@ -150,155 +151,60 @@ class NeuralNetworks {
   }
 
   /**
-   * Thực hiện tìm kiếm web bằng Google Custom Search API
+   * Thực hiện tìm kiếm web bằng Live Search
    * @param {string} query - Truy vấn tìm kiếm
-   * @returns {Promise<Array>} - Danh sách kết quả tìm kiếm
+   * @returns {Promise<Object>} - Kết quả tìm kiếm và metadata
    */
-  async performWebSearch(query) {
+  async performLiveSearch(query) {
     try {
-      const googleApiKey = process.env.GOOGLE_API_KEY;
-      const googleCseId = process.env.GOOGLE_CSE_ID;
+      logger.info('API', `Đang thực hiện Live Search cho: "${query}"`);
 
-      if (!googleApiKey || !googleCseId) {
-        logger.warn('API', 'Thiếu GOOGLE_API_KEY hoặc GOOGLE_CSE_ID trong biến môi trường. Bỏ qua tìm kiếm web.');
-        return [];
-      }
+      const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
-      // Tối ưu truy vấn tìm kiếm
-      const optimizedQuery = this.optimizeSearchQuery(query);
+      // Tạo prompt yêu cầu Live Search
+      const searchPrompt = prompts.web.liveSearchPrompt.replace('${query}', query);
 
-      logger.info('API', `Đang thực hiện tìm kiếm web cho: "${optimizedQuery}"`);
-
-      const axiosInstance = axios.create({
-        baseURL: 'https://www.googleapis.com',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 5000 // Thêm timeout để tránh chờ đợi quá lâu
-      });
-
-      const response = await axiosInstance.get('/customsearch/v1', {
-        params: {
-          key: googleApiKey,
-          cx: googleCseId,
-          q: optimizedQuery,
-          num: 5,
-          hl: 'vi',
-          gl: 'vn'
+      const response = await axiosInstance.post('/v1/chat/completions', {
+        model: this.CoreModel,
+        max_tokens: 2048,
+        messages: [
+          {
+            role: 'system',
+            content: prompts.web.liveSearchSystem
+          },
+          {
+            role: 'user',
+            content: searchPrompt
+          }
+        ],
+        search_parameters: {
+          mode: "auto",
+          max_search_results: 10,
+          include_citations: true
         }
       });
 
-      const results = response.data.items
-        ? response.data.items.map(item => ({
-          title: item.title,
-          snippet: item.snippet,
-          url: item.link,
-          date: item.pagemap?.metatags?.[0]?.['article:published_time'] || null
-        }))
-        : [];
+      logger.info('API', 'Đã nhận phản hồi từ Live Search');
+      
+      const searchResult = {
+        content: response.data.choices[0].message.content,
+        hasSearchResults: true,
+        searchMetadata: response.data.search_metadata || null
+      };
 
-      logger.info('API', `Đã tìm thấy ${results.length} kết quả cho truy vấn: ${optimizedQuery}`);
-      return results;
+      return searchResult;
     } catch (error) {
-      logger.error('API', 'Lỗi khi thực hiện tìm kiếm web:', error.message);
-      return [];
+      logger.error('API', 'Lỗi khi thực hiện Live Search:', error.message);
+      return {
+        content: null,
+        hasSearchResults: false,
+        searchMetadata: null,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Tối ưu hoá truy vấn tìm kiếm để có kết quả chính xác hơn
-   * @param {string} query - Truy vấn gốc
-   * @returns {string} - Truy vấn đã được tối ưu
-   */
-  optimizeSearchQuery(query) {
-    // Loại bỏ các từ hỏi thông thường để tập trung vào từ khóa chính
-    const commonQuestionWords = /^(làm thế nào|tại sao|tại sao lại|là gì|có phải|ai là|khi nào|ở đâu|what is|how to|why|who is|when|where)/i;
-    let optimized = query.replace(commonQuestionWords, '').trim();
 
-    // Loại bỏ các cụm từ yêu cầu cá nhân
-    const personalRequests = /(tôi muốn biết|cho tôi biết|hãy nói cho tôi|tell me|i want to know|please explain)/i;
-    optimized = optimized.replace(personalRequests, '').trim();
-
-    // Nếu truy vấn quá ngắn sau khi tối ưu, sử dụng truy vấn gốc
-    if (optimized.length < 5) {
-      return query;
-    }
-
-    return optimized;
-  }
-
-  /**
-   * Tạo prompt cải tiến với kết quả tìm kiếm
-   * @param {string} originalPrompt - Prompt ban đầu
-   * @param {Array} searchResults - Kết quả tìm kiếm
-   * @returns {string} - Prompt đã cải tiến
-   */
-  createSearchEnhancedPrompt(originalPrompt, searchResults) {
-    if (searchResults.length === 0) {
-      return originalPrompt;
-    }
-
-    // Loại bỏ các kết quả trùng lặp hoặc không liên quan
-    const relevantResults = this.filterRelevantResults(searchResults, originalPrompt);
-
-    if (relevantResults.length === 0) {
-      return originalPrompt;
-    }
-
-    let resultsText = '';
-    relevantResults.forEach((result, index) => {
-      resultsText += `[Source ${index + 1}]: ${result.title}\n`;
-      resultsText += `${result.snippet}\n`;
-      resultsText += `URL: ${result.url}\n\n`;
-    });
-
-    // Sử dụng mẫu từ cấu hình prompt
-    const enhancedPrompt = prompts.web.searchEnhancedPrompt
-      .replace('${originalPromptText}', originalPrompt)
-      .replace('${searchResultsText}', resultsText);
-
-    return enhancedPrompt;
-  }
-
-  /**
-   * Lọc kết quả tìm kiếm để lấy những kết quả liên quan nhất
-   * @param {Array} results - Danh sách kết quả tìm kiếm
-   * @param {string} query - Truy vấn gốc
-   * @returns {Array} - Danh sách kết quả đã được lọc
-   */
-  filterRelevantResults(results, query) {
-    if (results.length === 0) return [];
-
-    // Trích xuất từ khóa chính từ truy vấn
-    const keywords = this.extractKeywords(query);
-
-    const scoredResults = results.map(result => {
-      let score = 0;
-
-      // Kiểm tra sự xuất hiện của từ khóa trong tiêu đề và đoạn trích
-      keywords.forEach(keyword => {
-        if (result.title.toLowerCase().includes(keyword.toLowerCase())) score += 2;
-        if (result.snippet.toLowerCase().includes(keyword.toLowerCase())) score += 1;
-      });
-
-      // Ưu tiên các kết quả có ngày mới hơn
-      if (result.date) {
-        const resultDate = new Date(result.date);
-        const now = new Date();
-        const monthsAgo = (now - resultDate) / (1000 * 60 * 60 * 24 * 30);
-        if (monthsAgo < 3) score += 2; // Trong vòng 3 tháng
-        else if (monthsAgo < 12) score += 1; // Trong vòng 1 năm
-      }
-
-      return { ...result, relevanceScore: score };
-    });
-
-    // Sắp xếp theo điểm liên quan và chỉ lấy tối đa 3 kết quả có liên quan nhất
-    return scoredResults
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .filter(result => result.relevanceScore > 0)
-      .slice(0, 3);
-  }
 
   /**
    * Phân tích tin nhắn cho chức năng giám sát
@@ -446,19 +352,24 @@ class NeuralNetworks {
 
       // Xác định xem prompt có cần tìm kiếm web hay không
       const shouldSearchWeb = this.shouldPerformWebSearch(prompt);
-      let searchResults = [];
+      let searchResult = null;
+      let promptWithSearch = prompt;
 
       if (shouldSearchWeb) {
-        logger.info('NEURAL', "Prompt có vẻ cần thông tin từ web, đang thực hiện tìm kiếm...");
-        searchResults = await this.performWebSearch(prompt);
+        logger.info('NEURAL', "Prompt có vẻ cần thông tin từ web, đang thực hiện Live Search...");
+        searchResult = await this.performLiveSearch(prompt);
+        
+        if (searchResult.hasSearchResults && searchResult.content) {
+          // Sử dụng kết quả Live Search trực tiếp
+          promptWithSearch = prompts.web.liveSearchEnhanced
+            .replace('${originalPrompt}', prompt)
+            .replace('${searchContent}', searchResult.content);
+        } else {
+          logger.warn('NEURAL', 'Live Search không trả về kết quả, sử dụng kiến thức có sẵn');
+        }
       } else {
-        logger.info('NEURAL', "Sử dụng kiến thức có sẵn, không cần tìm kiếm web");
+        logger.info('NEURAL', "Sử dụng kiến thức có sẵn, không cần Live Search");
       }
-
-      // Tạo prompt được nâng cao với kết quả tìm kiếm (nếu có)
-      const promptWithSearch = searchResults.length > 0
-        ? this.createSearchEnhancedPrompt(prompt, searchResults)
-        : prompt;
 
       // Bổ sung thông tin từ trí nhớ cuộc trò chuyện
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(promptWithSearch, userId);
@@ -482,55 +393,55 @@ class NeuralNetworks {
         enhancedPrompt += prompts.chat.newConversation;
       }
 
-      if (searchResults.length > 0) {
-        enhancedPrompt += prompts.chat.webSearch;
-      }
+              if (searchResult && searchResult.hasSearchResults) {
+          enhancedPrompt += prompts.chat.webSearch;
+        }
 
-      enhancedPrompt += prompts.chat.generalInstructions + ` ${enhancedPromptWithMemory}`;
+        enhancedPrompt += prompts.chat.generalInstructions + ` ${enhancedPromptWithMemory}`;
 
-      // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
-      const userMessage = enhancedPrompt || prompt;
+        // Chuẩn bị tin nhắn cho lịch sử cuộc trò chuyện
+        const userMessage = enhancedPrompt || prompt;
 
-      // Thêm tin nhắn người dùng vào lịch sử
-      await conversationManager.addMessage(userId, 'user', userMessage);
-
-      // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện của người dùng cụ thể
-      const messages = conversationManager.getHistory(userId);
-
-      // Đảm bảo messages không rỗng
-      if (!messages || messages.length === 0) {
-        logger.error('NEURAL', `Lịch sử cuộc trò chuyện rỗng cho userId: ${userId}, khởi tạo lại`);
-        // Tạo system message mặc định
-        const defaultSystemMessage = {
-          role: 'system',
-          content: this.systemPrompt + ` You are running on ${this.Model} model.`
-        };
-
-        // Khởi tạo lại cuộc trò chuyện
-        await conversationManager.resetConversation(userId, this.systemPrompt, this.Model);
-
-        // Thêm tin nhắn người dùng hiện tại
+        // Thêm tin nhắn người dùng vào lịch sử
         await conversationManager.addMessage(userId, 'user', userMessage);
-      }
 
-      // Lấy lịch sử cuộc trò chuyện cập nhật
-      const updatedMessages = conversationManager.getHistory(userId);
+        // Tạo mảng tin nhắn hoàn chỉnh với lịch sử cuộc trò chuyện của người dùng cụ thể
+        const messages = conversationManager.getHistory(userId);
 
-      // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
-      const response = await axiosInstance.post('/v1/chat/completions', {
-        model: this.CoreModel,
-        max_tokens: 2048,
-        messages: updatedMessages
-      });
+        // Đảm bảo messages không rỗng
+        if (!messages || messages.length === 0) {
+          logger.error('NEURAL', `Lịch sử cuộc trò chuyện rỗng cho userId: ${userId}, khởi tạo lại`);
+          // Tạo system message mặc định
+          const defaultSystemMessage = {
+            role: 'system',
+            content: this.systemPrompt + ` You are running on ${this.Model} model.`
+          };
 
-      logger.info('NEURAL', `Đã nhận phản hồi từ API cho userId: ${userId}`);
-      let content = response.data.choices[0].message.content;
+          // Khởi tạo lại cuộc trò chuyện
+          await conversationManager.resetConversation(userId, this.systemPrompt, this.Model);
 
-      // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
-      await conversationManager.addMessage(userId, 'assistant', content);
+          // Thêm tin nhắn người dùng hiện tại
+          await conversationManager.addMessage(userId, 'user', userMessage);
+        }
 
-      // Xử lý và định dạng phản hồi
-      content = await this.formatResponseContent(content, isNewConversation, searchResults);
+        // Lấy lịch sử cuộc trò chuyện cập nhật
+        const updatedMessages = conversationManager.getHistory(userId);
+
+        // Thực hiện yêu cầu API với lịch sử cuộc trò chuyện
+        const response = await axiosInstance.post('/v1/chat/completions', {
+          model: this.CoreModel,
+          max_tokens: 2048,
+          messages: updatedMessages
+        });
+
+        logger.info('NEURAL', `Đã nhận phản hồi từ API cho userId: ${userId}`);
+        let content = response.data.choices[0].message.content;
+
+        // Thêm phản hồi của trợ lý vào lịch sử cuộc trò chuyện
+        await conversationManager.addMessage(userId, 'assistant', content);
+
+        // Xử lý và định dạng phản hồi
+        content = await this.formatResponseContent(content, isNewConversation, searchResult);
 
       // Xử lý phản hồi đặc biệt cho owner
       if (ownerSpecialResponse) {
@@ -558,10 +469,10 @@ class NeuralNetworks {
    * @param {string} enhancedPrompt - Prompt đã được cải thiện
    * @param {string} userId - ID người dùng
    * @param {object} message - Đối tượng tin nhắn
-   * @param {array} searchResults - Kết quả tìm kiếm web
+   * @param {object} searchResult - Kết quả Live Search
    * @returns {Promise<string>} - Phản hồi
    */
-  async processNormalChatCompletion(enhancedPrompt, userId, message, searchResults) {
+  async processNormalChatCompletion(enhancedPrompt, userId, message, searchResult) {
     try {
       // Sử dụng Axios với cấu hình bảo mật
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
@@ -582,7 +493,7 @@ class NeuralNetworks {
         promptWithInstructions += prompts.chat.newConversation;
       }
 
-      if (searchResults.length > 0) {
+      if (searchResult && searchResult.hasSearchResults) {
         promptWithInstructions += prompts.chat.webSearch;
       }
 
@@ -611,7 +522,7 @@ class NeuralNetworks {
       await conversationManager.addMessage(userId, 'assistant', content);
 
       // Xử lý và định dạng phản hồi
-      content = await this.formatResponseContent(content, isNewConversation, searchResults);
+      content = await this.formatResponseContent(content, isNewConversation, searchResult);
 
       return content;
     } catch (error) {
@@ -679,10 +590,10 @@ class NeuralNetworks {
    * Xử lý và định dạng nội dung phản hồi
    * @param {string} content - Nội dung phản hồi gốc
    * @param {boolean} isNewConversation - Là cuộc trò chuyện mới hay không
-   * @param {Array} searchResults - Kết quả tìm kiếm (nếu có)
+   * @param {Object} searchResult - Kết quả Live Search (nếu có)
    * @returns {string} - Nội dung đã được định dạng
    */
-  async formatResponseContent(content, isNewConversation, searchResults) {
+  async formatResponseContent(content, isNewConversation, searchResult) {
     // Lọc bỏ các lời chào thông thường ở đầu tin nhắn nếu không phải cuộc trò chuyện mới
     if (!isNewConversation) {
       // Cập nhật mẫu lời chào nếu cần
@@ -729,14 +640,17 @@ class NeuralNetworks {
       content = `Hii~ mình là ${this.Model} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
     }
 
-    // Thêm chỉ báo về kết quả tìm kiếm nếu có
-    if (searchResults && searchResults.length > 0) {
+    // Thêm chỉ báo về kết quả Live Search nếu có
+    if (searchResult && searchResult.hasSearchResults) {
       // Chỉ thêm biểu tượng tìm kiếm nhỏ ở đầu để không làm gián đoạn cuộc trò chuyện
       content = `🔍 ${content}`;
 
-      // Thêm ghi chú nhỏ về nguồn thông tin ở cuối nếu có nhiều kết quả tìm kiếm
-      if (searchResults.length >= 2) {
-        content += `\n\n*Thông tin được tổng hợp từ ${searchResults.length} nguồn trực tuyến.*`;
+      // Thêm ghi chú nhỏ về nguồn thông tin ở cuối
+      content += `\n\n*Thông tin được cập nhật từ Live Search.*`;
+      
+      // Thêm metadata nếu có
+      if (searchResult.searchMetadata) {
+        logger.debug('NEURAL', `Live Search metadata: ${JSON.stringify(searchResult.searchMetadata)}`);
       }
     }
 
@@ -1584,12 +1498,8 @@ class NeuralNetworks {
 
       const axiosInstance = this.createSecureAxiosInstance('https://api.x.ai');
 
-      const translateRequest = `
-        Translate the following text from Vietnamese to English, preserving the meaning and technical terms.
-        Only return the translation, no explanation or additional information needed.
-        
-        Text to translate: "${vietnamesePrompt}"
-      `;
+      const translateRequest = prompts.translation.vietnameseToEnglish
+        .replace('${vietnameseText}', vietnamesePrompt);
 
       const response = await axiosInstance.post('/v1/chat/completions', {
         model: this.thinkingModel,

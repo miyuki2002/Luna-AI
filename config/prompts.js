@@ -33,45 +33,45 @@ const prompts = {
       Return JSON only, no additional explanation needed.`
   },
   anime: {
-    analysisPrompt: `Phân tích nội dung sau và xác định xem có phải là yêu cầu tìm kiếm thông tin anime/manga không: 
+    analysisPrompt: `Analyze the following content and determine if it's an anime/manga information request: 
     "\${promptText}"
     
-    Nếu người dùng đang yêu cầu thông tin về anime hoặc manga cụ thể, hãy trích xuất các thông tin sau:
-    1. Loại yêu cầu (tìm kiếm/thông tin chi tiết/xếp hạng/theo mùa)
-    2. Loại dữ liệu (anime/manga)
-    3. Tên anime/manga hoặc ID cần tìm kiếm
-    4. Thông tin bổ sung (nếu có như mùa, năm, loại xếp hạng)
+    If the user is requesting information about specific anime or manga, extract the following information:
+    1. Request type (search/detailed information/ranking/seasonal)
+    2. Data type (anime/manga)
+    3. Anime/manga name or ID to search for
+    4. Additional information (if any, such as season, year, ranking type)
     
-    QUAN TRỌNG: Nếu nội dung đề cập đến anime hoặc manga theo bất kỳ cách nào, hãy coi đó là yêu cầu anime.
-    Mặc định với top anime hoặc manga là yêu cầu xếp hạng (ranking).
+    IMPORTANT: If content mentions anime or manga in any way, consider it an anime request.
+    By default, top anime or manga requests are ranking requests.
     
-    Trả về định dạng JSON:
+    Return in JSON format:
     {
       "isAnimeRequest": true/false,
       "requestType": "search|details|ranking|seasonal",
       "dataType": "anime|manga",
-      "searchTerm": "tên anime/manga hoặc ID",
+      "searchTerm": "anime/manga name or ID",
       "additionalInfo": {
         "rankingType": "all|airing|upcoming...",
-        "year": "năm",
+        "year": "year",
         "season": "winter|spring|summer|fall" 
       }
     }`,
-    malRequestAnalysis: `Phân tích yêu cầu tìm kiếm anime/manga sau: "\${commandText} \${queryText}"
-    Cần xác định:
-    1. Loại yêu cầu (tìm kiếm/thông tin chi tiết/xếp hạng/theo mùa)
-    2. Loại dữ liệu (anime/manga)
-    3. Từ khóa tìm kiếm hoặc ID
-    4. Thông tin bổ sung (nếu có như mùa, năm, loại xếp hạng)
+    malRequestAnalysis: `Analyze the following anime/manga search request: "\${commandText} \${queryText}"
+    Need to determine:
+    1. Request type (search/detailed information/ranking/seasonal)
+    2. Data type (anime/manga)
+    3. Search keyword or ID
+    4. Additional information (if any, such as season, year, ranking type)
     
-    Trả về định dạng JSON:
+    Return in JSON format:
     {
       "requestType": "search|details|ranking|seasonal",
       "dataType": "anime|manga",
-      "searchTerm": "từ khóa hoặc ID",
+      "searchTerm": "keyword or ID",
       "additionalInfo": {
         "rankingType": "all|airing|upcoming...",
-        "year": "năm",
+        "year": "year",
         "season": "winter|spring|summer|fall"
       }
     }`
@@ -91,15 +91,30 @@ const prompts = {
     generalInstructions: ` Avoid sounding too textbook-y or dry. If the user says something interesting, pick up on it naturally to keep the flow going.`
   },
   code: {
-    prefix: "Hãy giúp tôi giải quyết vấn đề lập trình sau:",
-    suffix: "Vui lòng cung cấp code với đầy đủ comment và giải thích để tôi có thể hiểu rõ. Nếu có nhiều cách làm, ưu tiên cách tốt nhất và dễ bảo trì.",
+    prefix: "Please help me solve the following programming problem:",
+    suffix: "Please provide code with complete comments and explanations so I can understand clearly. If there are multiple approaches, prioritize the best and most maintainable solution.",
     systemAddition: "\nYou are a programming assistant. When providing code examples, make sure they are complete, well-commented, and follow best practices. Always include all necessary imports and setup code. Never provide partial code examples that cannot be executed directly. Always ensure your code correctly addresses the user's requirements."
   },
   web: {
-    searchEnhancedPrompt: `\${originalPromptText}\n\n[SEARCH INFORMATION]\nBelow is relevant information from the web. Use this information when appropriate to supplement your answer, but you don't need to reference all of it:\n\n\${searchResultsText}\n\nNaturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.`
+    searchEnhancedPrompt: `\${originalPromptText}\n\n[SEARCH INFORMATION]\nBelow is relevant information from the web. Use this information when appropriate to supplement your answer, but you don't need to reference all of it:\n\n\${searchResultsText}\n\nNaturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.`,
+    liveSearchSystem: 'You have access to real-time web search capabilities. When users ask for current information, events, news, or data that might change over time, you should automatically search for the most up-to-date information available. Use this search capability intelligently to provide accurate and current responses.',
+    liveSearchPrompt: 'Please search for the latest information about: \${query}',
+    liveSearchEnhanced: `Based on the latest information from Live Search, please answer the following question in a natural and friendly manner as Luna:
+
+Original question: \${originalPrompt}
+
+Information from Live Search: \${searchContent}
+
+Please synthesize the information and respond naturally, without mentioning that you searched the web.`
   },
   memory: {
-    memoryContext: `[Thông tin từ cuộc trò chuyện trước: \${relevantMessagesText}] `
+    memoryContext: `[Information from previous conversation: \${relevantMessagesText}] `
+  },
+  translation: {
+    vietnameseToEnglish: `Translate the following text from Vietnamese to English, preserving the meaning and technical terms.
+Only return the translation, no explanation or additional information needed.
+
+Text to translate: "\${vietnameseText}"`
   },
   owner: {
     mentionResponse: `Create a friendly and respectful response when someone mentions \${ownerUsername} (\${ownerDisplayName}) - my creator. Reference their role as my creator and express gratitude. The response should be brief (1-2 sentences), use appropriate emojis, and show pride in my creator.
@@ -116,4 +131,4 @@ const prompts = {
   }
 };
 
-module.exports = prompts; 
+module.exports = prompts;
