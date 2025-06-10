@@ -1,6 +1,6 @@
-const { EmbedBuilder } = require('discord.js');
-const mongoClient = require('../services/mongoClient.js');
-const logger = require('./logger.js');
+const { EmbedBuilder } = require("discord.js");
+const mongoClient = require("../services/mongoClient.js");
+const logger = require("./logger.js");
 
 /**
  * Gửi log moderation đến kênh log đã cấu hình
@@ -14,8 +14,8 @@ async function sendModLog(guild, embed, isModAction = true) {
     const db = mongoClient.getDb();
 
     // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
-    const logSettings = await db.collection('mod_settings').findOne({
-      guildId: guild.id
+    const logSettings = await db.collection("mod_settings").findOne({
+      guildId: guild.id,
     });
 
     let logChannel = null;
@@ -30,7 +30,11 @@ async function sendModLog(guild, embed, isModAction = true) {
         try {
           logChannel = await guild.channels.fetch(logSettings.logChannelId);
         } catch (error) {
-          logger.error('COMMAND', `Không thể tìm thấy kênh log ${logSettings.logChannelId}:`, error);
+          logger.error(
+            "COMMAND",
+            `Không thể tìm thấy kênh log ${logSettings.logChannelId}:`,
+            error
+          );
         }
       }
     }
@@ -38,10 +42,11 @@ async function sendModLog(guild, embed, isModAction = true) {
     // Nếu không có kênh log được cài đặt, tìm kênh mặc định
     if (!logChannel) {
       logChannel = guild.channels.cache.find(
-        channel => channel.name.includes('mod-logs') ||
-                  channel.name.includes('mod-chat') ||
-                  channel.name.includes('admin') ||
-                  channel.name.includes('bot-logs')
+        (channel) =>
+          channel.name.includes("mod-logs") ||
+          channel.name.includes("mod-chat") ||
+          channel.name.includes("admin") ||
+          channel.name.includes("bot-logs")
       );
     }
 
@@ -52,7 +57,7 @@ async function sendModLog(guild, embed, isModAction = true) {
 
     return null;
   } catch (error) {
-    logger.error('COMMAND', 'Lỗi khi gửi log moderation:', error);
+    logger.error("COMMAND", "Lỗi khi gửi log moderation:", error);
     return null;
   }
 }
@@ -69,9 +74,9 @@ async function sendModLog(guild, embed, isModAction = true) {
  */
 function createModActionEmbed(options) {
   const embed = new EmbedBuilder()
-    .setColor(options.color || 0x3498DB)
-    .setTitle(options.title || 'Hành động Moderation')
-    .setDescription(options.description || '')
+    .setColor(options.color || 0x3498db)
+    .setTitle(options.title || "Hành động Moderation")
+    .setDescription(options.description || "")
     .setTimestamp();
 
   if (options.fields && Array.isArray(options.fields)) {
@@ -98,8 +103,8 @@ async function getModLogChannel(guild, isModAction = true) {
     const db = mongoClient.getDb();
 
     // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
-    const logSettings = await db.collection('mod_settings').findOne({
-      guildId: guild.id
+    const logSettings = await db.collection("mod_settings").findOne({
+      guildId: guild.id,
     });
 
     let logChannel = null;
@@ -117,17 +122,22 @@ async function getModLogChannel(guild, isModAction = true) {
             return logChannel;
           }
         } catch (error) {
-          logger.error('COMMAND', `Không thể tìm thấy kênh log ${logSettings.logChannelId}:`, error);
+          logger.error(
+            "COMMAND",
+            `Không thể tìm thấy kênh log ${logSettings.logChannelId}:`,
+            error
+          );
         }
       }
     }
 
     // Nếu không có kênh log được cài đặt, tìm kênh mặc định
     logChannel = guild.channels.cache.find(
-      channel => channel.name.includes('mod-logs') ||
-                channel.name.includes('mod-chat') ||
-                channel.name.includes('admin') ||
-                channel.name.includes('bot-logs')
+      (channel) =>
+        channel.name.includes("mod-logs") ||
+        channel.name.includes("mod-chat") ||
+        channel.name.includes("admin") ||
+        channel.name.includes("bot-logs")
     );
 
     if (logChannel && logChannel.isTextBased()) {
@@ -136,7 +146,7 @@ async function getModLogChannel(guild, isModAction = true) {
 
     return null;
   } catch (error) {
-    logger.error('COMMAND', 'Lỗi khi lấy kênh log moderation:', error);
+    logger.error("COMMAND", "Lỗi khi lấy kênh log moderation:", error);
     return null;
   }
 }
@@ -144,5 +154,5 @@ async function getModLogChannel(guild, isModAction = true) {
 module.exports = {
   sendModLog,
   createModActionEmbed,
-  getModLogChannel
+  getModLogChannel,
 };

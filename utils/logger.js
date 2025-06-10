@@ -3,22 +3,22 @@
  * Cho phép bật/tắt log và phân loại log theo mức độ
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // Sử dụng cấu hình từ file cấu hình
-const loggerConfig = require('../config/loggerConfig.js');
+const loggerConfig = require("../config/loggerConfig.js");
 
 // Mức độ log và màu sắc tương ứng
 const LOG_LEVELS = {
-  debug: { priority: 0, color: '\x1b[36m' },  // Cyan
-  info: { priority: 1, color: '\x1b[32m' },   // Green
-  warn: { priority: 2, color: '\x1b[33m' },   // Yellow
-  error: { priority: 3, color: '\x1b[31m' }   // Red
+  debug: { priority: 0, color: "\x1b[36m" }, // Cyan
+  info: { priority: 1, color: "\x1b[32m" }, // Green
+  warn: { priority: 2, color: "\x1b[33m" }, // Yellow
+  error: { priority: 3, color: "\x1b[31m" }, // Red
 };
 
 // Reset màu
-const RESET_COLOR = '\x1b[0m';
+const RESET_COLOR = "\x1b[0m";
 
 // Biến lưu trữ writeStream cho file log
 let logStream = null;
@@ -38,40 +38,42 @@ async function initializeFileLogging() {
     }
 
     const currentLogFile = path.join(logDir, config.fileLogging.filename);
-    
+
     // Nếu file log cũ tồn tại và cấu hình cho phép rotate
     if (fs.existsSync(currentLogFile) && config.fileLogging.rotateOnStartup) {
       const stats = fs.statSync(currentLogFile);
-      const oldTimestamp = stats.mtime.toISOString().replace(/[:.]/g, '-');
+      const oldTimestamp = stats.mtime.toISOString().replace(/[:.]/g, "-");
       const oldLogFile = path.join(logDir, `console_${oldTimestamp}.old`);
       fs.renameSync(currentLogFile, oldLogFile);
-      info('SYSTEM', `Đã đổi tên file log cũ thành: ${oldLogFile}`);
+      info("SYSTEM", `Đã đổi tên file log cũ thành: ${oldLogFile}`);
     }
 
     // Tạo writeStream để ghi log
-    logStream = fs.createWriteStream(currentLogFile, { flags: 'a' });
-    
+    logStream = fs.createWriteStream(currentLogFile, { flags: "a" });
+
     // Ghi thông tin khởi động
-    const startupMessage = `\n=== LUNA AI STARTUP LOG ===\nStartup Time: ${new Date().toISOString()}\nEnvironment: ${process.env.NODE_ENV || 'development'}\n=========================\n\n`;
+    const startupMessage = `\n=== LUNA AI STARTUP LOG ===\nStartup Time: ${new Date().toISOString()}\nEnvironment: ${
+      process.env.NODE_ENV || "development"
+    }\n=========================\n\n`;
     logStream.write(startupMessage);
 
     // Xử lý khi process kết thúc
-    process.on('exit', () => {
+    process.on("exit", () => {
       if (logStream) {
-        logStream.end('\n=== LUNA AI SHUTDOWN ===\n');
+        logStream.end("\n=== LUNA AI SHUTDOWN ===\n");
       }
     });
 
-    process.on('SIGINT', () => {
+    process.on("SIGINT", () => {
       if (logStream) {
-        logStream.end('\n=== LUNA AI INTERRUPTED ===\n');
+        logStream.end("\n=== LUNA AI INTERRUPTED ===\n");
       }
       process.exit();
     });
 
-    info('SYSTEM', 'Đã khởi tạo hệ thống ghi log vào file thành công');
+    info("SYSTEM", "Đã khởi tạo hệ thống ghi log vào file thành công");
   } catch (error) {
-    console.error('Lỗi khi khởi tạo hệ thống ghi log vào file:', error.message);
+    console.error("Lỗi khi khởi tạo hệ thống ghi log vào file:", error.message);
   }
 }
 
@@ -85,7 +87,7 @@ function writeToFile(level, message) {
 
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] ${level.toUpperCase()}: ${message}\n`;
-  
+
   logStream.write(logEntry);
 }
 
@@ -113,11 +115,13 @@ function log(category, level, message, ...args) {
   if (messageLevelPriority < currentLevelPriority) return;
 
   // Tạo timestamp nếu cần
-  const timestamp = config.showTimestamp ? `[${new Date().toISOString()}] ` : '';
+  const timestamp = config.showTimestamp
+    ? `[${new Date().toISOString()}] `
+    : "";
 
   // Tạo prefix với màu sắc
-  const levelColor = LOG_LEVELS[level]?.color || '';
-  const categoryStr = category ? `[${category}] ` : '';
+  const levelColor = LOG_LEVELS[level]?.color || "";
+  const categoryStr = category ? `[${category}] ` : "";
   const prefix = `${timestamp}${levelColor}${level.toUpperCase()}${RESET_COLOR} ${categoryStr}`;
 
   // Chuẩn bị nội dung log
@@ -125,16 +129,16 @@ function log(category, level, message, ...args) {
 
   // Ghi log với console tương ứng
   switch (level) {
-    case 'error':
+    case "error":
       console.error(logContent, ...args);
       break;
-    case 'warn':
+    case "warn":
       console.warn(logContent, ...args);
       break;
-    case 'debug':
+    case "debug":
       console.debug(logContent, ...args);
       break;
-    case 'info':
+    case "info":
     default:
       console.log(logContent, ...args);
       break;
@@ -154,7 +158,7 @@ function log(category, level, message, ...args) {
  * @param {...any} args - Các tham số bổ sung
  */
 function debug(category, message, ...args) {
-  log(category, 'debug', message, ...args);
+  log(category, "debug", message, ...args);
 }
 
 /**
@@ -164,7 +168,7 @@ function debug(category, message, ...args) {
  * @param {...any} args - Các tham số bổ sung
  */
 function info(category, message, ...args) {
-  log(category, 'info', message, ...args);
+  log(category, "info", message, ...args);
 }
 
 /**
@@ -174,7 +178,7 @@ function info(category, message, ...args) {
  * @param {...any} args - Các tham số bổ sung
  */
 function warn(category, message, ...args) {
-  log(category, 'warn', message, ...args);
+  log(category, "warn", message, ...args);
 }
 
 /**
@@ -184,7 +188,7 @@ function warn(category, message, ...args) {
  * @param {...any} args - Các tham số bổ sung
  */
 function error(category, message, ...args) {
-  log(category, 'error', message, ...args);
+  log(category, "error", message, ...args);
 }
 
 /**
@@ -193,7 +197,7 @@ function error(category, message, ...args) {
  */
 function setEnabled(enabled) {
   loggerConfig.setEnabled(enabled);
-  info('SYSTEM', `Logging ${enabled ? 'enabled' : 'disabled'}`);
+  info("SYSTEM", `Logging ${enabled ? "enabled" : "disabled"}`);
 }
 
 /**
@@ -203,9 +207,9 @@ function setEnabled(enabled) {
 function setLevel(level) {
   if (LOG_LEVELS[level]) {
     loggerConfig.setLevel(level);
-    info('SYSTEM', `Log level set to ${level}`);
+    info("SYSTEM", `Log level set to ${level}`);
   } else {
-    warn('SYSTEM', `Invalid log level: ${level}`);
+    warn("SYSTEM", `Invalid log level: ${level}`);
   }
 }
 
@@ -217,9 +221,12 @@ function setLevel(level) {
 function setCategoryEnabled(category, enabled) {
   const result = loggerConfig.setCategoryEnabled(category, enabled);
   if (result.categories[category] === enabled) {
-    info('SYSTEM', `Logging for category ${category} ${enabled ? 'enabled' : 'disabled'}`);
+    info(
+      "SYSTEM",
+      `Logging for category ${category} ${enabled ? "enabled" : "disabled"}`
+    );
   } else {
-    warn('SYSTEM', `Invalid category: ${category}`);
+    warn("SYSTEM", `Invalid category: ${category}`);
   }
 }
 
@@ -236,7 +243,7 @@ function getConfig() {
  */
 function resetConfig() {
   loggerConfig.resetToDefault();
-  info('SYSTEM', 'Logger configuration reset to default');
+  info("SYSTEM", "Logger configuration reset to default");
 }
 
 module.exports = {
@@ -249,5 +256,5 @@ module.exports = {
   setCategoryEnabled,
   getConfig,
   resetConfig,
-  initializeFileLogging
+  initializeFileLogging,
 };
