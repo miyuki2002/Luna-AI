@@ -1,8 +1,8 @@
-const mongoClient = require('../services/mongoClient.js');
+const mongoClient = require("../services/mongoClient.js");
 
 /**
  * Lưu hành động moderation vào cơ sở dữ liệu
-* @param {Object} options - Các tùy chọn
+ * @param {Object} options - Các tùy chọn
  * @param {string} options.guildId - ID của server
  * @param {string} options.targetId - ID của thành viên bị xử lý
  * @param {string} options.moderatorId - ID của người thực hiện hành động
@@ -15,46 +15,46 @@ const mongoClient = require('../services/mongoClient.js');
 async function logModAction(options) {
   try {
     const db = mongoClient.getDb();
-    
+
     // Tạo collection log nếu chưa tồn tại
     try {
-      await db.createCollection('modlog');
+      await db.createCollection("modlog");
     } catch (error) {
       // Bỏ qua lỗi nếu collection đã tồn tại
     }
-    
+
     // Chuẩn bị dữ liệu cơ bản
     const logData = {
       guildId: options.guildId,
       targetId: options.targetId,
       moderatorId: options.moderatorId,
       action: options.action,
-      reason: options.reason || 'Không có lý do',
-      timestamp: Date.now()
+      reason: options.reason || "Không có lý do",
+      timestamp: Date.now(),
     };
-    
+
     // Thêm các thông tin tùy chọn
     if (options.duration) {
       logData.duration = options.duration;
     }
-    
+
     if (options.count) {
       logData.count = options.count;
     }
-    
+
     // Lưu vào DB
-    const result = await db.collection('modlog').insertOne(logData);
-    
+    const result = await db.collection("modlog").insertOne(logData);
+
     return { ...logData, _id: result.insertedId };
   } catch (error) {
-    console.error('Lỗi khi lưu hành động moderation:', error);
+    console.error("Lỗi khi lưu hành động moderation:", error);
     throw error;
   }
 }
 
 /**
  * Lấy danh sách hành động moderation
-* @param {Object} options - Các tùy chọn
+ * @param {Object} options - Các tùy chọn
  * @param {string} options.guildId - ID của server
  * @param {string} options.targetId - ID của thành viên (tùy chọn)
  * @param {string} options.action - Loại hành động (tùy chọn)
@@ -64,35 +64,36 @@ async function logModAction(options) {
 async function getModLogs(options) {
   try {
     const db = mongoClient.getDb();
-    
+
     // Tạo bộ lọc
     const filter = { guildId: options.guildId };
-    
+
     if (options.targetId) {
       filter.targetId = options.targetId;
     }
-    
+
     if (options.action) {
       filter.action = options.action;
     }
-    
+
     // Truy vấn và sắp xếp kết quả
-    const logs = await db.collection('modlog')
+    const logs = await db
+      .collection("modlog")
       .find(filter)
       .sort({ timestamp: -1 })
       .limit(options.limit || 10)
       .toArray();
-    
+
     return logs;
   } catch (error) {
-    console.error('Lỗi khi lấy danh sách hành động moderation:', error);
+    console.error("Lỗi khi lấy danh sách hành động moderation:", error);
     throw error;
   }
 }
 
 /**
  * Định dạng thời gian từ phút sang chuỗi dễ đọc
-* @param {number} minutes - Số phút
+ * @param {number} minutes - Số phút
  * @returns {string} - Chuỗi thời gian đã định dạng
  */
 function formatDuration(minutes) {
@@ -101,16 +102,16 @@ function formatDuration(minutes) {
   } else if (minutes < 1440) {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours} giờ${mins > 0 ? ` ${mins} phút` : ''}`;
+    return `${hours} giờ${mins > 0 ? ` ${mins} phút` : ""}`;
   } else {
     const days = Math.floor(minutes / 1440);
     const hours = Math.floor((minutes % 1440) / 60);
-    return `${days} ngày${hours > 0 ? ` ${hours} giờ` : ''}`;
+    return `${days} ngày${hours > 0 ? ` ${hours} giờ` : ""}`;
   }
 }
 
 module.exports = {
   logModAction,
   getModLogs,
-  formatDuration
+  formatDuration,
 };
