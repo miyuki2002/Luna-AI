@@ -121,6 +121,29 @@ class OwnerService {
     }
 
     /**
+     * Tạo lời chào đặc biệt cho owner
+     * @returns {Promise<string>}
+     */
+    async getOwnerGreeting() {
+        if (!this.ownerInfo) {
+            return "Chào bạn! 💖 Hôm nay có gì cần mình giúp không ạ? ✨";
+        }
+
+        try {
+            const prompt = prompts.owner.greeting
+                .replace('${ownerDisplayName}', this.ownerInfo.displayName);
+
+            logger.info('OWNER', `Đang tạo lời chào đặc biệt cho owner: ${this.ownerInfo.displayName}`);
+            const response = await neuralNetworks.getCompletion(prompt);
+            return response;
+        } catch (error) {
+            logger.error('OWNER', 'Lỗi khi tạo lời chào động cho owner:', error);
+            // Fallback greeting nếu API lỗi
+            return `Chào ${this.ownerInfo.displayName}! 💖 Rất vui khi gặp lại creator của mình nè~ ✨`;
+        }
+    }
+
+    /**
      * Refresh thông tin owner (gọi lại API Discord)
      */
     async refreshOwnerInfo() {

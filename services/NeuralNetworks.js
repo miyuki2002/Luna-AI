@@ -413,7 +413,7 @@ class NeuralNetworks {
           const isNewConversation = conversationHistory.length <= 2;
 
           if (isNewConversation) {
-            ownerSpecialResponse = ownerService.getOwnerGreeting();
+            ownerSpecialResponse = await ownerService.getOwnerGreeting();
             logger.info('NEURAL', 'Tạo lời chào đặc biệt cho owner');
           }
         } else if (ownerMentioned) {
