@@ -15,9 +15,9 @@
     "url": "https://github.com/miyuki2002/Luna-AI.git"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.40.1",
-    "@gradio/client": "^1.14.2",
-    "axios": "^1.9.0",
+    "@anthropic-ai/sdk": "^0.54.0",
+    "@gradio/client": "^1.15.2",
+    "axios": "^1.10.0",
     "canvas": "^3.1.0",
     "discord.js": "^14.19.2",
     "dotenv": "^16.3.1",
