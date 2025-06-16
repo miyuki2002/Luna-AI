@@ -300,7 +300,7 @@ class ConversationService {
    */
   async processChatCompletion(prompt, userId, searchResult = null, additionalConfig = {}) {
     try {
-      const systemPrompt = additionalConfig.systemPrompt || prompts.system.main;
+      let systemPrompt = additionalConfig.systemPrompt || prompts.system.main;
 
       await conversationManager.loadConversationHistory(userId, systemPrompt, AICore.getModelName());
 
@@ -318,12 +318,23 @@ class ConversationService {
       // Xử lý search results nếu có
       if (searchResult && searchResult.hasSearchResults && searchResult.content) {
         logger.info("CONVERSATION_SERVICE", "Integrating Live Search results into prompt");
+        logger.debug("CONVERSATION_SERVICE", `Search result content: ${searchResult.content.substring(0, 200)}...`);
+        
         enhancedPrompt += prompts.chat.webSearch;
         // Tích hợp kết quả search vào prompt
         enhancedPrompt = prompts.web.liveSearchEnhanced
           .replace("${originalPrompt}", prompt)
           .replace("${searchContent}", searchResult.content);
+        
+        logger.debug("CONVERSATION_SERVICE", `Enhanced prompt with search: ${enhancedPrompt.substring(0, 300)}...`);
+        
+        // Sử dụng system prompt đặc biệt cho Live Search
+        systemPrompt = prompts.web.liveSearchSystem + "\n\n" + systemPrompt;
+        
+        // Reset conversation với system prompt mới
+        await conversationManager.resetConversation(userId, systemPrompt, AICore.getModelName());
       } else {
+        logger.debug("CONVERSATION_SERVICE", "No search results, using model knowledge");
         enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
       }
 
@@ -343,6 +354,7 @@ class ConversationService {
       const content = await AICore.processChatCompletion(messages, {
         model: additionalConfig.model || AICore.CoreModel,
         max_tokens: additionalConfig.max_tokens || 2048,
+        enableLiveSearch: searchResult && searchResult.hasSearchResults,
         ...additionalConfig,
       });
 
