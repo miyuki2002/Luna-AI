@@ -300,40 +300,38 @@ class AICore {
   shouldPerformWebSearch(prompt) {
     if (prompt.length < 10) return false;
 
-    const basicKnowledgeKeywords = /(là gì|what is|define|định nghĩa|giải thích|explain|cách làm|how to|hướng dẫn|tutorial|lý thuyết|theory|khái niệm|concept|nguyên lý|principle)/i;
-    
-    const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
+    const urgentInfoKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|breaking|today|this week|this month|this year|happening now|trending)/i;
 
-    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until|dữ liệu mới nhất|latest data|thông tin mới nhất của model|model's latest information|được train|được huấn luyện đến|trained until)/i;
+    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|sự kiện|diễn biến|thay đổi|phát triển|recent|current|latest|update|news|events|changes|developments)/i;
 
-    const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
+    const detailKeywords = /(thông tin về|chi tiết|tìm hiểu|tài liệu|nghiên cứu|báo cáo|information about|details|research|report|study|documentation)/i;
 
-    const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
-    
-    const newsKeywords = /(tin tức|thời sự|breaking news|latest news|mới nhất|cập nhật|update|sự kiện|events|diễn biến mới|recent developments)/i;
-    
-    const currentPeopleKeywords = /(streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|gần đây|recently)/i;
-    
-    const marketKeywords = /(giá hiện tại|current price|giá hôm nay|today's price|stock price|cổ phiếu|exchange rate|tỷ giá|market today|thị trường hôm nay)/i;
-    
-    const currentWeatherKeywords = /(thời tiết hôm nay|today's weather|thời tiết hiện tại|current weather|dự báo thời tiết|weather forecast)/i;
+    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|như thế nào|tại sao|định nghĩa|how many|when|where|who is|what is|why|how|define)/i;
 
-    const sportsResultsKeywords = /(kết quả trận|match result|tỷ số|score|championship|giải đấu|tournament|mùa giải|season|gần đây|recent)/i;
+    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|what do you think|in your opinion|your thoughts|how do you feel|do you like)/i;
 
-    if (basicKnowledgeKeywords.test(prompt) || 
-        aiPersonalKeywords.test(prompt) || 
-        modelInfoKeywords.test(prompt)) {
-      return false;
-    }
+    const knowledgeCheckKeywords = /(bạn có biết|bạn biết|bạn có hiểu|bạn hiểu|bạn có rõ|bạn rõ|do you know|you know|do you understand|you understand|are you familiar with)/i;
+
+    const animeKeywords = /(anime|manga|manhua|manhwa|hoạt hình|phim hoạt hình|webtoon|light novel|visual novel|doujinshi|otaku|cosplay|mangaka|seiyuu|studio|season|tập|chapter|volume|arc|raw|scan|fansub|vietsub|raw|scanlation)/i;
+
+    const genreKeywords = /(shounen|shoujo|seinen|josei|mecha|isekai|slice of life|harem|reverse harem|romance|action|adventure|fantasy|sci-fi|horror|comedy|drama|psychological|mystery|supernatural|magical girl|sports|school life)/i;
+
+    const studioKeywords = /(ghibli|kyoto animation|shaft|madhouse|bones|ufotable|a-1 pictures|wit studio|mappa|trigger|toei animation|pierrot|production i\.g|sunrise|gainax|hoạt hình 3d|cgi animation|3d animation)/i;
+
+    const nameKeywords = /(tên thật|tên đầy đủ|tên khai sinh|tên thường gọi|biệt danh|nickname|tên riêng|tên nghệ sĩ|stage name|real name|full name|birth name|given name|alias|streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|artist|actor|actress|singer|performer|gamer|content creator)/i;
+
+    if (opinionKeywords.test(prompt)) return false;
 
     return (
-      realTimeKeywords.test(prompt) ||
-      (newsKeywords.test(prompt) && !modelInfoKeywords.test(prompt)) ||
-      (currentPeopleKeywords.test(prompt) && realTimeKeywords.test(prompt)) ||
-      marketKeywords.test(prompt) ||
-      currentWeatherKeywords.test(prompt) ||
-      sportsResultsKeywords.test(prompt) ||
-      programmingKeywords.test(prompt)
+      urgentInfoKeywords.test(prompt) ||
+      knowledgeCheckKeywords.test(prompt) ||
+      animeKeywords.test(prompt) ||
+      genreKeywords.test(prompt) ||
+      studioKeywords.test(prompt) ||
+      nameKeywords.test(prompt) ||
+      informationKeywords.test(prompt) ||
+      detailKeywords.test(prompt) ||
+      factsKeywords.test(prompt)
     );
   }
 }
