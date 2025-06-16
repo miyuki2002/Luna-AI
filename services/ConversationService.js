@@ -272,28 +272,20 @@ class ConversationService {
         return await this.getMemoryAnalysis(userId, memoryRequest);
       }
 
-      // Xác định có cần web search không
-      const shouldSearchWeb = AICore.shouldPerformWebSearch(prompt);
-      let searchResult = null;
-      let promptWithSearch = prompt;
+      const shouldSearch = AICore.shouldPerformWebSearch(prompt);
+      let searchResults = null;
 
-      if (shouldSearchWeb) {
-        logger.info("CONVERSATION_SERVICE", "Performing web search for prompt");
-        searchResult = await AICore.performLiveSearch(prompt);
-
-        if (searchResult.hasSearchResults && searchResult.content) {
-          promptWithSearch = prompts.web.liveSearchEnhanced
-            .replace("${originalPrompt}", prompt)
-            .replace("${searchContent}", searchResult.content);
-        } else {
-          logger.warn("CONVERSATION_SERVICE", "Live Search returned no results");
-        }
+      if (shouldSearch) {
+        logger.info("CONVERSATION", `🔍 Using Live Search for: "${prompt.substring(0, 50)}..."`);
+        searchResults = await AICore.performLiveSearch(prompt);
+      } else {
+        logger.info("CONVERSATION", `💭 Using model knowledge for: "${prompt.substring(0, 50)}..."`);
       }
 
-      const enhancedPromptWithMemory = await this.enrichPromptWithMemory(promptWithSearch, userId);
+      const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
 
       // Xử lý chat completion
-      let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, searchResult);
+      let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, searchResults);
 
       // Xử lý phản hồi đặc biệt cho owner
       if (ownerSpecialResponse) {
@@ -327,11 +319,17 @@ class ConversationService {
         enhancedPrompt += prompts.chat.newConversation;
       }
 
-      if (searchResult && searchResult.hasSearchResults) {
+      // Xử lý search results nếu có
+      if (searchResult && searchResult.hasSearchResults && searchResult.content) {
+        logger.info("CONVERSATION_SERVICE", "Integrating Live Search results into prompt");
         enhancedPrompt += prompts.chat.webSearch;
+        // Tích hợp kết quả search vào prompt
+        enhancedPrompt = prompts.web.liveSearchEnhanced
+          .replace("${originalPrompt}", prompt)
+          .replace("${searchContent}", searchResult.content);
+      } else {
+        enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
       }
-
-      enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
 
       // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, "user", enhancedPrompt);
