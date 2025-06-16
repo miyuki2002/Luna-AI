@@ -29,7 +29,7 @@ async function experience(message, command_executed, execute) {
   }
 
   // Không thêm xp khi tin nhắn đến từ DMs
-  if (message.channel.type === "dm") {
+  if (!message.guild || message.channel.type === "dm") {
     return Promise.resolve({ xpAdded: false, reason: "DM_CHANNEL" });
   }
 

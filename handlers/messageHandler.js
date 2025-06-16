@@ -31,12 +31,16 @@ async function handleMessage(message) {
 
     await handleChatRequest(message, content);
 
-    processXp(message, commandExecuted, true);
+    if (message.guild) {
+      processXp(message, commandExecuted, true);
+    }
   } catch (error) {
     logger.error('MESSAGE', `Lỗi khi xử lý tin nhắn từ ${message.author.tag}:`, error);
     await message.reply('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn.');
 
-    processXp(message, false, false);
+    if (message.guild) {
+      processXp(message, false, false);
+    }
   }
 }
 
