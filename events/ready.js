@@ -79,14 +79,6 @@ async function startbot(client, loadCommands) {
     }
 
     try {
-      await NeuralNetworks.initializeGreetingPatterns();
-      initSystem.markReady('greetingPatterns');
-    } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi khởi tạo mẫu lời chào:', error);
-      initSystem.markReady('greetingPatterns');
-    }
-
-    try {
       logger.info('SYSTEM', 'Đang khởi tạo OwnerService...');
       ownerService.initialize(client);
       logger.info('SYSTEM', 'Đã khởi tạo OwnerService thành công!');
