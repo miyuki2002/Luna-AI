@@ -8,40 +8,10 @@ const AICore = require("./AICore.js");
 
 class ConversationService {
   constructor() {
-    this.greetingPatterns = [];
-    this.initializeGreetingPatterns();
-    
-    // Cấu hình conversation
     storageDB.setMaxConversationLength(30);
     storageDB.setMaxConversationAge(3 * 60 * 60 * 1000);
     
     logger.info("CONVERSATION_SERVICE", "Initialized conversation service");
-  }
-
-  /**
-   * Khởi tạo các mẫu lời chào từ MongoDB
-   */
-  async initializeGreetingPatterns() {
-    try {
-      await storageDB.initializeDefaultGreetingPatterns();
-      this.greetingPatterns = await storageDB.getGreetingPatterns();
-      logger.info("CONVERSATION_SERVICE", `Loaded ${this.greetingPatterns.length} greeting patterns`);
-    } catch (error) {
-      logger.error("CONVERSATION_SERVICE", "Error initializing greeting patterns:", error);
-      this.greetingPatterns = [];
-    }
-  }
-
-  /**
-   * Cập nhật mẫu lời chào từ cơ sở dữ liệu
-   */
-  async refreshGreetingPatterns() {
-    try {
-      this.greetingPatterns = await storageDB.getGreetingPatterns();
-      logger.info("CONVERSATION_SERVICE", `Updated ${this.greetingPatterns.length} greeting patterns`);
-    } catch (error) {
-      logger.error("CONVERSATION_SERVICE", "Error refreshing greeting patterns:", error);
-    }
   }
 
   /**
@@ -64,7 +34,7 @@ class ConversationService {
   }
 
   /**
-   * Làm phong phú prompt bằng cách thêm thông tin từ trí nhớ cuộc trò chuyện
+   * Trích xuất thông tin từ trí nhớ cuộc trò chuyện
    */
   async enrichPromptWithMemory(originalPrompt, userId) {
     try {
@@ -228,47 +198,6 @@ class ConversationService {
    * Xử lý và định dạng nội dung phản hồi
    */
   async formatResponseContent(content, isNewConversation, searchResult) {
-    if (!isNewConversation) {
-      if (!this.greetingPatterns || this.greetingPatterns.length === 0) {
-        await this.refreshGreetingPatterns();
-      }
-
-      let contentChanged = false;
-      let originalLength = content.length;
-
-      for (const pattern of this.greetingPatterns) {
-        const previousContent = content;
-        content = content.replace(pattern, "");
-        if (previousContent !== content) {
-          contentChanged = true;
-        }
-      }
-
-      content = content.replace(/^[\s,.!:;]+/, "");
-      if (content.length > 0) {
-        content = content.charAt(0).toUpperCase() + content.slice(1);
-      }
-
-      if (contentChanged && content.length < originalLength * 0.7 && content.length < 20) {
-        const commonFiller = /^(uhm|hmm|well|so|vậy|thế|đó|nha|nhé|ok|okay|nào|giờ)/i;
-        content = content.replace(commonFiller, "");
-        content = content.replace(/^[\s,.!:;]+/, "");
-        if (content.length > 0) {
-          content = content.charAt(0).toUpperCase() + content.slice(1);
-        }
-      }
-
-      if (content.length < 10 && originalLength > 50) {
-        const potentialContentStart = originalLength > 30 ? 30 : Math.floor(originalLength / 2);
-        content = content || content.substring(potentialContentStart).trim();
-        if (content.length > 0) {
-          content = content.charAt(0).toUpperCase() + content.slice(1);
-        }
-      }
-    } else if (content.toLowerCase().trim() === "chào bạn" || content.length < 6) {
-      content = `Hii~ mình là ${AICore.getModelName()} và mình ở đây nếu bạn cần gì nè 💬 Cứ thoải mái nói chuyện như bạn bè nha! ${content}`;
-    }
-
     if (searchResult && searchResult.hasSearchResults) {
       content = `🔍 ${content}`;
       content += `\n\n*Thông tin được cập nhật từ Live Search.*`;
