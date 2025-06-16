@@ -262,6 +262,12 @@ class ConversationService {
         return await this.getMemoryAnalysis(userId, memoryRequest);
       }
 
+      // Kiểm tra câu hỏi về training data
+      if (prompts.trainingData.keywords.test(prompt)) {
+        logger.info("CONVERSATION_SERVICE", "Training data question detected, returning direct response");
+        return prompts.trainingData.response;
+      }
+
       const shouldSearch = AICore.shouldPerformWebSearch(prompt);
       let searchResults = null;
 
