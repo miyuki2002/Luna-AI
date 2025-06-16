@@ -326,6 +326,7 @@ class AICore {
   testWebSearchLogic(prompt) {
     const basicKnowledgeKeywords = /(là gì|what is|define|định nghĩa|giải thích|explain|cách làm|how to|hướng dẫn|tutorial|lý thuyết|theory|khái niệm|concept|nguyên lý|principle)/i;
     const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
+    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until)/i;
     const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
     const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
     const newsKeywords = /(tin tức|thời sự|breaking news|latest news|mới nhất|cập nhật|update|sự kiện|events|diễn biến mới|recent developments)/i;
@@ -341,14 +342,20 @@ class AICore {
     if (aiPersonalKeywords.test(prompt)) {
       result.reasons.push("❌ AI personal question - no search needed");
     }
+    if (modelInfoKeywords.test(prompt)) {
+      result.reasons.push("❌ Model/training data question - no search needed");
+    }
     if (programmingKeywords.test(prompt)) {
       result.reasons.push("❌ Programming question - no search needed");
     }
     if (realTimeKeywords.test(prompt)) {
       result.reasons.push("✅ Real-time information - search needed");
     }
-    if (newsKeywords.test(prompt)) {
-      result.reasons.push("✅ News/updates - search needed");
+    if (newsKeywords.test(prompt) && !modelInfoKeywords.test(prompt)) {
+      result.reasons.push("✅ News/updates (not about model) - search needed");
+    }
+    if (newsKeywords.test(prompt) && modelInfoKeywords.test(prompt)) {
+      result.reasons.push("❌ News about model - no search needed");
     }
 
     if (result.reasons.length === 0) {
@@ -370,6 +377,10 @@ class AICore {
     
     const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
 
+    // Câu hỏi về model và training data (KHÔNG cần search)
+    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until)/i;
+
+    // Câu hỏi về lập trình và kỹ thuật cơ bản (KHÔNG cần search)
     const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
 
     const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
@@ -386,13 +397,14 @@ class AICore {
 
     if (basicKnowledgeKeywords.test(prompt) || 
         aiPersonalKeywords.test(prompt) || 
+        modelInfoKeywords.test(prompt) ||
         programmingKeywords.test(prompt)) {
       return false;
     }
 
     return (
       realTimeKeywords.test(prompt) ||
-      newsKeywords.test(prompt) ||
+      (newsKeywords.test(prompt) && !modelInfoKeywords.test(prompt)) ||
       (currentPeopleKeywords.test(prompt) && realTimeKeywords.test(prompt)) ||
       marketKeywords.test(prompt) ||
       currentWeatherKeywords.test(prompt) ||
