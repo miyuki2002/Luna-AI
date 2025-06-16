@@ -87,8 +87,7 @@ class AICore {
     try {
       logger.debug("AI_CORE", "Processing monitoring analysis");
 
-      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
-      const response = await axiosInstance.post("/v1/chat/completions", {
+      const response = await this.client.chat.completions.create({
         model: this.CoreModel,
         max_tokens: 1024,
         messages: [
@@ -103,7 +102,7 @@ class AICore {
         ],
       });
 
-      const content = response.data.choices[0].message.content;
+      const content = response.choices[0].message.content;
 
       if (!content.includes("VI_PHẠM:") && !content.includes("QUY_TẮC_VI_PHẠM:")) {
         return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Không phát hiện vi phạm`;
@@ -124,9 +123,7 @@ class AICore {
    */
   async processChatCompletion(messages, config = {}) {
     try {
-      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
-
-      const response = await axiosInstance.post("/v1/chat/completions", {
+      const response = await this.client.chat.completions.create({
         model: config.model || this.CoreModel,
         max_tokens: config.max_tokens || 2048,
         messages: messages,
@@ -134,7 +131,7 @@ class AICore {
       });
 
       logger.info("AI_CORE", "Chat completion processed successfully");
-      return response.data.choices[0].message.content;
+      return response.choices[0].message.content;
     } catch (error) {
       logger.error("AI_CORE", "Chat completion error:", error.message);
       throw new Error(`AI API Error: ${error.message}`);
