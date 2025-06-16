@@ -1,4 +1,4 @@
-const Anthropic = require("@anthropic-ai/sdk");
+const OpenAI = require("openai");
 const axios = require("axios");
 const fs = require("fs");
 
@@ -9,19 +9,19 @@ class AICore {
   constructor() {
     this.apiKey = process.env.XAI_API_KEY;
     if (!this.apiKey) {
-      throw new Error("API không được đặt trong biến môi trường");
+      throw new Error("API_KEY không được đặt trong biến môi trường");
     }
 
-    this.client = new Anthropic({
+    this.client = new OpenAI({
       apiKey: this.apiKey,
-      baseURL: "https://api.x.ai",
+      baseURL: "https://api.x.ai/v1",
     });
 
     this.systemPrompt = prompts.system.main;
     this.CoreModel = "grok-3-fast-beta";
     this.imageModel = "grok-2-image-1212";
     this.thinkingModel = "grok-3-mini";
-    this.Model = "luna-v1-preview";
+    this.Model = "luna-v2";
 
     logger.info("AI_CORE", `Initialized with models: ${this.CoreModel}, ${this.thinkingModel}`);
   }
@@ -60,10 +60,10 @@ class AICore {
     try {
       logger.info("AI_CORE", `Performing Live Search: "${query}"`);
 
-      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
       const searchPrompt = prompts.web.liveSearchPrompt.replace("${query}", query);
 
-      const response = await axiosInstance.post("/v1/chat/completions", {
+      // Sử dụng OpenAI SDK format nhưng với Grok's Live Search
+      const response = await this.client.chat.completions.create({
         model: this.CoreModel,
         max_tokens: 2048,
         messages: [
@@ -76,19 +76,21 @@ class AICore {
             content: searchPrompt,
           },
         ],
-        search_parameters: {
-          mode: "auto",
-          max_search_results: 10,
-          include_citations: true,
+        extra_body: {
+          search_parameters: {
+            mode: "auto",
+            max_search_results: 10,
+            include_citations: true,
+          },
         },
       });
 
       logger.info("AI_CORE", "Live Search completed successfully");
 
       return {
-        content: response.data.choices[0].message.content,
+        content: response.choices[0].message.content,
         hasSearchResults: true,
-        searchMetadata: response.data.search_metadata || null,
+        searchMetadata: response.search_metadata || null,
       };
     } catch (error) {
       logger.error("AI_CORE", "Live Search error:", error.message);
@@ -310,7 +312,7 @@ class AICore {
 
   /**
    * Trả về tên mô hình được hiển thị cho người dùng
-   * @returns {string} - Tên mô hình hiển thị
+   * @returns {string} - Tên mô hình
    */
   getModelName() {
     return this.Model;
@@ -323,30 +325,33 @@ class AICore {
    */
   shouldPerformWebSearch(prompt) {
     if (prompt.length < 10) return false;
-
-    const urgentInfoKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|breaking|today|this week|this month|this year|happening now|trending)/i;
-    const informationKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|sự kiện|diễn biến|thay đổi|phát triển|recent|current|latest|update|news|events|changes|developments)/i;
-    const detailKeywords = /(thông tin về|chi tiết|tìm hiểu|tài liệu|nghiên cứu|báo cáo|information about|details|research|report|study|documentation)/i;
-    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|như thế nào|tại sao|định nghĩa|how many|when|where|who is|what is|why|how|define)/i;
-    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|what do you think|in your opinion|your thoughts|how do you feel|do you like)/i;
-    const knowledgeCheckKeywords = /(bạn có biết|bạn biết|bạn có hiểu|bạn hiểu|bạn có rõ|bạn rõ|do you know|you know|do you understand|you understand|are you familiar with)/i;
-    const animeKeywords = /(anime|manga|manhua|manhwa|hoạt hình|phim hoạt hình|webtoon|light novel|visual novel|doujinshi|otaku|cosplay|mangaka|seiyuu|studio|season|tập|chapter|volume|arc|raw|scan|fansub|vietsub|raw|scanlation)/i;
-    const genreKeywords = /(shounen|shoujo|seinen|josei|mecha|isekai|slice of life|harem|reverse harem|romance|action|adventure|fantasy|sci-fi|horror|comedy|drama|psychological|mystery|supernatural|magical girl|sports|school life)/i;
-    const studioKeywords = /(ghibli|kyoto animation|shaft|madhouse|bones|ufotable|a-1 pictures|wit studio|mappa|trigger|toei animation|pierrot|production i\.g|sunrise|gainax|hoạt hình 3d|cgi animation|3d animation)/i;
-    const nameKeywords = /(tên thật|tên đầy đủ|tên khai sinh|tên thường gọi|biệt danh|nickname|tên riêng|tên nghệ sĩ|stage name|real name|full name|birth name|given name|alias|streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|artist|actor|actress|singer|performer|gamer|content creator)/i;
-
-    if (opinionKeywords.test(prompt)) return false;
+    const currentTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment)/i;
+    const updateKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|sự kiện|diễn biến|thay đổi|phát triển|xu hướng|trending|recent|current|latest|update|news|events|changes|developments|breaking)/i;
+    const detailKeywords = /(thông tin về|chi tiết|tìm hiểu|tài liệu|nghiên cứu|báo cáo|thống kê|dữ liệu|information about|details|research|report|study|documentation|statistics|data)/i;
+    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|như thế nào|tại sao|định nghĩa|giá|price|cost|when|where|who is|what is|why|how|define|how much|how many)/i;
+    const peopleKeywords = /(tên thật|tên đầy đủ|tiểu sử|lý lịch|nghề nghiệp|tuổi|sinh năm|quê quán|gia đình|real name|full name|biography|career|age|born|hometown|family|streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|artist|actor|actress|singer|performer|gamer|content creator)/i;
+    const entertainmentKeywords = /(anime|manga|manhua|manhwa|hoạt hình|phim|series|season|tập mới|episode|chapter mới|release date|ngày phát hành|studio|rating|review|đánh giá)/i;
+    const techKeywords = /(phiên bản|version|update|patch|release|ra mắt|launch|specs|thông số|giá bán|availability|tính năng|features|comparison|so sánh)/i;
+    const sportsKeywords = /(kết quả|result|score|tỷ số|match|trận đấu|tournament|giải đấu|championship|league|season|mùa giải|ranking|bảng xếp hạng)/i;
+    const financeKeywords = /(giá|price|stock|cổ phiếu|exchange rate|tỷ giá|market|thị trường|economy|kinh tế|inflation|lạm phát|GDP|unemployment|thất nghiệp)/i;
+    const weatherKeywords = /(thời tiết|weather|temperature|nhiệt độ|rain|mưa|storm|bão|climate|khí hậu|forecast|dự báo)/i;
+    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you)/i;
+    const aiCapabilityKeywords = /(bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|can you|are you able|do you know how|are you capable)/i;
+    if (opinionKeywords.test(prompt) || aiCapabilityKeywords.test(prompt)) {
+      return false;
+    }
 
     return (
-      urgentInfoKeywords.test(prompt) ||
-      knowledgeCheckKeywords.test(prompt) ||
-      animeKeywords.test(prompt) ||
-      genreKeywords.test(prompt) ||
-      studioKeywords.test(prompt) ||
-      nameKeywords.test(prompt) ||
-      informationKeywords.test(prompt) ||
+      currentTimeKeywords.test(prompt) ||
+      updateKeywords.test(prompt) ||
       detailKeywords.test(prompt) ||
-      factsKeywords.test(prompt)
+      factsKeywords.test(prompt) ||
+      peopleKeywords.test(prompt) ||
+      entertainmentKeywords.test(prompt) ||
+      techKeywords.test(prompt) ||
+      sportsKeywords.test(prompt) ||
+      financeKeywords.test(prompt) ||
+      weatherKeywords.test(prompt)
     );
   }
 }

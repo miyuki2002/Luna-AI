@@ -97,7 +97,6 @@ class StorageDB {
 
       // Tạo các chỉ mục khác
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
-      await db.collection('greetingPatterns').createIndex({ pattern: 1 }, { unique: true });
 
       // Tạo các collection cho hệ thống giám sát và quản lý
       try {
@@ -141,7 +140,6 @@ class StorageDB {
       const collectionsToReset = [
         'conversations',
         'conversation_meta',
-        'greetingPatterns',
         'monitor_settings',
         'monitor_logs',
         'mod_settings',
@@ -166,7 +164,6 @@ class StorageDB {
 
       // Khởi tạo lại dữ liệu
       await this.initializeConversationHistory();
-      await this.initializeDefaultGreetingPatterns();
       await this.initializeProfiles();
       await this.initializeImageBlacklist();
 
@@ -189,7 +186,6 @@ class StorageDB {
       try {
         await this.setupCollections();
         await this.initializeConversationHistory();
-        await this.initializeDefaultGreetingPatterns();
         await this.initializeProfiles();
         await this.initializeImageBlacklist();
       } catch (setupError) {
@@ -541,110 +537,7 @@ class StorageDB {
     this.maxConversationAge = value;
   }
 
-  /**
-   * Lấy danh sách các mẫu lời chào từ cơ sở dữ liệu
-   * @returns {Promise<Array>} - Mảng các mẫu regex lời chào
-   */
-  async getGreetingPatterns() {
-    try {
-      const db = mongoClient.getDb();
-      const collection = db.collection('greetingPatterns');
 
-      const patterns = await collection.find({}).toArray();
-
-      return patterns.map(item => new RegExp(item.pattern, item.flags));
-    } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi lấy mẫu lời chào từ DB:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Thêm mẫu lời chào mới vào cơ sở dữ liệu
-   * @param {string} pattern - Biểu thức chính quy dạng chuỗi
-   * @param {string} flags - Cờ cho regex (vd: 'i' cho case-insensitive)
-   * @param {string} description - Mô tả về mẫu lời chào
-   * @returns {Promise<boolean>} - Kết quả thêm mới
-   */
-  async addGreetingPattern(pattern, flags = 'i', description = '') {
-    try {
-      const db = mongoClient.getDb();
-      const collection = db.collection('greetingPatterns');
-
-      const existing = await collection.findOne({ pattern });
-      if (existing) {
-        return false;
-      }
-
-      await collection.insertOne({
-        pattern,
-        flags,
-        description,
-        createdAt: new Date()
-      });
-
-      return true;
-    } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi thêm mẫu lời chào:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Xóa mẫu lời chào từ cơ sở dữ liệu
-   * @param {string} pattern - Biểu thức chính quy dạng chuỗi cần xóa
-   * @returns {Promise<boolean>} - Kết quả xóa
-   */
-  async removeGreetingPattern(pattern) {
-    try {
-      const db = mongoClient.getDb();
-      const collection = db.collection('greetingPatterns');
-
-      const result = await collection.deleteOne({ pattern });
-      return result.deletedCount > 0;
-    } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi xóa mẫu lời chào:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Khởi tạo các mẫu lời chào mặc định
-   * @returns {Promise<void>}
-   */
-  async initializeDefaultGreetingPatterns() {
-    try {
-      const db = mongoClient.getDb();
-      const collection = db.collection('greetingPatterns');
-
-      const count = await collection.countDocuments();
-      if (count > 0) {
-        return;
-      }
-
-      const defaultPatterns = [
-        { pattern: '^(xin\\s+)?(chào|kính\\s+chào|chào\\s+mừng|xin\\s+chúc|hú|hú\\s+hú|của\\s+nợ|haly|halo|ha\\s+lô|lô|lô\\s+lô)\\s+(bạn|cậu|các\\s+bạn|mọi\\s+người|anh|chị|em|quý\\s+khách|quý\\s+vị|mọi\\s+người)?(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào tiếng Việt cơ bản' },
-        { pattern: '^(hi+|hello+|hey+|hee+y+|good\\s+(morning|afternoon|evening|day)|greetings|howdy|what\'?s\\s+up|yo+|hai|hiya+|oi)(\\s+there)?(\\s+(everyone|friend|guys|folks|all))?(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào tiếng Anh' },
-        { pattern: '^(hehe|hihi|huhu|hoho|:D|:\\)|\\^\\^|<3|:\\*|\\(y\\))\\s*', flags: 'i', description: 'Lời chào với biểu cảm/emojis phổ biến' },
-        { pattern: '^(mình|tôi|tớ|t|tui|em|anh|chị)(\\s+(là|tên|tên là|tên gọi là))?\\s+(luna|grok|ai|trợ\\s+lý|bot|chatbot|assistant|người\\s+máy)(\\s+(đây|nha|nhé|ạ|á|đó|nè|nhaa?|á))?(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Tự giới thiệu' },
-        { pattern: '^(chào\\s+(buổi\\s+)?(sáng|trưa|chiều|tối|khuya)|buổi\\s+(sáng|trưa|chiều|tối|khuya)(\\s+vui\\s+vẻ)?)(\\s+(bạn|các\\s+bạn|mọi\\s+người))?(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào theo thời gian' },
-        { pattern: '^(rất|thật)?\\s*vui\\s+(được\\s+)?(gặp|gặp\\s+gỡ|gặp\\s+lại|nói\\s+chuyện|trò\\s+chuyện|hội\\s+ngộ)(\\s+(với|cùng))?\\s+(bạn|các\\s+bạn|cậu|mọi\\s+người|quý\\s+vị)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Cách chào thăm hỏi' },
-        { pattern: '^(hmm+|ừm+|ờm+|à+|ừ+|okay+|ok|okie|so|vậy|thế|nào|vậy\\s+thì|thế\\s+thì|bắt\\s+đầu\\s+nào|let\'s\\s+start|bắt\\s+đầu\\s+thôi)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào trước khi bắt đầu' },
-        { pattern: '^(chúc\\s+mừng|happy|merry)\\s+(năm\\s+mới|sinh\\s+nhật|christmas|new\\s+year|holiday|anniversary|weekend)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào theo dịp đặc biệt' },
-        { pattern: '^(mình\\s+là|tui\\s+là|tớ\\s+là|ai\\s+là|tao\\s+là|người\\s+đây\\s+là|đây\\s+là)\\s+luna(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào bằng tiếng địa phương' },
-        { pattern: '^(bonjour|hola|ciao|konnichiwa|namaste|guten\\s+tag|salut|aloha|xin\\s+chào)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào bằng nhiều ngôn ngữ khác' },
-        { pattern: '^(tôi|mình|tớ|em)\\s+(là|chính\\s+là|hoạt\\s+động\\s+như|làm\\s+việc\\s+như)\\s+(một|1)?\\s*(con\\s+bot|trợ\\s+lý\\s+ảo|chatbot|large\\s+language\\s+model|virtual\\s+assistant|ai\\s+assistant|mô\\s+hình\\s+ngôn\\s+ngữ)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời giới thiệu kiểu bot/AI' },
-        { pattern: '^(rất\\s+vui|vui|hân\\s+hạnh|vinh\\s+dự|rất\\s+hân\\s+hạnh|thật\\s+tuyệt|thật\\s+vui|thật\\s+tốt|tuyệt\\s+vời)\\s+(khi|được)\\s+(gặp|gặp\\s+gỡ|gặp\\s+lại|trò\\s+chuyện|nói\\s+chuyện|hỗ\\s+trợ|giúp\\s+đỡ|phục\\s+vụ)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời giới thiệu với cảm xúc' },
-        { pattern: '^(chào|hi|hello|hey|xin\\s+chào)\\s+.{1,10}(,|\\.|\\!|\\?)\\s+mình\\s+là\\s+luna', flags: 'i', description: 'Lời chào mở rộng' },
-        { pattern: '^(mình|tôi|tớ|em)\\s+(đã|sẽ|đang|vẫn|luôn)\\s+(sẵn\\s+sàng|ở\\s+đây|có\\s+mặt)(\\s+(để|nhằm))?\\s+(giúp|hỗ\\s+trợ|trả\\s+lời|giúp\\s+đỡ|hỗ\\s+trợ|phục\\s+vụ|làm\\s+việc\\s+với)\\s+(bạn|các\\s+bạn|cậu|bạn\\s+đó|quý\\s+khách)(\\s*[,.!?~])*\\s*', flags: 'i', description: 'Lời chào với thông báo sẵn sàng' }
-      ];
-
-      await collection.insertMany(defaultPatterns);
-      logger.info('DATABASE', 'Đã khởi tạo các mẫu lời chào mặc định');
-    } catch (error) {
-      logger.error('DATABASE', 'Lỗi khi khởi tạo mẫu lời chào mặc định:', error);
-    }
-  }
 
   /**
    * Xóa và tạo lại collection conversations
