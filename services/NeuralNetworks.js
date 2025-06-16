@@ -802,44 +802,20 @@ class NeuralNetworks {
    * @returns {Array} - Danh sách các từ khóa
    */
   extractKeywords(prompt) {
-    if (!prompt || prompt.length < 3) return [];
+    if (!prompt?.length || prompt.length < 3) return [];
 
-    const stopWords = [
-      "và",
-      "hoặc",
-      "nhưng",
-      "nếu",
-      "vì",
-      "bởi",
-      "với",
-      "từ",
-      "đến",
-      "trong",
-      "ngoài",
-      "a",
-      "an",
-      "the",
-      "and",
-      "or",
-      "but",
-      "if",
-      "because",
-      "with",
-      "from",
-      "to",
-      "in",
-      "out",
-    ];
+    const stopWords = new Set([
+      "và", "hoặc", "nhưng", "nếu", "vì", "bởi", "với", "từ", "đến", "trong", "ngoài",
+      "a", "an", "the", "and", "or", "but", "if", "because", "with", "from", "to", "in", "out"
+    ]);
 
-    return [
-      ...new Set(
-        prompt
-          .toLowerCase()
-          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-          .split(/\s+/)
-          .filter((word) => word.length > 3 && !stopWords.includes(word))
-      ),
-    ].slice(0, 5);
+    return [...new Set(
+      prompt
+        .toLowerCase()
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+        .split(/\s+/)
+        .filter(word => word.length > 3 && !stopWords.has(word))
+    )].slice(0, 5);
   }
 
   /**
@@ -962,28 +938,20 @@ class NeuralNetworks {
    * @returns {Array} - Danh sách các tin nhắn quan trọng
    */
   extractKeyMessages(history) {
-    if (!history || history.length === 0) return [];
+    if (!history?.length) return [];
 
-    // Lọc ra các tin nhắn từ người dùng
     const userMessages = history
-      .filter((msg) => msg.role === "user")
-      .map((msg) => msg.content);
+      .filter(msg => msg.role === "user")
+      .map(msg => msg.content);
 
     const significantMessages = userMessages.filter(
-      (msg) => msg.length > 10 && msg.length < 200
+      msg => msg.length > 10 && msg.length < 200
     );
 
-    if (significantMessages.length === 0) {
-      return userMessages.slice(-3).map((msg) => {
-        if (msg.length > 100) return msg.substring(0, 100) + "...";
-        return msg;
-      });
-    }
-
-    return significantMessages.slice(-5).map((msg) => {
-      if (msg.length > 100) return msg.substring(0, 100) + "...";
-      return msg;
-    });
+    const messages = significantMessages.length ? significantMessages : userMessages;
+    return messages.slice(-5).map(msg => 
+      msg.length > 100 ? msg.substring(0, 100) + "..." : msg
+    );
   }
 
   /**
@@ -992,31 +960,21 @@ class NeuralNetworks {
    * @returns {Array} - Danh sách các chủ đề chính
    */
   identifyMainTopics(history) {
-    if (!history || history.length === 0) return ["Chưa có đủ dữ liệu"];
+    if (!history?.length) return ["Chưa có đủ dữ liệu"];
 
-    const allKeywords = [];
+    const allKeywords = history
+      .filter(msg => msg.role === "user")
+      .flatMap(msg => this.extractKeywords(msg.content));
 
-    history.forEach((msg) => {
-      if (msg.role === "user") {
-        const keywords = this.extractKeywords(msg.content);
-        allKeywords.push(...keywords);
-      }
-    });
+    const keywordFrequency = allKeywords.reduce((acc, keyword) => {
+      acc[keyword] = (acc[keyword] || 0) + 1;
+      return acc;
+    }, {});
 
-    const keywordFrequency = {};
-    allKeywords.forEach((keyword) => {
-      if (!keywordFrequency[keyword]) {
-        keywordFrequency[keyword] = 1;
-      } else {
-        keywordFrequency[keyword]++;
-      }
-    });
-
-    const sortedKeywords = Object.entries(keywordFrequency)
+    return Object.entries(keywordFrequency)
       .sort((a, b) => b[1] - a[1])
-      .map((entry) => entry[0]);
-
-    return sortedKeywords.slice(0, 5);
+      .slice(0, 5)
+      .map(entry => entry[0]);
   }
 
   /**
@@ -1025,25 +983,17 @@ class NeuralNetworks {
    * @returns {string} - Chuỗi thời gian đã định dạng
    */
   formatTimeAgo(timestamp) {
-    const now = Date.now();
-    const secondsAgo = Math.floor((now - timestamp) / 1000);
-
-    if (secondsAgo < 60) {
-      return `${secondsAgo} giây`;
-    }
-
+    const secondsAgo = Math.floor((Date.now() - timestamp) / 1000);
+    
+    if (secondsAgo < 60) return `${secondsAgo} giây`;
+    
     const minutesAgo = Math.floor(secondsAgo / 60);
-    if (minutesAgo < 60) {
-      return `${minutesAgo} phút`;
-    }
-
+    if (minutesAgo < 60) return `${minutesAgo} phút`;
+    
     const hoursAgo = Math.floor(minutesAgo / 60);
-    if (hoursAgo < 24) {
-      return `${hoursAgo} giờ`;
-    }
-
-    const daysAgo = Math.floor(hoursAgo / 24);
-    return `${daysAgo} ngày`;
+    if (hoursAgo < 24) return `${hoursAgo} giờ`;
+    
+    return `${Math.floor(hoursAgo / 24)} ngày`;
   }
 
   /**
@@ -1536,56 +1486,6 @@ class NeuralNetworks {
       );
       return false;
     }
-  }
-
-  /**
-   * Xử lý tin nhắn Discord
-   * @param {Discord.Message} message - Đối tượng tin nhắn Discord
-   * @returns {Object} - Thông tin về nội dung đã xử lý
-   */
-  async processDiscordMessage(message) {
-    try {
-      const originalContent = message.content;
-      console.log("Nội dung gốc của tin nhắn Discord:", originalContent);
-
-      let cleanContent = message.cleanContent || originalContent;
-      console.log("Nội dung đã xử lý của tin nhắn Discord:", cleanContent);
-
-      return {
-        cleanContent: cleanContent,
-        hasMentions: false,
-      };
-    } catch (error) {
-      console.error("Lỗi khi xử lý tin nhắn Discord:", error);
-      return {
-        cleanContent: message.content || "",
-        hasMentions: false,
-      };
-    }
-  }
-
-  /**
-   * Xử lý prompt từ Discord và gửi đến API
-   * @param {Discord.Message} message - Đối tượng tin nhắn Discord
-   * @returns {Promise<string>} - Phản hồi từ AI
-   */
-  async getCompletionFromDiscord(message) {
-    const processedMessage = await this.processDiscordMessage(message);
-
-    if (
-      processedMessage.cleanContent.toLowerCase() === "reset conversation" ||
-      processedMessage.cleanContent.toLowerCase() === "xóa lịch sử" ||
-      processedMessage.cleanContent.toLowerCase() === "quên hết đi"
-    ) {
-      await storageDB.clearConversationHistory(
-        message.author.id,
-        this.systemPrompt,
-        this.Model
-      );
-      return "Đã xóa lịch sử cuộc trò chuyện của chúng ta. Bắt đầu cuộc trò chuyện mới nào! 😊";
-    }
-
-    return await this.getCompletion(processedMessage.cleanContent, message);
   }
 
   /**
