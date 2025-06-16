@@ -236,17 +236,7 @@ class ConversationService {
         isOwnerInteraction = ownerService.isOwner(message.author.id);
         ownerMentioned = ownerService.isOwnerMentioned(prompt, message);
 
-        if (isOwnerInteraction) {
-          logger.info("CONVERSATION_SERVICE", `Owner interaction: ${message.author.username}`);
-          await conversationManager.loadConversationHistory(userId, prompts.system.main, AICore.getModelName());
-          const conversationHistory = conversationManager.getHistory(userId);
-          const isNewConversation = !conversationHistory || conversationHistory.length <= 2;
-
-          if (isNewConversation) {
-            ownerSpecialResponse = await ownerService.getOwnerGreeting();
-            logger.info("CONVERSATION_SERVICE", "Generated special owner greeting");
-          }
-        } else if (ownerMentioned) {
+        if (ownerMentioned) {
           logger.info("CONVERSATION_SERVICE", "Owner mentioned in message");
           ownerSpecialResponse = await ownerService.getOwnerMentionResponse(prompt);
         }
@@ -287,7 +277,7 @@ class ConversationService {
       // Xử lý chat completion
       let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, searchResults);
 
-      // Xử lý phản hồi đặc biệt cho owner
+      // Xử lý phản hồi khi owner được mention
       if (ownerSpecialResponse) {
         content = `${ownerSpecialResponse}\n\n${content}`;
       }

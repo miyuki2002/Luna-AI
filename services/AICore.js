@@ -326,7 +326,7 @@ class AICore {
   testWebSearchLogic(prompt) {
     const basicKnowledgeKeywords = /(là gì|what is|define|định nghĩa|giải thích|explain|cách làm|how to|hướng dẫn|tutorial|lý thuyết|theory|khái niệm|concept|nguyên lý|principle)/i;
     const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
-    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until)/i;
+    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until|dữ liệu mới nhất|latest data|thông tin mới nhất của model|model's latest information|được train|được huấn luyện đến|trained until)/i;
     const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
     const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
     const newsKeywords = /(tin tức|thời sự|breaking news|latest news|mới nhất|cập nhật|update|sự kiện|events|diễn biến mới|recent developments)/i;
@@ -377,10 +377,8 @@ class AICore {
     
     const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
 
-    // Câu hỏi về model và training data (KHÔNG cần search)
-    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until)/i;
+    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until|dữ liệu mới nhất|latest data|thông tin mới nhất của model|model's latest information|được train|được huấn luyện đến|trained until)/i;
 
-    // Câu hỏi về lập trình và kỹ thuật cơ bản (KHÔNG cần search)
     const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
 
     const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
