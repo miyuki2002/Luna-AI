@@ -11,7 +11,7 @@ const logger = require('../utils/logger.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
-    logger.info('SYSTEM', `
+    logger.info('SYSTEM', `\n\n
     ██╗     ██╗   ██╗███╗   ██╗ █████╗
     ██║     ██║   ██║██╔██╗ ██║███████║
     ██║     ██║   ██║██║╚██╗██║██╔══██║
@@ -115,12 +115,9 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('messageMonitor');
     } catch (error) {
       logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
-      initSystem.markReady('messageMonitor'); // Đánh dấu là đã sẵn sàng ngay cả khi có lỗi
+      initSystem.markReady('messageMonitor');
     }
     */
-
-    logger.warn('SYSTEM', 'Hệ thống giám sát tin nhắn đã bị tạm thời vô hiệu hóa');
-    initSystem.markReady('messageMonitor');
 
     // Khởi tạo Dashboard
     /** 
