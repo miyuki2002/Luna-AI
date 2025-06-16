@@ -319,39 +319,84 @@ class AICore {
   }
 
   /**
+   * Test method để kiểm tra logic shouldPerformWebSearch
+   * @param {string} prompt - Prompt để test
+   * @returns {Object} - Kết quả test với lý do
+   */
+  testWebSearchLogic(prompt) {
+    const basicKnowledgeKeywords = /(là gì|what is|define|định nghĩa|giải thích|explain|cách làm|how to|hướng dẫn|tutorial|lý thuyết|theory|khái niệm|concept|nguyên lý|principle)/i;
+    const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
+    const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
+    const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
+    const newsKeywords = /(tin tức|thời sự|breaking news|latest news|mới nhất|cập nhật|update|sự kiện|events|diễn biến mới|recent developments)/i;
+
+    const result = {
+      shouldSearch: this.shouldPerformWebSearch(prompt),
+      reasons: []
+    };
+
+    if (basicKnowledgeKeywords.test(prompt)) {
+      result.reasons.push("❌ Basic knowledge question - no search needed");
+    }
+    if (aiPersonalKeywords.test(prompt)) {
+      result.reasons.push("❌ AI personal question - no search needed");
+    }
+    if (programmingKeywords.test(prompt)) {
+      result.reasons.push("❌ Programming question - no search needed");
+    }
+    if (realTimeKeywords.test(prompt)) {
+      result.reasons.push("✅ Real-time information - search needed");
+    }
+    if (newsKeywords.test(prompt)) {
+      result.reasons.push("✅ News/updates - search needed");
+    }
+
+    if (result.reasons.length === 0) {
+      result.reasons.push("ℹ️ No specific keywords matched");
+    }
+
+    return result;
+  }
+
+  /**
    * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không
    * @param {string} prompt - Prompt từ người dùng
    * @returns {boolean} - True nếu nên thực hiện tìm kiếm web
    */
   shouldPerformWebSearch(prompt) {
     if (prompt.length < 10) return false;
-    const currentTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment)/i;
-    const updateKeywords = /(gần đây|hiện tại|mới nhất|cập nhật|tin tức|thời sự|sự kiện|diễn biến|thay đổi|phát triển|xu hướng|trending|recent|current|latest|update|news|events|changes|developments|breaking)/i;
-    const detailKeywords = /(thông tin về|chi tiết|tìm hiểu|tài liệu|nghiên cứu|báo cáo|thống kê|dữ liệu|information about|details|research|report|study|documentation|statistics|data)/i;
-    const factsKeywords = /(năm nào|khi nào|ở đâu|ai là|bao nhiêu|như thế nào|tại sao|định nghĩa|giá|price|cost|when|where|who is|what is|why|how|define|how much|how many)/i;
-    const peopleKeywords = /(tên thật|tên đầy đủ|tiểu sử|lý lịch|nghề nghiệp|tuổi|sinh năm|quê quán|gia đình|real name|full name|biography|career|age|born|hometown|family|streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|artist|actor|actress|singer|performer|gamer|content creator)/i;
-    const entertainmentKeywords = /(anime|manga|manhua|manhwa|hoạt hình|phim|series|season|tập mới|episode|chapter mới|release date|ngày phát hành|studio|rating|review|đánh giá)/i;
-    const techKeywords = /(phiên bản|version|update|patch|release|ra mắt|launch|specs|thông số|giá bán|availability|tính năng|features|comparison|so sánh)/i;
-    const sportsKeywords = /(kết quả|result|score|tỷ số|match|trận đấu|tournament|giải đấu|championship|league|season|mùa giải|ranking|bảng xếp hạng)/i;
-    const financeKeywords = /(giá|price|stock|cổ phiếu|exchange rate|tỷ giá|market|thị trường|economy|kinh tế|inflation|lạm phát|GDP|unemployment|thất nghiệp)/i;
-    const weatherKeywords = /(thời tiết|weather|temperature|nhiệt độ|rain|mưa|storm|bão|climate|khí hậu|forecast|dự báo)/i;
-    const opinionKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you)/i;
-    const aiCapabilityKeywords = /(bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|can you|are you able|do you know how|are you capable)/i;
-    if (opinionKeywords.test(prompt) || aiCapabilityKeywords.test(prompt)) {
+
+    const basicKnowledgeKeywords = /(là gì|what is|define|định nghĩa|giải thích|explain|cách làm|how to|hướng dẫn|tutorial|lý thuyết|theory|khái niệm|concept|nguyên lý|principle)/i;
+    
+    const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
+
+    const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
+
+    const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
+    
+    const newsKeywords = /(tin tức|thời sự|breaking news|latest news|mới nhất|cập nhật|update|sự kiện|events|diễn biến mới|recent developments)/i;
+    
+    const currentPeopleKeywords = /(streamer|youtuber|tiktoker|influencer|nghệ sĩ|ca sĩ|diễn viên|idol|người nổi tiếng|celebrity|gần đây|recently)/i;
+    
+    const marketKeywords = /(giá hiện tại|current price|giá hôm nay|today's price|stock price|cổ phiếu|exchange rate|tỷ giá|market today|thị trường hôm nay)/i;
+    
+    const currentWeatherKeywords = /(thời tiết hôm nay|today's weather|thời tiết hiện tại|current weather|dự báo thời tiết|weather forecast)/i;
+
+    const sportsResultsKeywords = /(kết quả trận|match result|tỷ số|score|championship|giải đấu|tournament|mùa giải|season|gần đây|recent)/i;
+
+    if (basicKnowledgeKeywords.test(prompt) || 
+        aiPersonalKeywords.test(prompt) || 
+        programmingKeywords.test(prompt)) {
       return false;
     }
 
     return (
-      currentTimeKeywords.test(prompt) ||
-      updateKeywords.test(prompt) ||
-      detailKeywords.test(prompt) ||
-      factsKeywords.test(prompt) ||
-      peopleKeywords.test(prompt) ||
-      entertainmentKeywords.test(prompt) ||
-      techKeywords.test(prompt) ||
-      sportsKeywords.test(prompt) ||
-      financeKeywords.test(prompt) ||
-      weatherKeywords.test(prompt)
+      realTimeKeywords.test(prompt) ||
+      newsKeywords.test(prompt) ||
+      (currentPeopleKeywords.test(prompt) && realTimeKeywords.test(prompt)) ||
+      marketKeywords.test(prompt) ||
+      currentWeatherKeywords.test(prompt) ||
+      sportsResultsKeywords.test(prompt)
     );
   }
 }
