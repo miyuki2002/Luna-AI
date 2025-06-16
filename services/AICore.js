@@ -18,37 +18,12 @@ class AICore {
     });
 
     this.systemPrompt = prompts.system.main;
-    this.CoreModel = "grok-3-fast-beta";
-    this.imageModel = "grok-2-image-1212";
-    this.thinkingModel = "grok-3-mini";
+    this.CoreModel = "grok-3-fast-latest";
+    this.imageModel = "grok-2-vision";
+    this.thinkingModel = "grok-3-mini-latest";
     this.Model = "luna-v2";
 
     logger.info("AI_CORE", `Initialized with models: ${this.CoreModel}, ${this.thinkingModel}`);
-  }
-
-  /**
-   * Tạo cấu hình Axios với xử lý chứng chỉ phù hợp
-   */
-  createSecureAxiosInstance(baseURL) {
-    const options = {
-      baseURL: baseURL || "https://api.x.ai",
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json",
-        "anthropic-version": "2025-04-15",
-        "User-Agent": `Luna/${this.Model}`,
-        Accept: "application/json",
-      },
-    };
-
-    const certPath = process.env.CUSTOM_CA_CERT_PATH;
-    if (certPath && fs.existsSync(certPath)) {
-      const ca = fs.readFileSync(certPath);
-      options.httpsAgent = new require("https").Agent({ ca });
-      logger.info("AI_CORE", `Using custom CA cert: ${certPath}`);
-    }
-
-    return axios.create(options);
   }
 
   /**
