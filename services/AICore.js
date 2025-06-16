@@ -37,8 +37,8 @@ class AICore {
 
       const searchPrompt = prompts.web.liveSearchPrompt.replace("${query}", query);
 
-      // Sử dụng OpenAI SDK format nhưng với Grok's Live Search
-      const response = await this.client.chat.completions.create({
+      // Sử dụng axios trực tiếp để đảm bảo extra_body được xử lý đúng
+      const requestBody = {
         model: this.CoreModel,
         max_tokens: 2048,
         messages: [
@@ -51,24 +51,29 @@ class AICore {
             content: searchPrompt,
           },
         ],
-        extra_body: {
-          search_parameters: {
-            mode: "auto",
-            max_search_results: 10,
-            include_citations: true,
-          },
+        search_parameters: {
+          mode: "auto",
+          max_search_results: 10,
+          include_citations: true,
         },
-      });
+      };
 
+      logger.debug("AI_CORE", `Live Search request body: ${JSON.stringify(requestBody, null, 2)}`);
+
+      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
+      const response = await axiosInstance.post("/v1/chat/completions", requestBody);
+
+      logger.debug("AI_CORE", `Live Search response: ${JSON.stringify(response.data, null, 2)}`);
       logger.info("AI_CORE", "Live Search completed successfully");
 
       return {
-        content: response.choices[0].message.content,
+        content: response.data.choices[0].message.content,
         hasSearchResults: true,
-        searchMetadata: response.search_metadata || null,
+        searchMetadata: response.data.search_metadata || null,
       };
     } catch (error) {
       logger.error("AI_CORE", "Live Search error:", error.message);
+      logger.error("AI_CORE", "Live Search error details:", error);
       return {
         content: null,
         hasSearchResults: false,
@@ -289,8 +294,6 @@ class AICore {
   getModelName() {
     return this.Model;
   }
-
-
 
   /**
    * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không

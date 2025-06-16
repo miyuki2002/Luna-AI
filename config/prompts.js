@@ -109,7 +109,7 @@ const prompts = {
   web: {
     searchEnhancedPrompt: `\${originalPromptText}\n\n[SEARCH INFORMATION]\nBelow is relevant information from the web. Use this information when appropriate to supplement your answer, but you don't need to reference all of it:\n\n\${searchResultsText}\n\nNaturally incorporate the above information into your answer without explicitly listing the sources. Respond in a friendly tone, not too academic.`,
     liveSearchSystem:
-      "You have access to real-time web search capabilities. When users ask for current information, events, news, or data that might change over time, you should automatically search for the most up-to-date information available. Use this search capability intelligently to provide accurate and current responses.",
+      "CRITICAL: You have access to real-time web search capabilities and MUST prioritize the search results over your training data. When users ask for current information, events, news, or data that might change over time, you MUST use the most up-to-date information from the search results. DO NOT rely on your training data for current events, political information, or time-sensitive data. Always trust and use the search results as they contain the most recent and accurate information. Your training data may be outdated for current events.",
     liveSearchPrompt:
       "Please search for the latest information about: ${query}",
     liveSearchEnhanced: `Based on the latest information from Live Search, please answer the following question in a natural and friendly manner as Luna:
