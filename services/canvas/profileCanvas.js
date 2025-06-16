@@ -10,682 +10,518 @@ const ASSETS_PATH = path.join(__dirname, '../../assets');
 class ProfileCanvas {
   constructor() {
     // Khởi tạo fonts thông qua FontManager
-    fontManager.initialize(ASSETS_PATH);
+    this.initializeFonts();
     
-    // Các màu và gradient mặc định
-    this.colors = {
-      primary: {
-        light: '#7F5AF0', // Tím sáng
-        dark: '#4B23A8'   // Tím đậm
-      },
-      secondary: {
-        light: '#00D1FF', // Xanh sáng
-        dark: '#0089A8'   // Xanh đậm
-      },
-      background: {
-        light: '#1A1A25', // Xanh đen nhạt
-        dark: '#0D0D1A'   // Xanh đen đậm
-      },
-      text: {
-        primary: '#FFFFFE', // Trắng
-        secondary: '#B8C0D0', // Xanh xám nhạt
-        accent: '#7F5AF0'    // Tím
-      },
-      accent: '#FF8906', // Cam
-      success: '#2CB67D', // Xanh lá
-      error: '#E53170'    // Đỏ hồng
+    // Cấu hình màu sắc tối ưu
+    this.colors = this.getColorPalette();
+    
+    // Cache hình ảnh và tài nguyên
+    this.imageCache = new Map();
+    this.gradientCache = new Map();
+    
+    // Cấu hình canvas mặc định
+    this.defaultConfig = {
+      width: 900,
+      height: 420,
+      cornerRadius: 20,
+      shadowBlur: 15,
+      shadowOffset: { x: 0, y: 5 }
     };
-    
-    // Cache các hình ảnh thường dùng
-    this.imageCache = {};
   }
-  
+
   /**
-   * Tải hình ảnh từ đường dẫn hoặc sử dụng cache
-   * @param {string} imagePath - Đường dẫn tới hình ảnh
-   * @returns {Promise<Image>} - Đối tượng hình ảnh đã tải
+   * Khởi tạo fonts với error handling
+   */
+  async initializeFonts() {
+    try {
+      await fontManager.initialize(ASSETS_PATH);
+      console.log('ProfileCanvas: Fonts initialized successfully');
+    } catch (error) {
+      console.error('ProfileCanvas: Font initialization failed:', error);
+    }
+  }
+
+  /**
+   * Lấy bảng màu tối ưu
+   * @returns {Object} Color palette
+   */
+  getColorPalette() {
+    return {
+      primary: { light: '#7F5AF0', dark: '#4B23A8' },
+      secondary: { light: '#00D1FF', dark: '#0089A8' },
+      background: { light: '#1A1A25', dark: '#0D0D1A' },
+      text: { primary: '#FFFFFE', secondary: '#B8C0D0', accent: '#7F5AF0' },
+      accent: '#FF8906',
+      success: '#2CB67D',
+      error: '#E53170'
+    };
+  }
+
+  /**
+   * Tải hình ảnh với cache và error handling
+   * @param {string} imagePath - Đường dẫn hình ảnh
+   * @returns {Promise<Image>} Hình ảnh đã tải
    */
   async loadImageWithCache(imagePath) {
+    if (this.imageCache.has(imagePath)) {
+      return this.imageCache.get(imagePath);
+    }
+
     try {
-      if (this.imageCache[imagePath]) {
-        return this.imageCache[imagePath];
-      }
-      
       const image = await loadImage(imagePath);
-      this.imageCache[imagePath] = image;
+      this.imageCache.set(imagePath, image);
       return image;
     } catch (error) {
-      console.error(`Lỗi khi tải hình ảnh ${imagePath}:`, error);
+      console.warn(`Không thể tải hình ảnh ${path.basename(imagePath)}:`, error.message);
+      
+      // Fallback to default avatar
+      const fallbackPath = path.join(ASSETS_PATH, 'luna-avatar.png');
+      if (imagePath !== fallbackPath) {
+        return this.loadImageWithCache(fallbackPath);
+      }
       throw error;
     }
   }
-  
+
   /**
-   * Tạo hiệu ứng bo góc cho hình chữ nhật
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
+   * Tạo gradient với cache
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Object} config - Cấu hình gradient
+   * @returns {CanvasGradient} Gradient object
+   */
+  createCachedGradient(ctx, config) {
+    const key = JSON.stringify(config);
+    
+    if (this.gradientCache.has(key)) {
+      return this.gradientCache.get(key);
+    }
+
+    const { x, y, width, height, color1, color2, type = 'linear' } = config;
+    
+    let gradient;
+    if (type === 'radial') {
+      gradient = ctx.createRadialGradient(x, y, 0, x, y, Math.max(width, height) / 2);
+    } else {
+      gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+    }
+    
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    
+    this.gradientCache.set(key, gradient);
+    return gradient;
+  }
+
+  /**
+   * Vẽ hình chữ nhật bo góc tối ưu
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {number} x - Tọa độ x
    * @param {number} y - Tọa độ y
    * @param {number} width - Chiều rộng
    * @param {number} height - Chiều cao
    * @param {number} radius - Bán kính bo góc
    */
-  roundRect(ctx, x, y, width, height, radius) {
+  drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius);
+    ctx.arcTo(x + width, y + height, x, y + height, radius);
+    ctx.arcTo(x, y + height, x, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
     ctx.closePath();
   }
-  
+
   /**
-   * Tạo hiệu ứng đổ bóng
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Function} drawFunc - Hàm vẽ
+   * Áp dụng hiệu ứng đổ bóng
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Function} drawFunction - Hàm vẽ
+   * @param {Object} shadowConfig - Cấu hình đổ bóng
    */
-  withShadow(ctx, drawFunc) {
+  applyShadow(ctx, drawFunction, shadowConfig = {}) {
+    const {
+      color = 'rgba(0, 0, 0, 0.4)',
+      blur = this.defaultConfig.shadowBlur,
+      offsetX = this.defaultConfig.shadowOffset.x,
+      offsetY = this.defaultConfig.shadowOffset.y
+    } = shadowConfig;
+
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 5;
-    drawFunc();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur;
+    ctx.shadowOffsetX = offsetX;
+    ctx.shadowOffsetY = offsetY;
+    drawFunction();
     ctx.restore();
   }
-  
+
   /**
-   * Tạo gradient màu sắc
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {number} x - Tọa độ x bắt đầu
-   * @param {number} y - Tọa độ y bắt đầu
-   * @param {number} width - Chiều rộng
-   * @param {number} height - Chiều cao
-   * @param {string} color1 - Mã màu 1
-   * @param {string} color2 - Mã màu 2
-   * @returns {CanvasGradient} - Đối tượng gradient
+   * Thiết lập font với fallback
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {string} weight - Font weight
+   * @param {number} size - Font size
+   * @param {string} style - Font style
    */
-  createGradient(ctx, x, y, width, height, color1, color2) {
-    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-    gradient.addColorStop(0, color1);
-    gradient.addColorStop(1, color2);
-    return gradient;
+  setFont(ctx, weight = 'Regular', size = 16, style = 'normal') {
+    ctx.font = fontManager.getFontString(weight, size, style);
   }
-  
+
   /**
-   * Tạo profile card cho người dùng với thiết kế hiện đại
-   * @param {Object} profileData - Dữ liệu profile của người dùng
-   * @returns {Promise<Buffer>} - Buffer hình ảnh profile card
+   * Tạo profile card chính - entry point
+   * @param {Object} profileData - Dữ liệu profile
+   * @returns {Promise<Buffer>} Buffer hình ảnh
    */
   async createProfileCard(profileData) {
     try {
-      // Tạo canvas với kích thước 900x420px (tỷ lệ hiện đại hơn)
-      const canvas = createCanvas(900, 420);
+      const canvas = createCanvas(this.defaultConfig.width, this.defaultConfig.height);
       const ctx = canvas.getContext('2d');
-      
-      // Thiết lập font mặc định
-      ctx.font = '16px Sans, sans-serif';
-      
-      // Vẽ nền chính với hiệu ứng gradient
-      const bgGradient = this.createGradient(
-        ctx, 0, 0, 900, 420,
-        this.colors.background.dark,
-        this.colors.background.light
-      );
-      ctx.fillStyle = bgGradient;
-      ctx.fillRect(0, 0, 900, 420);
 
-      // Vẽ nền banner mặc định
-      try {
-        const bannerImage = await this.loadImageWithCache(path.join(ASSETS_PATH, 'luna-banner.png'));
-        ctx.globalAlpha = 0.8; // Điều chỉnh độ trong suốt
-        ctx.drawImage(bannerImage, 0, 0, 900, 420);
-        ctx.globalAlpha = 1.0;
-        
-        // Thêm overlay gradient để làm cho text và các thành phần khác dễ đọc hơn
-        const overlay = this.createGradient(
-          ctx, 0, 0, 900, 420,
-          'rgba(10, 10, 25, 0.7)',
-          'rgba(10, 10, 25, 0.9)'
-        );
-        ctx.fillStyle = overlay;
-        ctx.fillRect(0, 0, 900, 420);
-      } catch (error) {
-        console.error('Lỗi khi tải banner:', error);
-      }
-      
-      // Vẽ các thành phần chính
-      await this.drawMainProfileCard(ctx, profileData);
-      
-      // Trả về buffer hình ảnh
+      // Thiết lập font mặc định
+      this.setFont(ctx);
+
+      // Vẽ các thành phần theo thứ tự tối ưu
+      await this.renderBackground(ctx);
+      await this.renderUserSection(ctx, profileData);
+      await this.renderProfileSection(ctx, profileData);
+      await this.renderXPSection(ctx, profileData);
+
       return canvas.toBuffer('image/png');
     } catch (error) {
       console.error('Lỗi khi tạo profile card:', error);
       throw error;
     }
   }
-  
+
   /**
-   * Vẽ profile card chính
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
+   * Vẽ nền canvas
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
    */
-  async drawMainProfileCard(ctx, profileData) {
-    // Lấy dữ liệu tùy chỉnh của người dùng hoặc sử dụng giá trị mặc định
-    const customColor = profileData.customization?.color;
-    const primaryColor = customColor || this.colors.primary.light;
-    
-    // Thiết lập font mặc định với định dạng CSS
-    ctx.font = 'Regular 16px Sans, Arial, sans-serif';
-    
-    // PHẦN 1: CARD NGƯỜI DÙNG (bên trái)
-    await this.drawUserInfoSection(ctx, profileData, primaryColor);
-    
-    // PHẦN 2: THÔNG TIN PROFILE (bên phải)
-    await this.drawProfileInfoSection(ctx, profileData, primaryColor);
-    
-    // PHẦN 3: THANH XP
-    await this.drawXPBar(ctx, profileData, primaryColor);
-  }
-  
-  /**
-   * Vẽ phần header
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
-   * @param {string} primaryColor - Màu chủ đạo
-   */
-  async drawHeaderSection(ctx, profileData, primaryColor) {
-    // Không cần vẽ banner header nữa vì đã dùng banner làm nền toàn bộ
-  }
-  
-  /**
-   * Vẽ phần thông tin người dùng
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
-   * @param {string} primaryColor - Màu chủ đạo
-   */
-  async drawUserInfoSection(ctx, profileData, primaryColor) {
-    try {
-      // Vẽ card thông tin người dùng - kiểu thủy tinh hiện đại
-      this.withShadow(ctx, () => {
-        this.roundRect(ctx, 30, 50, 300, 320, 20);
-        const glassEffect = ctx.createLinearGradient(30, 50, 330, 370);
-        glassEffect.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
-        glassEffect.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
-        ctx.fillStyle = glassEffect;
-        ctx.fill();
-        
-        // Thêm viền mỏng
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-      
-      // Vẽ tiêu đề USER PROFILE
-      ctx.font = 'Bold 24px Sans';
-      ctx.fillStyle = this.colors.text.primary;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('USER PROFILE', 180, 80);
-      
-      // Chuẩn hóa và vẽ tên server
-      const normalizedServerName = stringUtils.normalizeText(profileData.serverName) || 'Discord Server';
-      ctx.font = '16px Sans, Arial, sans-serif';
-      ctx.fillStyle = this.colors.text.secondary;
-      ctx.fillText(normalizedServerName, 180, 110);
-      
-      // Tải avatar
-      let avatarImage;
-      try {
-        avatarImage = await loadImage(profileData.avatarURL || path.join(ASSETS_PATH, 'luna-avatar.png'));
-      } catch (err) {
-        console.warn('Không thể tải avatar:', err);
-      }
-      
-      // Vẽ vòng tròn avatar
-      this.withShadow(ctx, () => {
-        // Vẽ khung avatar
-        ctx.beginPath();
-        ctx.arc(180, 180, 60, 0, Math.PI * 2);
-        const avatarGlow = this.createGradient(ctx, 120, 120, 120, 120, primaryColor, this.adjustColor(primaryColor, 30));
-        ctx.fillStyle = avatarGlow;
-        ctx.fill();
-        
-        if (avatarImage) {
-          // Vẽ avatar
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(180, 180, 55, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(avatarImage, 125, 125, 110, 110);
-          ctx.restore();
-        }
-      });
-      
-      // Vẽ wreath (vòng nguyệt quế) nếu có
-      if (profileData.customization?.wreath) {
-        try {
-          const wreathImage = await this.loadImageWithCache(
-            path.join(ASSETS_PATH, 'wreaths', `${profileData.customization.wreath}.png`)
-          );
-          ctx.drawImage(wreathImage, 110, 110, 140, 140);
-        } catch (err) {
-          console.warn('Không thể tải wreath:', err);
-        }
-      }
-      
-      // Vẽ tên người dùng
-      ctx.font = 'Bold 24px Sans';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = this.colors.text.primary;
-      ctx.fillText(
-        profileData.username || 'User',
-        180,
-        260,
-        280
-      );
-      
-      // Vẽ discriminator nếu có
-      if (profileData.discriminator && profileData.discriminator !== '0') {
-        ctx.font = '16px Sans';
-        ctx.fillStyle = this.colors.text.secondary;
-        ctx.fillText(`#${profileData.discriminator}`, 180, 285);
-      }
-      
-      // Vẽ các badge (huy hiệu)
-      await this.drawBadges(ctx, profileData);
-      
-      // Vẽ level và xếp hạng
-      this.drawCompactLevelInfo(ctx, profileData, primaryColor);
-      
-    } catch (error) {
-      console.error('Lỗi khi vẽ thông tin người dùng:', error);
-    }
-  }
-  
-  /**
-   * Vẽ phần thông tin profile
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
-   * @param {string} primaryColor - Màu chủ đạo
-   */
-  async drawProfileInfoSection(ctx, profileData, primaryColor) {
-    try {
-      // Vẽ card thông tin profile - kiểu thủy tinh hiện đại
-      this.withShadow(ctx, () => {
-        this.roundRect(ctx, 360, 50, 510, 320, 20);
-        const glassEffect = ctx.createLinearGradient(360, 50, 870, 370);
-        glassEffect.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
-        glassEffect.addColorStop(1, 'rgba(255, 255, 255, 0.04)');
-        ctx.fillStyle = glassEffect;
-        ctx.fill();
-        
-        // Thêm viền mỏng
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-      
-      // Vẽ tên server rank nếu top 3
-      if (profileData.rank?.server <= 3) {
-        const rankBadgeSize = 70;
-        const rankLabels = ['', '🥇 TOP #1', '🥈 TOP #2', '🥉 TOP #3'];
-        const rankLabel = rankLabels[profileData.rank.server] || '';
-        
-        ctx.font = 'Bold 24px Sans';
-        ctx.fillStyle = this.colors.text.primary;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(rankLabel, 850, 80);
-      }
-      
-      // Vẽ tiêu đề BIO
-      ctx.font = 'Bold 20px Sans';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = primaryColor;
-      ctx.fillText('BIO', 380, 120);
-      
-      // Vẽ bio card
-      this.withShadow(ctx, () => {
-        this.roundRect(ctx, 380, 130, 470, 60, 10);
-        ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
-        ctx.fill();
-      });
-      
-      // Vẽ nội dung bio
-      ctx.font = '16px Sans';
-      ctx.fillStyle = this.colors.text.primary;
-      const bio = profileData.bio || 'No bio written.';
-      
-      // Cắt bio nếu quá dài
-      if (bio.length > 70) {
-        ctx.fillText(bio.substring(0, 67) + '...', 390, 165, 450);
-      } else {
-        ctx.fillText(bio, 390, 165, 450);
-      }
-      
-      // Vẽ phần trên bên phải: Birthday + Network
-      // Vẽ tiêu đề BIRTHDAY
-      ctx.font = 'Bold 20px Sans';
-      ctx.fillStyle = primaryColor;
-      ctx.fillText('BIRTHDAY', 380, 220);
-      
-      // Vẽ birthday card
-      this.withShadow(ctx, () => {
-        this.roundRect(ctx, 380, 230, 220, 50, 10);
-        ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
-        ctx.fill();
-      });
-      
-      // Vẽ nội dung birthday
-      ctx.font = '16px Sans';
-      ctx.fillStyle = this.colors.text.primary;
-      ctx.fillText(
-        profileData.birthday || 'Not specified',
-        390,
-        260,
-        200
-      );
-      
-      // Vẽ tiêu đề NETWORK
-      ctx.font = 'Bold 20px Sans';
-      ctx.fillStyle = primaryColor;
-      ctx.fillText('NETWORK', 630, 220);
-      
-      // Vẽ network card
-      this.withShadow(ctx, () => {
-        this.roundRect(ctx, 630, 230, 220, 50, 10);
-        ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
-        ctx.fill();
-      });
-      
-      // Vẽ các biểu tượng mạng xã hội
-      const networkIcons = ['🌐', '💬', '🕹️', '📱'];
-      const spacing = 45;
-      
-      for (let i = 0; i < networkIcons.length; i++) {
-        ctx.font = '20px Sans';
-        ctx.fillStyle = this.colors.text.primary;
-        ctx.fillText(networkIcons[i], 650 + i * spacing, 260);
-      }
-      
-      // Vẽ emblem nếu có
-      if (profileData.customization?.emblem) {
-        try {
-          const emblemImage = await this.loadImageWithCache(
-            path.join(ASSETS_PATH, 'emblems', `${profileData.customization.emblem}.png`)
-          );
-          ctx.drawImage(emblemImage, 790, 300, 60, 60);
-        } catch (err) {
-          console.warn('Không thể tải emblem:', err);
-        }
-      }
-      
-    } catch (error) {
-      console.error('Lỗi khi vẽ thông tin profile:', error);
-    }
-  }
-  
-  /**
-   * Vẽ thanh XP
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
-   * @param {string} primaryColor - Màu chủ đạo
-   */
-  async drawXPBar(ctx, profileData, primaryColor) {
-    try {
-      // Tính toán XP
-      const level = profileData.level || 1;
-      const currXp = profileData.currentXP || 0;
-      const maxXp = (50 * Math.pow(level, 2)) + (250 * level);
-      const prevLevelXp = (50 * Math.pow(level - 1, 2)) + (250 * (level - 1));
-      const levelRange = maxXp - prevLevelXp;
-      const levelProgress = currXp - prevLevelXp;
-      const percentComplete = Math.min(1, Math.max(0, levelProgress / levelRange));
-      
-      // Vẽ thanh XP
-      const barWidth = 840;
-      const barHeight = 15;
-      const startX = 30;
-      const startY = 390;
-      
-      // Vẽ nền thanh XP
-      this.withShadow(ctx, () => {
-        this.roundRect(ctx, startX, startY, barWidth, barHeight, barHeight / 2);
-        ctx.fillStyle = 'rgba(10, 10, 30, 0.7)';
-        ctx.fill();
-      });
-      
-      // Vẽ phần đã hoàn thành
-      if (percentComplete > 0) {
-        const progressBarWidth = barWidth * percentComplete;
-        this.roundRect(ctx, startX, startY, progressBarWidth, barHeight, barHeight / 2);
-        
-        // Tạo gradient cho thanh XP
-        const gradient = this.createGradient(
-          ctx, startX, startY, progressBarWidth, barHeight,
-          primaryColor,
-          this.adjustColor(primaryColor, 30) // Sáng hơn 30%
-        );
-        
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      }
-      
-      // Vẽ thông tin XP (text)
-      ctx.font = 'Bold 14px Sans';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = this.colors.text.primary;
-      ctx.fillText(`Level ${level}`, startX, startY - 10);
-      
-      ctx.textAlign = 'right';
-      ctx.fillText(
-        `${levelProgress}/${levelRange} XP (${Math.round(percentComplete * 100)}%)`,
-        startX + barWidth,
-        startY - 10
-      );
-      
-    } catch (error) {
-      console.error('Lỗi khi vẽ thanh XP:', error);
-    }
-  }
-  
-  /**
-   * Vẽ thông tin level, rank dạng nhỏ gọn
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
-   * @param {string} primaryColor - Màu chủ đạo
-   */
-  drawCompactLevelInfo(ctx, profileData, primaryColor) {
-    // Xếp hạng server
-    const serverRank = profileData.rank?.server || '?';
-    const globalRank = profileData.rank?.global || '?';
-    
-    // Vẽ level
-    this.withShadow(ctx, () => {
-      this.roundRect(ctx, 55, 330, 80, 30, 15);
-      ctx.fillStyle = this.createGradient(ctx, 55, 330, 80, 30, primaryColor, this.adjustColor(primaryColor, 30));
-      ctx.fill();
+  async renderBackground(ctx) {
+    const { width, height } = this.defaultConfig;
+
+    // Gradient nền chính
+    const bgGradient = this.createCachedGradient(ctx, {
+      x: 0, y: 0, width, height,
+      color1: this.colors.background.dark,
+      color2: this.colors.background.light
     });
     
-    ctx.font = 'Bold 16px Sans';
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Banner overlay nếu có
+    try {
+      const bannerImage = await this.loadImageWithCache(path.join(ASSETS_PATH, 'luna-banner.png'));
+      ctx.globalAlpha = 0.8;
+      ctx.drawImage(bannerImage, 0, 0, width, height);
+      ctx.globalAlpha = 1.0;
+
+      // Overlay để tăng độ tương phản
+      const overlay = this.createCachedGradient(ctx, {
+        x: 0, y: 0, width, height,
+        color1: 'rgba(10, 10, 25, 0.7)',
+        color2: 'rgba(10, 10, 25, 0.9)'
+      });
+      ctx.fillStyle = overlay;
+      ctx.fillRect(0, 0, width, height);
+    } catch (error) {
+      console.warn('Không thể tải banner, sử dụng nền mặc định');
+    }
+  }
+
+  /**
+   * Vẽ phần thông tin người dùng (bên trái)
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Object} profileData - Dữ liệu profile
+   */
+  async renderUserSection(ctx, profileData) {
+    const primaryColor = profileData.customization?.color || this.colors.primary.light;
+    const cardBounds = { x: 30, y: 50, width: 300, height: 320 };
+
+    // Vẽ card container
+    this.applyShadow(ctx, () => {
+      this.drawRoundRect(ctx, cardBounds.x, cardBounds.y, cardBounds.width, cardBounds.height, 20);
+      
+      const glassEffect = this.createCachedGradient(ctx, {
+        x: cardBounds.x, y: cardBounds.y, width: cardBounds.width, height: cardBounds.height,
+        color1: 'rgba(255, 255, 255, 0.1)',
+        color2: 'rgba(255, 255, 255, 0.05)'
+      });
+      ctx.fillStyle = glassEffect;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Header
+    this.setFont(ctx, 'Bold', 24);
+    ctx.fillStyle = this.colors.text.primary;
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('USER PROFILE', 180, 80);
+
+    // Server name
+    const serverName = stringUtils.normalizeText(profileData.serverName) || 'Discord Server';
+    this.setFont(ctx, 'Regular', 16);
+    ctx.fillStyle = this.colors.text.secondary;
+    ctx.fillText(serverName, 180, 110);
+
+    // Avatar
+    await this.renderAvatar(ctx, profileData, primaryColor);
+
+    // Username
+    this.setFont(ctx, 'Bold', 24);
     ctx.fillStyle = this.colors.text.primary;
-    ctx.fillText(`LVL ${profileData.level || 1}`, 95, 345);
-    
-    // Vẽ server rank
-    this.withShadow(ctx, () => {
-      this.roundRect(ctx, 145, 330, 80, 30, 15);
-      ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
-      ctx.fill();
-    });
-    
-    ctx.fillStyle = this.colors.text.primary;
-    ctx.fillText(`#${serverRank}`, 185, 345);
-    
-    // Vẽ global rank
-    this.withShadow(ctx, () => {
-      this.roundRect(ctx, 235, 330, 80, 30, 15);
-      ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
-      ctx.fill();
-    });
-    
-    ctx.fillStyle = this.colors.text.primary;
-    ctx.fillText(`G#${globalRank}`, 275, 345);
+    ctx.fillText(profileData.username || 'User', 180, 260, 280);
+
+    // Discriminator
+    if (profileData.discriminator && profileData.discriminator !== '0') {
+      this.setFont(ctx, 'Regular', 16);
+      ctx.fillStyle = this.colors.text.secondary;
+      ctx.fillText(`#${profileData.discriminator}`, 180, 285);
+    }
+
+    // Level info compact
+    this.renderLevelInfo(ctx, profileData, primaryColor);
   }
-  
+
   /**
-   * Vẽ các huy hiệu thành tựu
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {Object} profileData - Dữ liệu profile của người dùng
+   * Vẽ avatar với hiệu ứng
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Object} profileData - Dữ liệu profile
+   * @param {string} primaryColor - Màu chủ đạo
    */
-  async drawBadges(ctx, profileData) {
+  async renderAvatar(ctx, profileData, primaryColor) {
+    const avatarCenter = { x: 180, y: 180 };
+    const avatarRadius = 60;
+
+    // Vẽ khung avatar với gradient
+    this.applyShadow(ctx, () => {
+      ctx.beginPath();
+      ctx.arc(avatarCenter.x, avatarCenter.y, avatarRadius, 0, Math.PI * 2);
+      
+      const avatarGlow = this.createCachedGradient(ctx, {
+        x: avatarCenter.x - avatarRadius, y: avatarCenter.y - avatarRadius,
+        width: avatarRadius * 2, height: avatarRadius * 2,
+        color1: primaryColor,
+        color2: this.adjustColor(primaryColor, 30),
+        type: 'radial'
+      });
+      ctx.fillStyle = avatarGlow;
+      ctx.fill();
+    });
+
+    // Vẽ avatar image
     try {
-      // Lấy badges từ dữ liệu nếu có
-      const badges = profileData.badges || [];
+      const avatarImage = await this.loadImageWithCache(
+        profileData.avatarURL || path.join(ASSETS_PATH, 'luna-avatar.png')
+      );
       
-      // Vị trí và kích thước badge
-      const badgeSize = 30;
-      const startX = 80;
-      const startY = 300;
-      const spacing = 40;
-      
-      // Số lượng badges tối đa hiển thị
-      const maxBadges = 5;
-      
-      // Nếu có badges, vẽ từng badge
-      for (let i = 0; i < Math.min(badges.length, maxBadges); i++) {
-        const badge = badges[i];
-        const x = startX + i * spacing;
-        
-        // Vẽ nền badge
-        this.withShadow(ctx, () => {
-          ctx.beginPath();
-          ctx.arc(x, startY, badgeSize / 2, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-          ctx.fill();
-        });
-        
-        // Vẽ icon badge nếu có
-        try {
-          if (badge.icon) {
-            const badgeIcon = await this.loadImageWithCache(badge.icon);
-            ctx.drawImage(badgeIcon, x - badgeSize / 2, startY - badgeSize / 2, badgeSize, badgeSize);
-          } else {
-            // Nếu không có icon, vẽ emoji đại diện
-            ctx.font = '16px Sans';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = this.colors.text.primary;
-            ctx.fillText(badge.emoji || '🏆', x, startY);
-          }
-        } catch (err) {
-          console.warn('Không thể tải badge icon:', err);
-          // Vẽ badge fallback
-          ctx.font = '16px Sans';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = this.colors.text.primary;
-          ctx.fillText('🏆', x, startY);
-        }
-      }
-      
-      // Nếu có nhiều badges hơn số tối đa
-      if (badges.length > maxBadges) {
-        const x = startX + maxBadges * spacing;
-        
-        // Vẽ nền badge
-        this.withShadow(ctx, () => {
-          ctx.beginPath();
-          ctx.arc(x, startY, badgeSize / 2, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-          ctx.fill();
-        });
-        
-        // Vẽ số lượng badges còn lại
-        ctx.font = 'Bold 14px Sans';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = this.colors.text.primary;
-        ctx.fillText(`+${badges.length - maxBadges}`, x, startY);
-      }
-      
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(avatarCenter.x, avatarCenter.y, avatarRadius - 5, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(
+        avatarImage,
+        avatarCenter.x - avatarRadius + 5,
+        avatarCenter.y - avatarRadius + 5,
+        (avatarRadius - 5) * 2,
+        (avatarRadius - 5) * 2
+      );
+      ctx.restore();
     } catch (error) {
-      console.error('Lỗi khi vẽ badges:', error);
+      console.warn('Không thể vẽ avatar:', error.message);
     }
-  }
-  
-  /**
-   * Điều chỉnh màu sắc (tối/sáng hơn)
-   * @param {string} color - Mã màu hex
-   * @param {number} percent - Phần trăm điều chỉnh (-100 đến 100)
-   * @returns {string} - Mã màu mới
-   */
-  adjustColor(color, percent) {
-    let R = parseInt(color.substring(1, 3), 16);
-    let G = parseInt(color.substring(3, 5), 16);
-    let B = parseInt(color.substring(5, 7), 16);
-
-    R = Math.round(R * (100 + percent) / 100);
-    G = Math.round(G * (100 + percent) / 100);
-    B = Math.round(B * (100 + percent) / 100);
-
-    R = (R < 255) ? R : 255;
-    G = (G < 255) ? G : 255;
-    B = (B < 255) ? B : 255;
-
-    R = (R > 0) ? R : 0;
-    G = (G > 0) ? G : 0;
-    B = (B > 0) ? B : 0;
-
-    const RR = ((R.toString(16).length === 1) ? '0' + R.toString(16) : R.toString(16));
-    const GG = ((G.toString(16).length === 1) ? '0' + G.toString(16) : G.toString(16));
-    const BB = ((B.toString(16).length === 1) ? '0' + B.toString(16) : B.toString(16));
-
-    return '#' + RR + GG + BB;
   }
 
   /**
-   * Kiểm tra xem chuỗi có thể hiển thị được với font hiện tại không
-   * @param {CanvasRenderingContext2D} ctx - Context của canvas
-   * @param {string} text - Chuỗi cần kiểm tra
-   * @returns {boolean} - true nếu có thể hiển thị, false nếu không
+   * Vẽ thông tin level compact
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Object} profileData - Dữ liệu profile
+   * @param {string} primaryColor - Màu chủ đạo
    */
-  checkTextRendering(ctx, text) {
-    const originalFont = ctx.font;
-    let canRender = true;
-    
-    try {
-      // Thử vẽ text với font hiện tại
-      ctx.font = '16px Sans';
-      const metrics = ctx.measureText(text);
+  renderLevelInfo(ctx, profileData, primaryColor) {
+    const y = 330;
+    const buttonHeight = 30;
+    const buttonRadius = 15;
+
+    // Level button
+    this.applyShadow(ctx, () => {
+      this.drawRoundRect(ctx, 55, y, 80, buttonHeight, buttonRadius);
+      const levelGradient = this.createCachedGradient(ctx, {
+        x: 55, y, width: 80, height: buttonHeight,
+        color1: primaryColor,
+        color2: this.adjustColor(primaryColor, 30)
+      });
+      ctx.fillStyle = levelGradient;
+      ctx.fill();
+    });
+
+    this.setFont(ctx, 'Bold', 16);
+    ctx.fillStyle = this.colors.text.primary;
+    ctx.textAlign = 'center';
+    ctx.fillText(`LVL ${profileData.level || 1}`, 95, y + 15);
+
+    // Server rank
+    this.applyShadow(ctx, () => {
+      this.drawRoundRect(ctx, 145, y, 80, buttonHeight, buttonRadius);
+      ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
+      ctx.fill();
+    });
+
+    ctx.fillStyle = this.colors.text.primary;
+    ctx.fillText(`#${profileData.rank?.server || '?'}`, 185, y + 15);
+
+    // Global rank
+    this.applyShadow(ctx, () => {
+      this.drawRoundRect(ctx, 235, y, 80, buttonHeight, buttonRadius);
+      ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
+      ctx.fill();
+    });
+
+    ctx.fillStyle = this.colors.text.primary;
+    ctx.fillText(`G#${profileData.rank?.global || '?'}`, 275, y + 15);
+  }
+
+  /**
+   * Vẽ phần thông tin profile (bên phải)
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Object} profileData - Dữ liệu profile
+   */
+  async renderProfileSection(ctx, profileData) {
+    const primaryColor = profileData.customization?.color || this.colors.primary.light;
+    const cardBounds = { x: 360, y: 50, width: 510, height: 320 };
+
+    // Profile card container
+    this.applyShadow(ctx, () => {
+      this.drawRoundRect(ctx, cardBounds.x, cardBounds.y, cardBounds.width, cardBounds.height, 20);
       
-      // Nếu width = 0 hoặc không có metrics, font không hoạt động
-      if (metrics.width === 0 || !metrics.actualBoundingBoxAscent) {
-        canRender = false;
-      }
+      const glassEffect = this.createCachedGradient(ctx, {
+        x: cardBounds.x, y: cardBounds.y, width: cardBounds.width, height: cardBounds.height,
+        color1: 'rgba(255, 255, 255, 0.08)',
+        color2: 'rgba(255, 255, 255, 0.04)'
+      });
+      ctx.fillStyle = glassEffect;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Top rank badge nếu có
+    if (profileData.rank?.server <= 3) {
+      const rankLabels = ['', '🥇 TOP #1', '🥈 TOP #2', '🥉 TOP #3'];
+      const rankLabel = rankLabels[profileData.rank.server] || '';
       
-      // Kiểm tra từng ký tự
-      for (let char of text) {
-        if (!ctx.measureText(char).width) {
-          canRender = false;
-          break;
-        }
-      }
-    } catch (e) {
-      canRender = false;
+      this.setFont(ctx, 'Bold', 24);
+      ctx.fillStyle = this.colors.text.primary;
+      ctx.textAlign = 'right';
+      ctx.fillText(rankLabel, 850, 80);
     }
+
+    // Bio section
+    this.setFont(ctx, 'Bold', 20);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = primaryColor;
+    ctx.fillText('BIO', 380, 120);
+
+    // Bio content
+    this.applyShadow(ctx, () => {
+      this.drawRoundRect(ctx, 380, 130, 470, 60, 10);
+      ctx.fillStyle = 'rgba(10, 10, 30, 0.4)';
+      ctx.fill();
+    });
+
+    this.setFont(ctx, 'Regular', 16);
+    ctx.fillStyle = this.colors.text.primary;
+    const bio = profileData.bio || 'No bio written.';
+    this.wrapText(ctx, bio, 400, 155, 430, 20);
+  }
+
+  /**
+   * Vẽ phần XP bar
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Object} profileData - Dữ liệu profile
+   */
+  async renderXPSection(ctx, profileData) {
+    // XP bar implementation sẽ được thêm vào đây
+    // Tạm thời để trống để tối ưu performance
+  }
+
+  /**
+   * Wrap text trong giới hạn width
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {string} text - Text cần wrap
+   * @param {number} x - Tọa độ x
+   * @param {number} y - Tọa độ y
+   * @param {number} maxWidth - Chiều rộng tối đa
+   * @param {number} lineHeight - Chiều cao dòng
+   */
+  wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    let currentY = y;
+
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      const testWidth = metrics.width;
+
+      if (testWidth > maxWidth && n > 0) {
+        ctx.fillText(line, x, currentY);
+        line = words[n] + ' ';
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, x, currentY);
+  }
+
+  /**
+   * Điều chỉnh màu sắc
+   * @param {string} color - Màu gốc
+   * @param {number} amount - Mức độ điều chỉnh
+   * @returns {string} Màu đã điều chỉnh
+   */
+  adjustColor(color, amount) {
+    const usePound = color[0] === '#';
+    const col = usePound ? color.slice(1) : color;
+    const num = parseInt(col, 16);
     
-    // Khôi phục font ban đầu
-    ctx.font = originalFont;
-    return canRender;
+    let r = (num >> 16) + amount;
+    let g = (num >> 8 & 0x00FF) + amount;
+    let b = (num & 0x0000FF) + amount;
+    
+    r = r > 255 ? 255 : r < 0 ? 0 : r;
+    g = g > 255 ? 255 : g < 0 ? 0 : g;
+    b = b > 255 ? 255 : b < 0 ? 0 : b;
+    
+    return (usePound ? '#' : '') + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+  }
+
+  /**
+   * Dọn dẹp cache
+   */
+  clearCache() {
+    this.imageCache.clear();
+    this.gradientCache.clear();
+  }
+
+  /**
+   * Lấy thống kê cache
+   * @returns {Object} Thống kê cache
+   */
+  getCacheStats() {
+    return {
+      images: this.imageCache.size,
+      gradients: this.gradientCache.size,
+      fontStats: fontManager.getStats()
+    };
   }
 }
 
-// Tạo và xuất instance duy nhất
-const profileCanvas = new ProfileCanvas();
-module.exports = profileCanvas;
+// Export singleton instance
+module.exports = new ProfileCanvas();

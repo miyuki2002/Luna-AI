@@ -1,99 +1,259 @@
 const { registerFont } = require('canvas');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 class FontManager {
   constructor() {
     this.initialized = false;
+    this.registeredFonts = new Set();
+    this.fallbackFonts = this.getFallbackFonts();
   }
 
   /**
-   * Khởi tạo và đăng ký fonts
+   * Lấy danh sách fonts dự phòng theo hệ điều hành
+   * @returns {Array} Danh sách fonts dự phòng
+   */
+  getFallbackFonts() {
+    const platform = os.platform();
+    
+    switch (platform) {
+      case 'win32':
+        return ['Arial', 'Segoe UI', 'Tahoma', 'Verdana', 'sans-serif'];
+      case 'darwin':
+        return ['Helvetica Neue', 'Arial', 'San Francisco', 'sans-serif'];
+      case 'linux':
+        return ['DejaVu Sans', 'Liberation Sans', 'Arial', 'sans-serif'];
+      default:
+        return ['Arial', 'sans-serif'];
+    }
+  }
+
+  /**
+   * Kiểm tra file font có tồn tại không
+   * @param {string} fontPath - Đường dẫn tới file font
+   * @returns {boolean}
+   */
+  fontExists(fontPath) {
+    try {
+      return fs.existsSync(fontPath) && fs.statSync(fontPath).isFile();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Đăng ký một font với xử lý lỗi
+   * @param {string} fontPath - Đường dẫn tới file font
+   * @param {Object} options - Tùy chọn đăng ký font
+   * @returns {boolean} Thành công hay không
+   */
+  registerSingleFont(fontPath, options) {
+    const fontKey = `${fontPath}-${JSON.stringify(options)}`;
+    
+    if (this.registeredFonts.has(fontKey)) {
+      return true; // Đã đăng ký rồi
+    }
+
+    if (!this.fontExists(fontPath)) {
+      return false;
+    }
+
+    try {
+      registerFont(fontPath, options);
+      this.registeredFonts.add(fontKey);
+      return true;
+    } catch (error) {
+      console.warn(`Không thể đăng ký font ${path.basename(fontPath)}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Khởi tạo và đăng ký fonts với tối ưu hóa
    * @param {string} assetsPath - Đường dẫn tới thư mục assets
    */
   async initialize(assetsPath) {
     if (this.initialized) return;
 
     try {
+      // Thiết lập biến môi trường để tránh lỗi Fontconfig trên Windows
+      if (os.platform() === 'win32') {
+        process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || '';
+        process.env.FC_DEBUG = '0'; // Tắt debug fontconfig
+      }
+
       const fontsPath = path.join(assetsPath, 'fonts');
       
-      // Map giữa weights dạng chữ và số
-      const fontWeightMappings = {
-        'Thin': 100,
-        'ExtraLight': 200,
-        'Light': 300,
-        'Regular': 400,
-        'Medium': 500,
-        'SemiBold': 600,
-        'Bold': 700,
-        'ExtraBold': 800,
-        'Black': 900
+      if (!fs.existsSync(fontsPath)) {
+        console.warn(`Thư mục fonts không tồn tại: ${fontsPath}`);
+        this.initialized = true;
+        return;
+      }
+
+      // Cấu hình font weights
+      const fontWeights = {
+        'Thin': { numeric: 100, css: '100' },
+        'ExtraLight': { numeric: 200, css: '200' },
+        'Light': { numeric: 300, css: '300' },
+        'Regular': { numeric: 400, css: 'normal' },
+        'Medium': { numeric: 500, css: '500' },
+        'SemiBold': { numeric: 600, css: '600' },
+        'Bold': { numeric: 700, css: 'bold' },
+        'ExtraBold': { numeric: 800, css: '800' },
+        'Black': { numeric: 900, css: '900' }
       };
+
+      // Danh sách fonts Montserrat cần đăng ký
+      const fontVariants = this.generateFontVariants();
       
-      // Đăng ký tất cả các biến thể của Montserrat
-      const fontVariants = [
-        { file: 'Montserrat-Thin.otf', weight: 'Thin', style: 'normal' },
-        { file: 'Montserrat-ThinItalic.otf', weight: 'Thin', style: 'italic' },
-        { file: 'Montserrat-ExtraLight.otf', weight: 'ExtraLight', style: 'normal' },
-        { file: 'Montserrat-ExtraLightItalic.otf', weight: 'ExtraLight', style: 'italic' },
-        { file: 'Montserrat-Light.otf', weight: 'Light', style: 'normal' },
-        { file: 'Montserrat-LightItalic.otf', weight: 'Light', style: 'italic' },
-        { file: 'Montserrat-Regular.otf', weight: 'Regular', style: 'normal' },
-        { file: 'Montserrat-Italic.otf', weight: 'Regular', style: 'italic' },
-        { file: 'Montserrat-Medium.otf', weight: 'Medium', style: 'normal' },
-        { file: 'Montserrat-MediumItalic.otf', weight: 'Medium', style: 'italic' },
-        { file: 'Montserrat-SemiBold.otf', weight: 'SemiBold', style: 'normal' },
-        { file: 'Montserrat-SemiBoldItalic.otf', weight: 'SemiBold', style: 'italic' },
-        { file: 'Montserrat-Bold.otf', weight: 'Bold', style: 'normal' },
-        { file: 'Montserrat-BoldItalic.otf', weight: 'Bold', style: 'italic' },
-        { file: 'Montserrat-ExtraBold.otf', weight: 'ExtraBold', style: 'normal' },
-        { file: 'Montserrat-ExtraBoldItalic.otf', weight: 'ExtraBold', style: 'italic' },
-        { file: 'Montserrat-Black.otf', weight: 'Black', style: 'normal' },
-        { file: 'Montserrat-BlackItalic.otf', weight: 'Black', style: 'italic' }
-      ];
-      
-      // Đăng ký fonts với các cách khác nhau để tăng khả năng tương thích với Pango
+      let successCount = 0;
+      let totalCount = 0;
+
       for (const variant of fontVariants) {
-        try {
-          // Cách 1: Đăng ký với tên weight
-          registerFont(path.join(fontsPath, variant.file), {
+        const fontPath = path.join(fontsPath, variant.file);
+        const weight = fontWeights[variant.weight];
+        
+        if (!weight) continue;
+
+        totalCount++;
+
+        // Thử đăng ký với các cấu hình khác nhau
+        const registrationConfigs = [
+          {
             family: 'Montserrat',
-            weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
+            weight: weight.css,
             style: variant.style
-          });
-          
-          // Cách 2: Đăng ký với số weight
-          registerFont(path.join(fontsPath, variant.file), {
+          },
+          {
             family: 'Montserrat',
-            weight: fontWeightMappings[variant.weight].toString(),
+            weight: weight.numeric.toString(),
             style: variant.style
-          });
-          
-          // Cách 3: Đăng ký không có rotation
-          registerFont(path.join(fontsPath, variant.file), {
-            family: 'Montserrat',
-            weight: variant.weight === 'Regular' ? 'normal' : variant.weight.toLowerCase(),
-            style: variant.style,
-            rotate: false
-          });
-          
-          // Cách 4: Đăng ký không có rotation với số weight
-          registerFont(path.join(fontsPath, variant.file), {
-            family: 'Montserrat',
-            weight: fontWeightMappings[variant.weight].toString(),
-            style: variant.style,
-            rotate: false
-          });
-        } catch (err) {
-          console.warn(`Không thể đăng ký font ${variant.file}:`, err);
+          },
+          {
+            family: `Montserrat-${variant.weight}`,
+            weight: weight.css,
+            style: variant.style
+          }
+        ];
+
+        let registered = false;
+        for (const config of registrationConfigs) {
+          if (this.registerSingleFont(fontPath, config)) {
+            registered = true;
+            break;
+          }
+        }
+
+        if (registered) {
+          successCount++;
         }
       }
+
+      console.log(`Fonts: Đăng ký thành công ${successCount}/${totalCount} fonts`);
       
-      console.log('Đã đăng ký fonts thành công');
+      // Đăng ký fonts dự phòng hệ thống nếu cần
+      this.registerSystemFallbacks();
+      
       this.initialized = true;
     } catch (error) {
-      console.error('Lỗi khi đăng ký fonts:', error);
-      console.warn('Sẽ sử dụng font dự phòng');
+      console.error('Lỗi khi khởi tạo FontManager:', error);
+      console.warn('Sẽ sử dụng fonts hệ thống mặc định');
+      this.initialized = true;
     }
+  }
+
+  /**
+   * Tạo danh sách các biến thể font
+   * @returns {Array} Danh sách font variants
+   */
+  generateFontVariants() {
+    const weights = ['Thin', 'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black'];
+    const styles = [
+      { suffix: '', style: 'normal' },
+      { suffix: 'Italic', style: 'italic' }
+    ];
+
+    const variants = [];
+    
+    for (const weight of weights) {
+      for (const styleInfo of styles) {
+        // Montserrat regular
+        variants.push({
+          file: `Montserrat-${weight}${styleInfo.suffix}.otf`,
+          weight: weight,
+          style: styleInfo.style,
+          family: 'Montserrat'
+        });
+
+        // MontserratAlternates
+        variants.push({
+          file: `MontserratAlternates-${weight}${styleInfo.suffix}.otf`,
+          weight: weight,
+          style: styleInfo.style,
+          family: 'MontserratAlternates'
+        });
+      }
+    }
+
+    return variants;
+  }
+
+  /**
+   * Đăng ký fonts dự phòng hệ thống
+   */
+  registerSystemFallbacks() {
+    // Không cần đăng ký fonts hệ thống, chúng đã có sẵn
+    console.log('Fonts dự phòng hệ thống:', this.fallbackFonts.join(', '));
+  }
+
+  /**
+   * Lấy font string CSS với fallback
+   * @param {string} weight - Font weight (Bold, Regular, etc.)
+   * @param {number} size - Font size
+   * @param {string} style - Font style (normal, italic)
+   * @returns {string} Font CSS string
+   */
+  getFontString(weight = 'Regular', size = 16, style = 'normal') {
+    const weightMap = {
+      'Thin': '100',
+      'ExtraLight': '200', 
+      'Light': '300',
+      'Regular': 'normal',
+      'Medium': '500',
+      'SemiBold': '600',
+      'Bold': 'bold',
+      'ExtraBold': '800',
+      'Black': '900'
+    };
+
+    const cssWeight = weightMap[weight] || 'normal';
+    const fontFamily = this.initialized ? 
+      `Montserrat, ${this.fallbackFonts.join(', ')}` : 
+      this.fallbackFonts.join(', ');
+
+    return `${style !== 'normal' ? style + ' ' : ''}${cssWeight} ${size}px ${fontFamily}`;
+  }
+
+  /**
+   * Kiểm tra xem FontManager đã được khởi tạo chưa
+   * @returns {boolean}
+   */
+  isInitialized() {
+    return this.initialized;
+  }
+
+  /**
+   * Lấy thông tin thống kê fonts
+   * @returns {Object}
+   */
+  getStats() {
+    return {
+      initialized: this.initialized,
+      registeredFonts: this.registeredFonts.size,
+      fallbackFonts: this.fallbackFonts,
+      platform: os.platform()
+    };
   }
 }
 
