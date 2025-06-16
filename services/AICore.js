@@ -1,4 +1,3 @@
-const OpenAI = require("openai");
 const axios = require("axios");
 const fs = require("fs");
 
@@ -12,11 +11,6 @@ class AICore {
       throw new Error("API_KEY không được đặt trong biến môi trường");
     }
 
-    this.client = new OpenAI({
-      apiKey: this.apiKey,
-      baseURL: "https://api.x.ai/v1",
-    });
-
     this.systemPrompt = prompts.system.main;
     this.CoreModel = "grok-3-fast-latest";
     this.imageModel = "grok-2-vision";
@@ -24,6 +18,52 @@ class AICore {
     this.Model = "luna-v2";
 
     logger.info("AI_CORE", `Initialized with models: ${this.CoreModel}, ${this.thinkingModel}`);
+  }
+
+  /**
+   * Tạo cấu hình Axios với xử lý chứng chỉ phù hợp
+   */
+  createSecureAxiosInstance(baseURL) {
+    const https = require("https");
+    
+    const options = {
+      baseURL: baseURL || "https://api.x.ai",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        "User-Agent": `Luna/${this.CoreModel}`,
+        Accept: "application/json",
+      },
+      timeout: 30000, // 30 seconds timeout
+    };
+
+    // Xử lý SSL certificate
+    const certPath = process.env.CUSTOM_CA_CERT_PATH;
+    const rejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0';
+    
+    if (certPath && fs.existsSync(certPath)) {
+      // Sử dụng custom certificate nếu có
+      const ca = fs.readFileSync(certPath);
+      options.httpsAgent = new https.Agent({ 
+        ca,
+        rejectUnauthorized: true
+      });
+      logger.info("AI_CORE", `Using custom CA cert: ${certPath}`);
+    } else if (!rejectUnauthorized) {
+      // Bypass SSL verification nếu NODE_TLS_REJECT_UNAUTHORIZED=0
+      options.httpsAgent = new https.Agent({
+        rejectUnauthorized: false
+      });
+      logger.warn("AI_CORE", "SSL certificate verification disabled");
+    } else {
+      // Sử dụng default SSL verification
+      options.httpsAgent = new https.Agent({
+        rejectUnauthorized: true
+      });
+      logger.info("AI_CORE", "Using default SSL certificate verification");
+    }
+
+    return axios.create(options);
   }
 
   /**
@@ -74,6 +114,11 @@ class AICore {
     } catch (error) {
       logger.error("AI_CORE", "Live Search error:", error.message);
       logger.error("AI_CORE", "Live Search error details:", error);
+      
+      if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
+        logger.error("AI_CORE", "SSL Certificate Error. Consider setting NODE_TLS_REJECT_UNAUTHORIZED=0 in .env file");
+      }
+      
       return {
         content: null,
         hasSearchResults: false,
@@ -92,7 +137,7 @@ class AICore {
     try {
       logger.debug("AI_CORE", "Processing monitoring analysis");
 
-      const response = await this.client.chat.completions.create({
+      const requestBody = {
         model: this.CoreModel,
         max_tokens: 1024,
         messages: [
@@ -105,9 +150,12 @@ class AICore {
             content: prompt,
           },
         ],
-      });
+      };
 
-      const content = response.choices[0].message.content;
+      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
+      const response = await axiosInstance.post("/v1/chat/completions", requestBody);
+
+      const content = response.data.choices[0].message.content;
 
       if (!content.includes("VI_PHẠM:") && !content.includes("QUY_TẮC_VI_PHẠM:")) {
         return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Không phát hiện vi phạm`;
@@ -116,6 +164,11 @@ class AICore {
       return content;
     } catch (error) {
       logger.error("AI_CORE", "Monitoring analysis error:", error.message);
+      
+      if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
+        logger.error("AI_CORE", "SSL Certificate Error. Consider setting NODE_TLS_REJECT_UNAUTHORIZED=0 in .env file");
+      }
+      
       return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Lỗi kết nối API: ${error.message}`;
     }
   }
@@ -128,17 +181,35 @@ class AICore {
    */
   async processChatCompletion(messages, config = {}) {
     try {
-      const response = await this.client.chat.completions.create({
+      const requestBody = {
         model: config.model || this.CoreModel,
         max_tokens: config.max_tokens || 2048,
         messages: messages,
         ...config,
-      });
+      };
+
+      if (config.enableLiveSearch) {
+        requestBody.search_parameters = {
+          mode: "auto",
+          max_search_results: 10,
+          include_citations: true,
+        };
+      }
+
+      logger.debug("AI_CORE", `Chat completion request: ${JSON.stringify(requestBody, null, 2)}`);
+
+      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
+      const response = await axiosInstance.post("/v1/chat/completions", requestBody);
 
       logger.info("AI_CORE", "Chat completion processed successfully");
-      return response.choices[0].message.content;
+      return response.data.choices[0].message.content;
     } catch (error) {
       logger.error("AI_CORE", "Chat completion error:", error.message);
+      
+      if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
+        logger.error("AI_CORE", "SSL Certificate Error. Consider setting NODE_TLS_REJECT_UNAUTHORIZED=0 in .env file");
+      }
+      
       throw new Error(`AI API Error: ${error.message}`);
     }
   }
