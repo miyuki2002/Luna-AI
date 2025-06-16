@@ -290,52 +290,7 @@ class AICore {
     return this.Model;
   }
 
-  /**
-   * Test method để kiểm tra logic shouldPerformWebSearch
-   * @param {string} prompt - Prompt để test
-   * @returns {Object} - Kết quả test với lý do
-   */
-  testWebSearchLogic(prompt) {
-    const basicKnowledgeKeywords = /(là gì|what is|define|định nghĩa|giải thích|explain|cách làm|how to|hướng dẫn|tutorial|lý thuyết|theory|khái niệm|concept|nguyên lý|principle)/i;
-    const aiPersonalKeywords = /(bạn nghĩ|ý kiến của bạn|theo bạn|bạn cảm thấy|bạn thích|bạn có thể|bạn biết cách|bạn có khả năng|bạn làm được|what do you think|in your opinion|your thoughts|how do you feel|do you like|can you|could you|are you able|do you know how|are you capable)/i;
-    const modelInfoKeywords = /(model của bạn|model của tôi|dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|phiên bản model|model version|kiến thức đến|knowledge until|dữ liệu đến|data until|dữ liệu mới nhất|latest data|thông tin mới nhất của model|model's latest information|được train|được huấn luyện đến|trained until)/i;
-    const programmingKeywords = /(code|lập trình|programming|javascript|python|html|css|react|nodejs|algorithm|thuật toán|debug|error|lỗi|syntax|cú pháp)/i;
-    const realTimeKeywords = /(hôm nay|ngày nay|tuần này|tháng này|năm nay|hiện giờ|đang diễn ra|bây giờ|lúc này|today|this week|this month|this year|right now|currently|happening now|at the moment|vừa xảy ra|just happened)/i;
-    const newsKeywords = /(tin tức|thời sự|breaking news|latest news|mới nhất|cập nhật|update|sự kiện|events|diễn biến mới|recent developments)/i;
 
-    const result = {
-      shouldSearch: this.shouldPerformWebSearch(prompt),
-      reasons: []
-    };
-
-    if (basicKnowledgeKeywords.test(prompt)) {
-      result.reasons.push("❌ Basic knowledge question - no search needed");
-    }
-    if (aiPersonalKeywords.test(prompt)) {
-      result.reasons.push("❌ AI personal question - no search needed");
-    }
-    if (modelInfoKeywords.test(prompt)) {
-      result.reasons.push("❌ Model/training data question - no search needed");
-    }
-    if (programmingKeywords.test(prompt)) {
-      result.reasons.push("❌ Programming question - no search needed");
-    }
-    if (realTimeKeywords.test(prompt)) {
-      result.reasons.push("✅ Real-time information - search needed");
-    }
-    if (newsKeywords.test(prompt) && !modelInfoKeywords.test(prompt)) {
-      result.reasons.push("✅ News/updates (not about model) - search needed");
-    }
-    if (newsKeywords.test(prompt) && modelInfoKeywords.test(prompt)) {
-      result.reasons.push("❌ News about model - no search needed");
-    }
-
-    if (result.reasons.length === 0) {
-      result.reasons.push("ℹ️ No specific keywords matched");
-    }
-
-    return result;
-  }
 
   /**
    * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không
@@ -367,8 +322,7 @@ class AICore {
 
     if (basicKnowledgeKeywords.test(prompt) || 
         aiPersonalKeywords.test(prompt) || 
-        modelInfoKeywords.test(prompt) ||
-        programmingKeywords.test(prompt)) {
+        modelInfoKeywords.test(prompt)) {
       return false;
     }
 
@@ -378,7 +332,8 @@ class AICore {
       (currentPeopleKeywords.test(prompt) && realTimeKeywords.test(prompt)) ||
       marketKeywords.test(prompt) ||
       currentWeatherKeywords.test(prompt) ||
-      sportsResultsKeywords.test(prompt)
+      sportsResultsKeywords.test(prompt) ||
+      programmingKeywords.test(prompt)
     );
   }
 }
