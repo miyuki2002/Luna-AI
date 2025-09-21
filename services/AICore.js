@@ -6,16 +6,16 @@ const prompts = require("../config/prompts.js");
 
 class AICore {
   constructor() {
-    this.apiKey = process.env.XAI_API_KEY;
+    this.apiKey = process.env.API_KEY;
     if (!this.apiKey) {
       throw new Error("API_KEY không được đặt trong biến môi trường");
     }
 
     this.systemPrompt = prompts.system.main;
-    this.CoreModel = "grok-3-fast-latest";
-    this.imageModel = "grok-2-vision";
-    this.thinkingModel = "grok-3-mini-latest";
-    this.Model = "luna-v2";
+    this.CoreModel = "sonar";
+    this.imageModel = "sonar";
+    this.thinkingModel = "sonar";
+    this.Model = "luna-v3";
 
     logger.info("AI_CORE", `Initialized with models: ${this.CoreModel}, ${this.thinkingModel}`);
   }
@@ -27,7 +27,7 @@ class AICore {
     const https = require("https");
     
     const options = {
-      baseURL: baseURL || "https://api.x.ai",
+      baseURL: baseURL || "https://api.perplexity.ai/",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
@@ -67,66 +67,97 @@ class AICore {
   }
 
   /**
-   * Thực hiện tìm kiếm web bằng Live Search
-   * @param {string} query - Truy vấn tìm kiếm
-   * @returns {Promise<Object>} - Kết quả tìm kiếm và metadata
-   */
-  async performLiveSearch(query) {
-    try {
-      logger.info("AI_CORE", `Performing Live Search: "${query}"`);
+ * @param {string} query - Truy vấn tìm kiếm
+ * @param {Object} options - Tùy chọn tìm kiếm (optional)
+ * @returns {Promise<Object>} - Kết quả tìm kiếm và metadata
+ */
+async performLiveSearch(query, options = {}) {
+  try {
+    logger.info("AI_CORE", `Performing Sonar Search: "${query}"`);
 
-      const searchPrompt = prompts.web.liveSearchPrompt.replace("${query}", query);
+    const requestBody = {
+      model: options.model || "sonar-pro", // Thay thế this.CoreModel
+      max_tokens: options.max_tokens || 2048,
+      temperature: options.temperature || 0.1,
+      messages: [
+        {
+          role: "user",
+          content: query 
+        }
+      ],
+      return_images: options.return_images !== false,
+      return_related_questions: options.return_related_questions !== false,
+      search_recency_filter: options.search_recency_filter || "auto",
+      search_domain_filter: options.search_domain_filter || undefined,
+      enable_search_classifier: options.enable_search_classifier !== false,
+      disable_search: options.disable_search || false,
+    };
 
-      // Sử dụng axios trực tiếp để đảm bảo extra_body được xử lý đúng
-      const requestBody = {
-        model: this.CoreModel,
-        max_tokens: 2048,
-        messages: [
-          {
-            role: "system",
-            content: prompts.web.liveSearchSystem,
-          },
-          {
-            role: "user",
-            content: searchPrompt,
-          },
-        ],
-        search_parameters: {
-          mode: "auto",
-          max_search_results: 10,
-          include_citations: true,
-        },
-      };
+    logger.debug("AI_CORE", `Sonar Search request body: ${JSON.stringify(requestBody, null, 2)}`);
 
-      logger.debug("AI_CORE", `Live Search request body: ${JSON.stringify(requestBody, null, 2)}`);
-
-      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
-      const response = await axiosInstance.post("/v1/chat/completions", requestBody);
-
-      logger.debug("AI_CORE", `Live Search response: ${JSON.stringify(response.data, null, 2)}`);
-      logger.info("AI_CORE", "Live Search completed successfully");
-
-      return {
-        content: response.data.choices[0].message.content,
-        hasSearchResults: true,
-        searchMetadata: response.data.search_metadata || null,
-      };
-    } catch (error) {
-      logger.error("AI_CORE", "Live Search error:", error.message);
-      logger.error("AI_CORE", "Live Search error details:", error);
-      
-      if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
-        logger.error("AI_CORE", "SSL Certificate Error. Consider setting NODE_TLS_REJECT_UNAUTHORIZED=0 in .env file");
+    const axiosInstance = this.createSecureAxiosInstance("https://api.perplexity.ai/");
+    const response = await axiosInstance.post("/chat/completions", requestBody, {
+      headers: {
+        "Authorization": `Bearer ${process.env.API_KEY}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
       }
-      
-      return {
-        content: null,
-        hasSearchResults: false,
-        searchMetadata: null,
-        error: error.message,
-      };
+    });
+
+    logger.debug("AI_CORE", `Sonar Search response: ${JSON.stringify(response.data, null, 2)}`);
+    logger.info("AI_CORE", "Sonar Search completed successfully");
+
+    // Parse response từ Sonar API
+    const choice = response.data.choices[0];
+    const citations = response.data.citations || [];
+    const web_results = response.data.web_results || [];
+    const related_questions = response.data.related_questions || [];
+    const images = response.data.images || [];
+
+    return {
+      content: choice.message.content,
+      hasSearchResults: web_results.length > 0 || citations.length > 0,
+      searchMetadata: {
+        citations: citations,
+        web_results: web_results,
+        related_questions: related_questions,
+        images: images,
+        usage: response.data.usage,
+        model: response.data.model,
+        search_enabled: !requestBody.disable_search,
+        total_results: web_results.length,
+        search_time: response.data.created
+      }
+    };
+  } catch (error) {
+    logger.error("AI_CORE", "Sonar Search error:", error.message);
+    logger.error("AI_CORE", "Sonar Search error details:", error);
+    
+    // Handle SSL certificate errors
+    if (error.code === 'CERT_HAS_EXPIRED' || 
+        error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || 
+        error.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
+      logger.error("AI_CORE", "SSL Certificate Error. Consider setting NODE_TLS_REJECT_UNAUTHORIZED=0 in .env file");
     }
+    
+    // Handle API specific errors
+    if (error.response?.status === 401) {
+      logger.error("AI_CORE", "Invalid API key. Check PERPLEXITY_API_KEY in environment variables");
+    } else if (error.response?.status === 429) {
+      logger.error("AI_CORE", "Rate limit exceeded. Please try again later");
+    } else if (error.response?.status === 400) {
+      logger.error("AI_CORE", "Bad request. Check request parameters:", error.response.data);
+    }
+    
+    return {
+      content: null,
+      hasSearchResults: false,
+      searchMetadata: null,
+      error: error.message,
+      errorCode: error.response?.status || 'UNKNOWN_ERROR'
+    };
   }
+}
 
   /**
    * Phân tích tin nhắn cho chức năng giám sát
@@ -152,8 +183,8 @@ class AICore {
         ],
       };
 
-      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
-      const response = await axiosInstance.post("/v1/chat/completions", requestBody);
+      const axiosInstance = this.createSecureAxiosInstance("https://api.perplexity.ai/");
+      const response = await axiosInstance.post("/chat/completions", requestBody);
 
       const content = response.data.choices[0].message.content;
 
@@ -198,8 +229,8 @@ class AICore {
 
       logger.debug("AI_CORE", `Chat completion request: ${JSON.stringify(requestBody, null, 2)}`);
 
-      const axiosInstance = this.createSecureAxiosInstance("https://api.x.ai");
-      const response = await axiosInstance.post("/v1/chat/completions", requestBody);
+      const axiosInstance = this.createSecureAxiosInstance("https://api.perplexity.ai/");
+      const response = await axiosInstance.post("/chat/completions", requestBody);
 
       logger.info("AI_CORE", "Chat completion processed successfully");
       return response.data.choices[0].message.content;
