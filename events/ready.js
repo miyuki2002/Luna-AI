@@ -8,6 +8,7 @@ const ownerService = require('../services/ownerService.js');
 // const { initDashboard } = require('./dashboard.js');
 // const messageMonitor = require('../services/messageMonitor.js');
 const logger = require('../utils/logger.js');
+const AutoUpdateService = require('../services/AutoUpdateService');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -18,6 +19,26 @@ async function startbot(client, loadCommands) {
     ███████╗╚██████╔╝██║ ╚████║██║  ██║
     ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝
     `);
+
+    try {
+      logger.info('SYSTEM', 'Khởi chạy Luna Bot...');
+      
+      const autoUpdateService = new AutoUpdateService();
+      const currentVersion = autoUpdateService.getCurrentVersion();
+      logger.info('SYSTEM', `Version hiện tại: v${currentVersion}`);
+      
+      const hasUpdate = await autoUpdateService.checkAndUpdate();
+      
+      if (hasUpdate) {
+        return;
+      }
+      
+      logger.info('SYSTEM', 'Tiếp tục khởi động bot...');
+      
+    } catch (error) {
+      logger.error('SYSTEM', `Lỗi khi auto-update:`, error);
+      logger.info('SYSTEM', `Tiếp tục khởi động bot bình thường do lỗi auto-update`);
+    }
 
     try {
       logger.info('SYSTEM', `Đang kết nối đến MongoDB...`);

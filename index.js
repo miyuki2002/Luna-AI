@@ -13,7 +13,6 @@ const { startbot } = require("./events/ready");
 const { setupGuildHandlers } = require("./handlers/guildHandler");
 const logger = require("./utils/logger.js");
 
-// Tạo một Discord client mới
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
