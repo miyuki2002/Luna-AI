@@ -268,6 +268,12 @@ class ConversationService {
         return prompts.trainingData.response;
       }
 
+      // Kiểm tra câu hỏi về model info/version
+      if (prompts.modelInfo.keywords.test(prompt)) {
+        logger.info("CONVERSATION_SERVICE", "Model info question detected, returning direct response");
+        return prompts.modelInfo.response;
+      }
+
       const shouldSearch = AICore.shouldPerformWebSearch(prompt);
       let searchResults = null;
 
