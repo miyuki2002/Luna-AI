@@ -208,7 +208,7 @@ class SystemService {
    * Validate environment variables
    */
   validateEnvironment() {
-    const required = ["XAI_API_KEY"];
+    const required = ["API_KEY"];
     const optional = ["GRADIO_IMAGE_SPACE", "CUSTOM_CA_CERT_PATH", "NODE_TLS_REJECT_UNAUTHORIZED"];
     
     const missing = [];
