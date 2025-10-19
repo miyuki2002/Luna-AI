@@ -91,6 +91,32 @@ async function handleChatRequest(message, content) {
   await message.channel.sendTyping();
 
   try {
+    // Kiểm tra giới hạn token trước khi xử lý
+    const TokenService = require('../services/TokenService.js');
+    const userId = message.author.id;
+    const tokenCheck = await TokenService.canUseTokens(userId, 2000); // Ước tính 2000 tokens
+
+    if (!tokenCheck.allowed) {
+      const roleNames = {
+        user: 'Người dùng',
+        helper: 'Helper',
+        admin: 'Admin',
+        owner: 'Owner'
+      };
+      
+      await message.reply(
+        `**Giới hạn Token**\n\n` +
+        `Bạn đã sử dụng hết giới hạn token hàng ngày!\n\n` +
+        `**Thông tin:**\n` +
+        `• Vai trò: ${roleNames[tokenCheck.role] || tokenCheck.role}\n` +
+        `• Đã sử dụng: ${tokenCheck.current.toLocaleString()} tokens\n` +
+        `• Giới hạn: ${tokenCheck.limit.toLocaleString()} tokens/ngày\n` +
+        `• Còn lại: ${tokenCheck.remaining.toLocaleString()} tokens\n\n` +
+        `Giới hạn sẽ được reset vào ngày mai. Vui lòng quay lại sau!`
+      );
+      return;
+    }
+
     const response = await NeuralNetworks.getCompletion(content, message);
 
     // Chia phản hồi nếu nó quá dài cho Discord
@@ -159,9 +185,39 @@ async function handleCodeRequest(message, prompt) {
   await message.channel.sendTyping();
 
   try {
-    const codeResponse = await NeuralNetworks.getCodeCompletion(prompt, message);
+    // Kiểm tra giới hạn token trước khi xử lý
+    const TokenService = require('../services/TokenService.js');
+    const userId = message.author.id;
+    const tokenCheck = await TokenService.canUseTokens(userId, 4000); // Code requests thường dùng nhiều tokens hơn
 
-    let formattedResponse = codeResponse;
+    if (!tokenCheck.allowed) {
+      const roleNames = {
+        user: 'Người dùng',
+        helper: 'Helper',
+        admin: 'Admin',
+        owner: 'Owner'
+      };
+      
+      await message.reply(
+        `**Giới hạn Token**\n\n` +
+        `Bạn đã sử dụng hết giới hạn token hàng ngày!\n\n` +
+        `**Thông tin:**\n` +
+        `• Vai trò: ${roleNames[tokenCheck.role] || tokenCheck.role}\n` +
+        `• Đã sử dụng: ${tokenCheck.current.toLocaleString()} tokens\n` +
+        `• Giới hạn: ${tokenCheck.limit.toLocaleString()} tokens/ngày\n` +
+        `• Còn lại: ${tokenCheck.remaining.toLocaleString()} tokens\n\n` +
+        `Giới hạn sẽ được reset vào ngày mai. Vui lòng quay lại sau!`
+      );
+      return;
+    }
+
+    const result = await NeuralNetworks.getCodeCompletion(prompt, message);
+    let formattedResponse = result.content || result;
+
+    // Ghi nhận token usage nếu có
+    if (result.usage && result.usage.total_tokens) {
+      await TokenService.recordTokenUsage(userId, result.usage.total_tokens, 'code');
+    }
 
     if (!formattedResponse.includes('```')) {
       formattedResponse = formatCodeResponse(formattedResponse);

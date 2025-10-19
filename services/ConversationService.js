@@ -135,7 +135,7 @@ class ConversationService {
         if (msg.role === "user" || msg.role === "assistant") {
           messageCount++;
 
-          let roleName = msg.role === "user" ? "👤 Bạn" : "🤖 Luna";
+          let roleName = msg.role === "user" ? "Bạn" : "Luna";
           let content = msg.content;
 
           if (content.length > 150) {
@@ -150,7 +150,7 @@ class ConversationService {
 
       if (request.toLowerCase().includes("ngắn gọn") || 
           request.toLowerCase().includes("tóm tắt")) {
-        analysis = `📝 **Tóm tắt cuộc trò chuyện của chúng ta**\n\n`;
+        analysis = `**Tóm tắt cuộc trò chuyện của chúng ta**\n\n`;
         analysis += `- Chúng ta đã trao đổi ${messageCount} tin nhắn\n`;
         analysis += `- Cuộc trò chuyện bắt đầu cách đây ${textUtils.formatTimeAgo(
           fullHistory[0]?.timestamp || Date.now()
@@ -163,7 +163,7 @@ class ConversationService {
         });
       } else if (request.toLowerCase().includes("đầy đủ") || 
                  request.toLowerCase().includes("chi tiết")) {
-        analysis = `📜 **Lịch sử đầy đủ cuộc trò chuyện của chúng ta**\n\n`;
+        analysis = `**Lịch sử đầy đủ cuộc trò chuyện của chúng ta**\n\n`;
 
         const maxDisplayMessages = Math.min(conversationSummary.length, 15);
         for (let i = conversationSummary.length - maxDisplayMessages; i < conversationSummary.length; i++) {
@@ -171,10 +171,10 @@ class ConversationService {
         }
 
         if (conversationSummary.length > maxDisplayMessages) {
-          analysis = `💬 *[${conversationSummary.length - maxDisplayMessages} tin nhắn trước đó không được hiển thị]*\n\n` + analysis;
+          analysis = `*[${conversationSummary.length - maxDisplayMessages} tin nhắn trước đó không được hiển thị]*\n\n` + analysis;
         }
       } else {
-        analysis = `💭 **Tóm tắt trí nhớ của cuộc trò chuyện**\n\n`;
+        analysis = `**Tóm tắt trí nhớ của cuộc trò chuyện**\n\n`;
         analysis += `- Chúng ta đã trao đổi ${messageCount} tin nhắn\n`;
         analysis += `- Các chủ đề chính: ${textUtils.identifyMainTopics(fullHistory).join(", ")}\n\n`;
 
@@ -185,7 +185,7 @@ class ConversationService {
         });
       }
 
-      analysis += "\n💫 *Lưu ý: Mình vẫn nhớ toàn bộ cuộc trò chuyện của chúng ta và có thể trả lời dựa trên ngữ cảnh đó.*";
+      analysis += "\n*Lưu ý: Mình vẫn nhớ toàn bộ cuộc trò chuyện của chúng ta và có thể trả lời dựa trên ngữ cảnh đó.*";
 
       return analysis;
     } catch (error) {
@@ -199,7 +199,7 @@ class ConversationService {
    */
   async formatResponseContent(content, isNewConversation, searchResult) {
     if (searchResult && searchResult.hasSearchResults) {
-      content = `🔍 ${content}`;
+      content = `${content}`;
       content += `\n\n*Thông tin được cập nhật từ Live Search.*`;
 
       if (searchResult.searchMetadata) {
@@ -278,10 +278,10 @@ class ConversationService {
       let searchResults = null;
 
       if (shouldSearch) {
-        logger.info("CONVERSATION", `🔍 Using Live Search for: "${prompt.substring(0, 50)}..."`);
+        logger.info("CONVERSATION", `Using Live Search for: "${prompt.substring(0, 50)}..."`);
         searchResults = await AICore.performLiveSearch(prompt);
       } else {
-        logger.info("CONVERSATION", `💭 Using model knowledge for: "${prompt.substring(0, 50)}..."`);
+        logger.info("CONVERSATION", `Using model knowledge for: "${prompt.substring(0, 50)}..."`);
       }
 
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
@@ -357,14 +357,24 @@ class ConversationService {
       }
 
       // Gọi AI Core để xử lý
-      const content = await AICore.processChatCompletion(messages, {
+      const result = await AICore.processChatCompletion(messages, {
         model: additionalConfig.model || AICore.CoreModel,
         max_tokens: additionalConfig.max_tokens || 2048,
         enableLiveSearch: searchResult && searchResult.hasSearchResults,
         ...additionalConfig,
       });
 
+      const content = result.content;
+      const tokenUsage = result.usage;
+
       logger.info("CONVERSATION_SERVICE", `Chat completion processed for userId: ${userId}`);
+      logger.debug("CONVERSATION_SERVICE", `Token usage: ${JSON.stringify(tokenUsage)}`);
+
+      // Ghi nhận token usage
+      if (tokenUsage && tokenUsage.total_tokens) {
+        const TokenService = require('./TokenService.js');
+        await TokenService.recordTokenUsage(userId, tokenUsage.total_tokens, 'chat');
+      }
 
       await conversationManager.addMessage(userId, "assistant", content);
       const formattedContent = await this.formatResponseContent(content, isNewConversation, searchResult);
