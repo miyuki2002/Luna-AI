@@ -12,9 +12,9 @@ class AICore {
     }
 
     this.systemPrompt = prompts.system.main;
-    this.CoreModel = "sonar";
-    this.imageModel = "sonar";
-    this.thinkingModel = "sonar";
+    this.CoreModel = "sonar-pro";
+    this.imageModel = "sonar-pro";
+    this.thinkingModel = "sonar-reasoning";
     this.Model = "luna-v3";
 
     logger.info("AI_CORE", `Initialized with models: ${this.CoreModel}, ${this.thinkingModel}`);
@@ -208,7 +208,7 @@ async performLiveSearch(query, options = {}) {
    * Xử lý chat completion với API
    * @param {Array} messages - Lịch sử tin nhắn
    * @param {Object} config - Cấu hình API
-   * @returns {Promise<string>} - Phản hồi từ API
+   * @returns {Promise<Object>} - Phản hồi từ API với thông tin token usage
    */
   async processChatCompletion(messages, config = {}) {
     try {
@@ -233,7 +233,18 @@ async performLiveSearch(query, options = {}) {
       const response = await axiosInstance.post("/chat/completions", requestBody);
 
       logger.info("AI_CORE", "Chat completion processed successfully");
-      return response.data.choices[0].message.content;
+      
+      // Trích xuất token usage từ response
+      const tokenUsage = response.data.usage || {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0
+      };
+
+      return {
+        content: response.data.choices[0].message.content,
+        usage: tokenUsage
+      };
     } catch (error) {
       logger.error("AI_CORE", "Chat completion error:", error.message);
       
@@ -248,7 +259,7 @@ async performLiveSearch(query, options = {}) {
   /**
    * Nhận phản hồi với quá trình suy nghĩ từ API
    * @param {string} prompt - Câu hỏi từ người dùng
-   * @returns {Promise<string>} - Phản hồi với quá trình suy nghĩ
+   * @returns {Promise<Object>} - Phản hồi với quá trình suy nghĩ và token usage
    */
   async getThinkingResponse(prompt) {
     try {
@@ -266,15 +277,19 @@ async performLiveSearch(query, options = {}) {
         },
       ];
 
-      let content = await this.processChatCompletion(messages, {
+      const result = await this.processChatCompletion(messages, {
         model: this.thinkingModel,
       });
 
       // Format thinking response
-      content = content.replace("[THINKING]", "💭 **Quá trình suy nghĩ:**\n");
-      content = content.replace("[ANSWER]", "\n\n✨ **Câu trả lời:**\n");
+      let content = result.content;
+      content = content.replace("[THINKING]", "**Quá trình suy nghĩ:**\n");
+      content = content.replace("[ANSWER]", "\n\n**Câu trả lời:**\n");
 
-      return content;
+      return {
+        content,
+        usage: result.usage
+      };
     } catch (error) {
       logger.error("AI_CORE", "Thinking response error:", error.message);
       throw error;
@@ -284,7 +299,7 @@ async performLiveSearch(query, options = {}) {
   /**
    * Nhận phản hồi mã từ API
    * @param {string} prompt - Prompt của người dùng
-   * @returns {Promise<string>} - Phản hồi mã từ API
+   * @returns {Promise<Object>} - Phản hồi mã từ API với token usage
    */
   async getCodeCompletion(prompt) {
     try {
@@ -332,12 +347,12 @@ async performLiveSearch(query, options = {}) {
         },
       ];
 
-      const content = await this.processChatCompletion(messages, {
+      const result = await this.processChatCompletion(messages, {
         model: this.thinkingModel,
         max_tokens: 1000,
       });
 
-      const analysisResult = JSON.parse(content);
+      const analysisResult = JSON.parse(result.content);
       logger.info("AI_CORE", "Content analysis completed");
 
       return analysisResult;
@@ -374,12 +389,12 @@ async performLiveSearch(query, options = {}) {
         },
       ];
 
-      const translatedText = await this.processChatCompletion(messages, {
+      const result = await this.processChatCompletion(messages, {
         model: this.thinkingModel,
         max_tokens: 1024,
       });
 
-      const cleanTranslation = translatedText.trim().replace(/^["']|["']$/g, "");
+      const cleanTranslation = result.content.trim().replace(/^["']|["']$/g, "");
       logger.info("AI_CORE", "Translation completed");
 
       return cleanTranslation;

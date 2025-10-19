@@ -122,6 +122,15 @@ class StorageDB {
         logger.error('DATABASE', 'Lỗi khi tạo chỉ mục cho hệ thống giám sát:', error);
       }
 
+      // Khởi tạo hệ thống token limit
+      try {
+        const TokenService = require('./TokenService.js');
+        await TokenService.initializeCollection();
+        logger.info('DATABASE', 'Đã khởi tạo hệ thống token limit');
+      } catch (error) {
+        logger.error('DATABASE', 'Lỗi khi khởi tạo hệ thống token limit:', error);
+      }
+
       logger.info('DATABASE', 'Đã thiết lập collections và indexes MongoDB');
     } catch (error) {
       logger.error('DATABASE', 'Lỗi khi thiết lập collections MongoDB:', error);
