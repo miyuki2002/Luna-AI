@@ -10,7 +10,7 @@
 
 Luna là một bot Discord được hỗ trợ bởi API Anthropic/xAI. Cô ấy có tính cách thân thiện, gần gũi và có thể hỗ trợ nhiều nhiệm vụ bao gồm trò chuyện, tạo mã nguồn và tạo hình ảnh. Bot tích hợp hệ thống cấp độ và thành tựu để tạo động lực tương tác với người dùng.
 
-**🚀 Phiên bản 1.0.4**: Kiến trúc mới được tái cấu trúc hoàn toàn với các service module riêng biệt, dễ bảo trì và nâng cấp hơn.
+**🚀 Phiên bản 1.1.0**: Hệ thống quản lý token và vai trò người dùng với giới hạn theo cấp bậc.
 
 ## Tính Năng
 
@@ -23,6 +23,8 @@ Luna là một bot Discord được hỗ trợ bởi API Anthropic/xAI. Cô ấy
 - 🎨 **Profile Card**: Thẻ thông tin người dùng với thiết kế hiện đại.
 - 💾 **Đồng Bộ Dữ Liệu**: Lưu trữ thông tin người dùng và máy chủ với MongoDB.
 - 🔧 **Kiến Trúc Module**: Dễ dàng bảo trì, nâng cấp và thay đổi nhà cung cấp AI.
+- 🎯 **Quản Lý Token**: Hệ thống giới hạn token theo vai trò người dùng.
+- 👥 **Hệ Thống Vai Trò**: Phân quyền 4 cấp (Owner, Admin, Helper, User).
 
 ## Kiến Trúc Mới (v1.0.4)
 
@@ -53,6 +55,12 @@ Luna đã được tái cấu trúc hoàn toàn với kiến trúc module hóa:
 - Duy trì backward compatibility hoàn toàn
 - Wrapper methods cho existing code
 
+### 🔐 **TokenService.js** - Quản lý Token
+- Theo dõi và giới hạn token theo vai trò
+- Quản lý vai trò người dùng (Owner, Admin, Helper, User)
+- Tự động reset giới hạn hàng ngày
+- Thống kê chi tiết theo ngày/tuần/tháng
+
 ## Cài Đặt
 
 1. Clone repository này
@@ -66,14 +74,22 @@ Luna đã được tái cấu trúc hoàn toàn với kiến trúc module hóa:
 Luna/
 ├── assets/         # Tài nguyên (hình ảnh, font)
 ├── commands/       # Các lệnh slash
+│   ├── admin/      # Lệnh quản trị
+│   │   ├── setrole.js      # Đặt vai trò người dùng
+│   │   ├── tokenstats.js   # Thống kê token
+│   │   └── resettoken.js   # Reset token
+│   ├── AI/         # Lệnh AI
+│   ├── info/       # Lệnh thông tin
+│   └── social/     # Lệnh xã hội
 ├── events/         # Event handlers
 ├── handlers/       # Logic xử lý
 ├── services/       # Các dịch vụ (DB, AI, Canvas)
-│   ├── AICore.js           # 🧠 Trung tâm AI và API
-│   ├── ImageService.js     # 🖼️ Dịch vụ tạo hình ảnh
-│   ├── ConversationService.js # 💬 Quản lý hội thoại
-│   ├── SystemService.js    # ⚙️ Tiện ích hệ thống
-│   └── NeuralNetworks.js   # 🎯 Orchestrator chính
+│   ├── AICore.js               # Trung tâm AI và API
+│   ├── ImageService.js         # Dịch vụ tạo hình ảnh
+│   ├── ConversationService.js  # Quản lý hội thoại
+│   ├── SystemService.js        # Tiện ích hệ thống
+│   ├── TokenService.js         # Quản lý token và vai trò
+│   └── NeuralNetworks.js       # Orchestrator chính
 └── utils/          # Tiện ích
 ```
 
@@ -84,9 +100,34 @@ Luna/
 - Gõ `/help` để xem các chức năng của bot.
 - Tương tác với bot thường xuyên để tăng cấp độ và nhận thành tựu.
 - Sử dụng `/profile` để xem thẻ thông tin của bạn.
+- Sử dụng `/tokenstats user` để xem mức sử dụng token của bạn.
+
+## Hệ Thống Token và Vai Trò
+
+Luna sử dụng hệ thống token để quản lý việc sử dụng API, với giới hạn theo vai trò:
+
+### Vai Trò
+- **Owner**: Không giới hạn token, toàn quyền quản lý
+- **Admin**: 100,000 tokens/ngày, quản lý người dùng
+- **Helper**: 50,000 tokens/ngày, hỗ trợ nâng cao
+- **User**: 10,000 tokens/ngày (mặc định)
+
+### Tính Năng
+- Tự động reset giới hạn mỗi 24 giờ
+- Theo dõi sử dụng theo ngày, tuần, tháng
+- Lịch sử 100 giao dịch gần nhất
+- Thông báo khi đạt giới hạn
+- Thống kê chi tiết cho admin
+
+### Cấu Hình Owner
+Thêm Discord User ID của bạn vào file `.env`:
+```env
+OWNER_ID=your_discord_user_id
+```
 
 ## Các Lệnh
 
+### Lệnh Cơ Bản
 | Lệnh | Mô Tả |
 |---------|-------------|
 | `/help` | Hiển thị các lệnh có sẵn |
@@ -95,6 +136,14 @@ Luna/
 | `/image` | Tạo hình ảnh bằng các lệnh đơn giản |
 | `/reset` | Đặt lại cuộc trò chuyện với bot |
 | `/profile` | Xem thẻ thông tin người dùng |
+
+### Lệnh Quản Trị (Admin/Owner)
+| Lệnh | Mô Tả | Quyền |
+|---------|-------------|---------|
+| `/setrole` | Đặt vai trò cho người dùng | Owner, Admin |
+| `/tokenstats user` | Xem thống kê token của người dùng | Tất cả (chỉ xem của mình), Owner/Admin (xem của người khác) |
+| `/tokenstats system` | Xem thống kê token toàn hệ thống | Owner, Admin |
+| `/resettoken` | Reset giới hạn token cho người dùng | Owner, Admin |
 
 ## Lợi Ích Kiến Trúc Mới
 

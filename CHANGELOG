@@ -90,3 +90,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Monolithic NeuralNetworks.js structure (converted to lightweight orchestrator)
 - Code comments and documentation blocks (cleaned up for production)
+
+## [1.1.0] - 2025-10-19
+### Added
+- **Token Limit System**: Comprehensive token usage tracking and management
+  - Role-based token limits (Owner: unlimited, Admin: 100k/day, Helper: 50k/day, User: 10k/day)
+  - Automatic daily reset of token limits
+  - Token usage tracking by day, week, month, and total
+  - History of last 100 transactions per user
+- **User Role System**: Four-tier role hierarchy
+  - Owner: Full system access with unlimited tokens
+  - Admin: User management and system statistics access
+  - Helper: Enhanced token limits for support tasks
+  - User: Default role with standard limits
+- **TokenService.js**: New service for token and role management
+  - User token data initialization and tracking
+  - Role assignment and validation
+  - Token usage recording and limit checking
+  - System-wide statistics and reporting
+- **Admin Commands**:
+  - `/setrole`: Set user roles (Owner/Admin only)
+  - `/tokenstats user`: View individual user token statistics
+  - `/tokenstats system`: View system-wide token statistics (Owner/Admin only)
+  - `/resettoken`: Reset token limits for users (Owner/Admin only)
+- Token limit warnings with detailed information display
+- MongoDB collection for user token data storage
+- Comprehensive token usage logging and monitoring
+
+### Changed
+- Updated API configuration to use Perplexity AI
+- Migrated from X.AI to Perplexity API for improved performance
+- Enhanced AICore to track and return token usage from API responses
+- Modified ConversationService to record token usage automatically
+- Updated messageHandler to check token limits before processing requests
+- Improved user profile structure with role field
+- Simplified owner configuration to single OWNER_ID
+- Removed all emoji icons from token system messages and embeds
+
+### Technical
+- Token data stored in MongoDB with automatic cleanup
+- Automatic token limit reset after 24 hours
+- Role-based access control for admin commands
+- Token usage estimation for different request types
+- Integration with existing profile and storage systems
+- Secure role assignment with owner-only restrictions
