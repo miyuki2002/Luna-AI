@@ -22,7 +22,7 @@ const client = new Client({
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessageReactions,
 	],
-	partials: [Partials.Channel, Partials.Message, Partials.Reaction], // Thêm partials để xử lý tin nhắn cũ
+	partials: [Partials.Channel, Partials.Message, Partials.Reaction], 
 });
 
 client.commands = new Collection();
