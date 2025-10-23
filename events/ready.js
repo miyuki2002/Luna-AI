@@ -1,3 +1,4 @@
+// events/ready.js
 const NeuralNetworks = require('../services/NeuralNetworks');
 const mongoClient = require('../services/mongoClient.js');
 const storageDB = require('../services/storagedb.js');
@@ -5,7 +6,7 @@ const initSystem = require('../services/initSystem.js');
 const ProfileDB = require('../services/profiledb.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
 const ownerService = require('../services/ownerService.js');
-const { setupGuildHandlers } = require('../handlers/guildHandler'); // ← THÊM DÒNG NÀY
+const { setupGuildHandlers } = require('../handlers/guildHandler');
 const logger = require('../utils/logger.js');
 const AutoUpdateService = require('../services/AutoUpdateService');
 
@@ -48,7 +49,7 @@ async function startbot(client, loadCommands) {
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo kết nối MongoDB:', error);
       initSystem.markReady('mongodb');
-      logger.warn('SYSTEM', 'Bot sẽ hoạt động mà không có khả năng lưu trữ lâu dài. Một số tính năng có thể không hoạt động chính xác.');
+      logger.warn('SYSTEM', 'Bot sẽ hoạt động mà không có khả năng lưu trữ lâu dài.');
     }
 
     try {
@@ -118,14 +119,18 @@ async function startbot(client, loadCommands) {
     // ========================================
     try {
       logger.info('SYSTEM', '=== BẮT ĐẦU THIẾT LẬP GUILD HANDLERS VÀ DEPLOY COMMANDS ===');
+      
+      // Phải await để đợi hàm async hoàn thành
       await setupGuildHandlers(client);
+      
       logger.info('SYSTEM', '✓ Đã thiết lập guild handlers và deploy commands thành công!');
     } catch (error) {
       logger.error('SYSTEM', '❌ Lỗi khi thiết lập guild handlers:', error);
+      logger.error('SYSTEM', 'Stack trace:', error.stack);
     }
     // ========================================
 
-
+    // Thiết lập trạng thái cho bot
     client.user.setPresence({
       activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'
