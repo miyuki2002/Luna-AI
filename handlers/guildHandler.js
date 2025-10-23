@@ -1,7 +1,7 @@
 const { REST, Routes } = require('discord.js');
 const mongoClient = require('../services/mongoClient.js');
 const initSystem = require('../services/initSystem.js');
-const { getCommandsJson, loadCommands } = require('./commandHandler');
+const { getCommandsJson, loadCommands, reloadCommands } = require('./commandHandler');
 const logger = require('../utils/logger.js');
 
 /**
@@ -136,7 +136,7 @@ async function handleGuildJoin(guild, commands) {
     }
 
     // Triển khai slash commands cho guild mới
-    await deployCommandsToGuild(guild.id, commandsToRegister);
+    await deployCommandsToGuild(guild.id, commandsToRegister, guild.client);
     logger.info('GUILD', `Đã triển khai các lệnh slash cho server: ${guild.name}`);
 
     // Thông báo cho chủ sở hữu server hoặc kênh mặc định nếu có thể
@@ -169,8 +169,9 @@ function handleGuildLeave(guild) {
  * Triển khai slash commands cho một guild cụ thể
  * @param {string} guildId - ID của guild cần triển khai lệnh
  * @param {Array} commands - Mảng các lệnh cần triển khai (tùy chọn)
+ * @param {Discord.Client} client - Discord client (tùy chọn)
  */
-async function deployCommandsToGuild(guildId, existingCommands = null) {
+async function deployCommandsToGuild(guildId, existingCommands = null, client = null) {
   try {
     const token = process.env.DISCORD_TOKEN;
     const clientId = process.env.CLIENT_ID;
@@ -187,7 +188,14 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
     const rest = new REST({ version: '10' }).setToken(token);
 
     // Sử dụng commands từ cache hoặc từ tham số
-    const commands = existingCommands || getCommandsJson(client);
+    let commands = existingCommands;
+    if (!commands && client) {
+      // Force reload commands để đảm bảo có commands mới nhất
+      logger.info('GUILD', 'Đang reload commands để đảm bảo có commands mới nhất...');
+      reloadCommands(client);
+      commands = getCommandsJson(client);
+      logger.info('GUILD', `Đã load ${commands ? commands.length : 0} commands cho guild ${guildId}`);
+    }
 
     // Kiểm tra xem có lệnh nào để triển khai không
     if (!commands || commands.length === 0) {
@@ -197,6 +205,10 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
 
     // Triển khai lệnh đến guild cụ thể
     logger.info('GUILD', `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
+    
+    // Log danh sách commands để debug
+    const commandNames = commands.map(cmd => cmd.name).join(', ');
+    logger.info('GUILD', `Danh sách commands: ${commandNames}`);
 
     const data = await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
@@ -283,7 +295,7 @@ function setupGuildHandlers(client, commands = null) {
         // Triển khai lệnh cho guild
         if (commandsToRegister && commandsToRegister.length > 0) {
           try {
-            await deployCommandsToGuild(guild.id, commandsToRegister);
+            await deployCommandsToGuild(guild.id, commandsToRegister, client);
             deployCount++;
           } catch (error) {
             logger.error('GUILD', `Lỗi khi triển khai lệnh cho server ${guild.name}:`, error);
@@ -312,6 +324,44 @@ function setupGuildHandlers(client, commands = null) {
   logger.info('GUILD', 'Đã đăng ký handlers cho sự kiện guild');
 }
 
+/**
+ * Force deploy commands cho tất cả guilds (dùng khi có commands mới)
+ * @param {Discord.Client} client - Discord client
+ */
+async function forceDeployCommandsToAllGuilds(client) {
+  try {
+    logger.info('GUILD', 'Bắt đầu force deploy commands cho tất cả guilds...');
+    
+    // Clear cache và reload commands
+    reloadCommands(client);
+    const commands = getCommandsJson(client);
+    
+    if (!commands || commands.length === 0) {
+      logger.warn('GUILD', 'Không có commands nào để deploy!');
+      return;
+    }
+    
+    logger.info('GUILD', `Đã load ${commands.length} commands, bắt đầu deploy...`);
+    
+    const guilds = client.guilds.cache;
+    let successCount = 0;
+    
+    for (const guild of guilds.values()) {
+      try {
+        await deployCommandsToGuild(guild.id, commands, client);
+        successCount++;
+        logger.info('GUILD', `Đã deploy commands cho guild: ${guild.name}`);
+      } catch (error) {
+        logger.error('GUILD', `Lỗi khi deploy commands cho guild ${guild.name}:`, error);
+      }
+    }
+    
+    logger.info('GUILD', `Đã deploy commands thành công cho ${successCount}/${guilds.size} guilds`);
+  } catch (error) {
+    logger.error('GUILD', 'Lỗi khi force deploy commands:', error);
+  }
+}
+
 // Export các hàm để sử dụng trong các file khác
 module.exports = {
   handleGuildJoin,
@@ -320,5 +370,6 @@ module.exports = {
   setupGuildHandlers,
   getGuildFromDB,
   updateGuildSettings,
-  storeGuildInDB
+  storeGuildInDB,
+  forceDeployCommandsToAllGuilds
 };
