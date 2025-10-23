@@ -6,8 +6,9 @@ const {
 	Events,
 	Collection,
 } = require("discord.js");
+// Import the new handler function
 const { handleMentionMessage } = require("./handlers/messageHandler");
-const { handleCommand, loadCommands } = require("./handlers/commandHandler");
+const { handleCommand, loadCommands } = require("./handlers/commandHandler"); // Removed getCommandsJson as it's not used directly here
 const { startbot } = require("./events/ready");
 const { setupGuildHandlers } = require("./handlers/guildHandler");
 const logger = require("./utils/logger.js");
@@ -16,42 +17,36 @@ const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
-		GatewayIntentBits.GuildIntegrations,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.DirectMessages,
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessageReactions,
-		GatewayIntentBits.GuildVoiceStates,
-		GatewayIntentBits.GuildPresences,
 	],
-	partials: [
-		Partials.Channel, 
-		Partials.Message, 
-		Partials.Reaction,
-		Partials.User,
-		Partials.GuildMember
-	],
+	partials: [Partials.Channel, Partials.Message, Partials.Reaction], // Thêm partials để xử lý tin nhắn cũ
 });
 
 client.commands = new Collection();
 client.features = ["EXPERIENCE_POINTS"];
 
-startbot(client, () => {
-	loadCommands(client);
-	setupGuildHandlers(client);
-});
+startbot(client, () => loadCommands(client));
+
+// Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
+setupGuildHandlers(client);
 
 client.on(Events.MessageCreate, async (message) => {
 	await handleMentionMessage(message, client);
 });
 
+// Đăng ký sự kiện interaction - sẽ được kích hoạt sau khi ready
 client.on(Events.InteractionCreate, async (interaction) => {
 	if (!interaction.isChatInputCommand()) return;
 	await handleCommand(interaction, client);
 });
 
+// Xử lý lỗi và thoát
 process.on("unhandledRejection", (error) => {
 	logger.error("SYSTEM", "Lỗi không được xử lý:", error);
 });
 
+// Đăng nhập vào Discord bằng token của ứng dụng
 client.login(process.env.DISCORD_TOKEN);

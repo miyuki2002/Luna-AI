@@ -1,6 +1,6 @@
 {
   "name": "luna",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Bot Discord hỗ trợ trò chuyện AI và tạo hình ảnh",
   "main": "index.js",
   "scripts": {
@@ -16,12 +16,12 @@
   },
   "dependencies": {
     "@gradio/client": "^1.15.2",
-    "axios": "^1.12.2",
-    "canvas": "^3.2.0",
-    "discord.js": "^14.23.2",
-    "dotenv": "^17.2.3",
-    "mongodb": "^6.20.0",
-    "simple-git": "^3.28.0"
+    "axios": "^1.10.0",
+    "canvas": "^3.1.0",
+    "discord.js": "^14.19.2",
+    "dotenv": "^16.3.1",
+    "mongodb": "^6.16.0",
+    "simple-git": "^3.26.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
