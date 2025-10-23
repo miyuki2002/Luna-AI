@@ -22,19 +22,14 @@ async function startbot(client, loadCommands) {
 
     try {
       logger.info('SYSTEM', 'Khởi chạy Luna Bot...');
-      
       const autoUpdateService = new AutoUpdateService();
       const currentVersion = autoUpdateService.getCurrentVersion();
       logger.info('SYSTEM', `Version hiện tại: v${currentVersion}`);
-      
       const hasUpdate = await autoUpdateService.checkAndUpdate();
-      
       if (hasUpdate) {
         return;
       }
-      
       logger.info('SYSTEM', 'Tiếp tục khởi động bot...');
-      
     } catch (error) {
       logger.error('SYSTEM', `Lỗi khi auto-update:`, error);
       logger.info('SYSTEM', `Tiếp tục khởi động bot bình thường do lỗi auto-update`);
@@ -64,15 +59,12 @@ async function startbot(client, loadCommands) {
     try {
       logger.info('SYSTEM', 'Đang khởi tạo hệ thống profile người dùng...');
       await storageDB.initializeProfiles();
-
       const profileCollection = await ProfileDB.getProfileCollection();
       logger.info('SYSTEM', 'Đã thiết lập collection user_profiles và cấu trúc dữ liệu');
-
       const db = mongoClient.getDb();
       await db.collection('user_profiles').createIndex({ 'data.global_xp': -1 });
       await db.collection('user_profiles').createIndex({ 'data.xp.id': 1 });
       logger.info('SYSTEM', 'Đã khởi tạo các index cho collection user_profiles');
-
       initSystem.markReady('profiles');
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo hệ thống profile người dùng:', error);
@@ -82,7 +74,6 @@ async function startbot(client, loadCommands) {
     try {
       logger.info('SYSTEM', 'Đang khởi tạo hệ thống profile guild...');
       await GuildProfileDB.setupGuildProfileIndexes();
-
       for (const [guildId, guild] of client.guilds.cache) {
         try {
           const guildProfile = await GuildProfileDB.getGuildProfile(guildId);
@@ -91,7 +82,6 @@ async function startbot(client, loadCommands) {
           logger.error('SYSTEM', `Lỗi khi tải cấu hình guild ${guild.name}:`, err);
         }
       }
-
       logger.info('SYSTEM', 'Đã khởi tạo hệ thống profile guild');
       initSystem.markReady('guildProfiles');
     } catch (error) {
@@ -118,14 +108,12 @@ async function startbot(client, loadCommands) {
 
     try {
       await setupGuildHandlers(client);
-    
       logger.info('SYSTEM', 'Đã thiết lập guild handlers và deploy commands thành công!');
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi thiết lập guild handlers:', error);
       logger.error('SYSTEM', 'Stack trace:', error.stack);
     }
 
-    // Thiết lập trạng thái cho bot
     client.user.setPresence({
       activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'

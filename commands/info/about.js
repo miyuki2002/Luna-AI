@@ -2,9 +2,7 @@ const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, ButtonBuilder, Act
 const NeuralNetworks = require('../../services/NeuralNetworks');
 const { formatUptime } = require('../../utils/string');
 const { createCanvas, loadImage } = require('canvas');
-const path = require('path');
-const os = require('os');
-const fs = require('fs');
+const packageJson = require('../../package.json');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -16,10 +14,9 @@ module.exports = {
 		
 		try {
 			// Lấy thông tin cơ bản
-			const modelName = NeuralNetworks.Model || "Anthropic Claude";
+			const modelName = NeuralNetworks.getModelName() || "Anthropic Claude";
 			const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
 			const serverCount = interaction.client.guilds.cache.size;
-			const userCount = interaction.client.users.cache.size;
 			
 			// Tạo canvas cho thẻ thông tin với kích thước nhỏ hơn để giảm tải
 			const canvas = createCanvas(900, 500);
@@ -50,16 +47,12 @@ module.exports = {
 			// Load và vẽ ảnh Luna
 			let avatarImage;
 			try {
-				// Thử tải từ URL thay vì từ file để tránh lỗi file system
 				avatarImage = await loadImage(interaction.client.user.displayAvatarURL({ extension: 'png', size: 256 }));
 			} catch (error) {
 				console.error('Error loading avatar:', error);
-				// Không xử lý lỗi ở đây, chỉ không hiển thị avatar
 			}
 			
-			// Vẽ avatar nếu tải được
 			if (avatarImage) {
-				// Vẽ avatar đơn giản không cần clip path để tránh lỗi
 				ctx.drawImage(avatarImage, 50, 50, 70, 70);
 			}
 			
@@ -100,7 +93,6 @@ module.exports = {
 			// Tạo attachment từ canvas
 			const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'about-luna.png' });
 			
-			// Tạo embed đơn giản để hiển thị ảnh
 			const aboutEmbed = new EmbedBuilder()
 				.setColor(0x9B59B6)
 				.setImage('attachment://about-luna.png')
@@ -111,7 +103,7 @@ module.exports = {
 				new ButtonBuilder()
 					.setLabel('Mời Luna')
 					.setEmoji('✉️')
-					.setURL(`https://discord.com/api/oauth2/authorize?client_id=${interaction.client.user.id}&permissions=8&scope=bot%20applications.commands`)
+					.setURL(`https://discord.com/api/oauth2/authorize?client_id=${interaction.client.user.id}&permissions=0&scope=bot%20applications.commands`)
 					.setStyle(ButtonStyle.Link),
 					
 				new ButtonBuilder()
@@ -129,7 +121,7 @@ module.exports = {
 				new ButtonBuilder()
 					.setLabel('Website')
 					.setEmoji('🌐')
-					.setURL('https://lunabot.art')
+					.setURL('https://lunaby.io.vn')
 					.setStyle(ButtonStyle.Link)
 			);
 			
@@ -150,20 +142,20 @@ module.exports = {
 				.setThumbnail(interaction.client.user.displayAvatarURL({ dynamic: true, size: 512 }))
 				.setDescription('*Luna là trợ lý AI thân thiện, luôn sẵn sàng trò chuyện và giúp đỡ bạn với khả năng trí tuệ nhân tạo tiên tiến.*')
 				.addFields(
-					{ name: 'Model AI', value: NeuralNetworks.Model || "Anthropic Claude", inline: true },
+					{ name: 'Model AI', value: NeuralNetworks.getModelName() || "Anthropic Claude", inline: true },
 					{ name: 'Runtime', value: formatUptime(process.uptime(), true), inline: true },
 					{ name: 'Servers', value: `${interaction.client.guilds.cache.size}`, inline: true },
 					{ name: 'Memory', value: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`, inline: true },
 					{ name: 'Node.js', value: process.version, inline: true }
 				)
-				.setFooter({ text: `Luna Bot v1.0.2 • Developed by s4ory` })
+				.setFooter({ text: `Luna Bot v${packageJson.version} • Developed by s4ory` })
 				.setTimestamp();
 				
 			const row = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setLabel('Mời Luna')
 					.setEmoji('✉️')
-					.setURL(`https://discord.com/api/oauth2/authorize?client_id=${interaction.client.user.id}&permissions=8&scope=bot%20applications.commands`)
+					.setURL(`https://discord.com/api/oauth2/authorize?client_id=${interaction.client.user.id}&permissions=0&scope=bot%20applications.commands`)
 					.setStyle(ButtonStyle.Link),
 				
 				new ButtonBuilder()
