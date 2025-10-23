@@ -31,7 +31,7 @@ client.features = ["EXPERIENCE_POINTS"];
 startbot(client, () => loadCommands(client));
 
 // Thiết lập xử lý sự kiện guild (tự động deploy khi bot tham gia guild mới)
-setupGuildHandlers(client);
+// setupGuildHandlers(client);
 
 client.on(Events.MessageCreate, async (message) => {
 	await handleMentionMessage(message, client);

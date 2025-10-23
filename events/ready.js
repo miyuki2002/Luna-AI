@@ -5,8 +5,7 @@ const initSystem = require('../services/initSystem.js');
 const ProfileDB = require('../services/profiledb.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
 const ownerService = require('../services/ownerService.js');
-// const { initDashboard } = require('./dashboard.js');
-// const messageMonitor = require('../services/messageMonitor.js');
+const { setupGuildHandlers } = require('../handlers/guildHandler'); // ← THÊM DÒNG NÀY
 const logger = require('../utils/logger.js');
 const AutoUpdateService = require('../services/AutoUpdateService');
 
@@ -116,46 +115,17 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('commands');
     }
 
-    /**
+    // ========================================
     try {
-      const connected = await NeuralNetworks.testConnection();
-      initSystem.markReady('api');
+      logger.info('SYSTEM', '=== BẮT ĐẦU THIẾT LẬP GUILD HANDLERS VÀ DEPLOY COMMANDS ===');
+      await setupGuildHandlers(client);
+      logger.info('SYSTEM', '✓ Đã thiết lập guild handlers và deploy commands thành công!');
     } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi kết nối đến X.AI API:', error);
-      initSystem.markReady('api');
+      logger.error('SYSTEM', '❌ Lỗi khi thiết lập guild handlers:', error);
     }
-    */
+    // ========================================
 
-    // TẠM THỜI VÔ HIỆU HÓA HỆ THỐNG GIÁM SÁT TIN NHẮN
-    /**
-    try {
-      // Khởi tạo hệ thống giám sát tin nhắn
-      console.log('🔍 Đang khởi tạo hệ thống giám sát tin nhắn...');
-      await messageMonitor.initialize(client);
-      console.log('✅ Đã khởi tạo hệ thống giám sát tin nhắn');
-      initSystem.markReady('messageMonitor');
-    } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
-      initSystem.markReady('messageMonitor');
-    }
-    */
 
-    // Khởi tạo Dashboard
-    /** 
-    try {
-      logger.info('SYSTEM', 'Đang khởi tạo Web Dashboard...');
-      const dashboard = await initDashboard(client);
-      if (dashboard) {
-        logger.info('SYSTEM', 'Đã khởi tạo Web Dashboard thành công!');
-      }
-      initSystem.markReady('dashboard');
-    } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi khởi tạo Web Dashboard:', error);
-      initSystem.markReady('dashboard');
-    }
-    */
-
-    // Thiết lập trạng thái cho bot
     client.user.setPresence({
       activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'
