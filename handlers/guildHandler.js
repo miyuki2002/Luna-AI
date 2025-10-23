@@ -136,7 +136,7 @@ async function handleGuildJoin(guild, commands) {
     }
 
     // Triển khai slash commands cho guild mới
-    await deployCommandsToGuild(guild.id, commandsToRegister);
+    await deployCommandsToGuild(guild.id, commandsToRegister, client);
     logger.info('GUILD', `Đã triển khai các lệnh slash cho server: ${guild.name}`);
 
     // Thông báo cho chủ sở hữu server hoặc kênh mặc định nếu có thể
@@ -165,7 +165,7 @@ function handleGuildLeave(guild) {
   removeGuildFromDB(guild.id);
 }
 
-async function deployCommandsToGuild(guildId, existingCommands = null) {
+async function deployCommandsToGuild(guildId, existingCommands = null, client = null) {
  try {
    const token = process.env.DISCORD_TOKEN;
    const clientId = process.env.CLIENT_ID;
@@ -276,7 +276,7 @@ async function handleGuildJoin(guild, commands) {
     }
 
     logger.info('GUILD', `Đang triển khai ${commandsToRegister.length} lệnh cho guild ${guild.name}...`);
-    await deployCommandsToGuild(guild.id, commandsToRegister);
+    await deployCommandsToGuild(guild.id, commandsToRegister, client);
     logger.info('GUILD', `Đã triển khai các lệnh slash cho server: ${guild.name}`);
 
     const defaultChannel = findDefaultChannel(guild);
@@ -353,7 +353,7 @@ function setupGuildHandlers(client, commands = null) {
         }
 
         try {
-          await deployCommandsToGuild(guild.id, commandsToRegister);
+          await deployCommandsToGuild(guild.id, commandsToRegister, client);
           deployCount++;
           logger.info('GUILD', `[${deployCount}/${guilds.size}] Deployed commands: ${guild.name}`);
           
