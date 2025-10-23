@@ -69,14 +69,15 @@ const loadCommands = (client) => {
 
 // Lấy commands dưới dạng JSON từ cache hoặc tải mới
 const getCommandsJson = (client) => {
-  if (!commandsJsonCache || !client) {
-    if (client) {
-      loadCommands(client);
-    } else {
-      logger.warn('COMMAND', 'Client không được cung cấp cho getCommandsJson');
-      return [];
-    }
+  if (!client) {
+    logger.warn('COMMAND', 'Client không được cung cấp cho getCommandsJson');
+    return [];
   }
+  
+  if (!commandsJsonCache) {
+    loadCommands(client);
+  }
+  
   return commandsJsonCache;
 };
 
