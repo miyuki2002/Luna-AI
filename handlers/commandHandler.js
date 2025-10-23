@@ -69,15 +69,9 @@ const loadCommands = (client) => {
 
 // Lấy commands dưới dạng JSON từ cache hoặc tải mới
 const getCommandsJson = (client) => {
-  if (!client) {
-    logger.warn('COMMAND', 'Client không được cung cấp cho getCommandsJson');
-    return [];
-  }
-  
   if (!commandsJsonCache) {
     loadCommands(client);
   }
-  
   return commandsJsonCache;
 };
 
@@ -107,15 +101,8 @@ const handleCommand = async (interaction, client) => {
   }
 };
 
-// Clear cache và reload commands
-const reloadCommands = (client) => {
-  commandsJsonCache = null;
-  return loadCommands(client);
-};
-
 module.exports = {
   loadCommands,
   handleCommand,
-  getCommandsJson,
-  reloadCommands
+  getCommandsJson
 };
