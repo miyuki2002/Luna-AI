@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { MessageFlags } = require('discord.js');
 const logger = require('../utils/logger.js');
 
 // Cache cho commands JSON
@@ -53,20 +52,22 @@ const loadCommands = (client) => {
   const commandsPath = path.join(__dirname, '../commands');
   const commandsJson = [];
 
+  // Xóa tất cả lệnh hiện tại
   client.commands.clear();
 
+  // Tải lệnh từ thư mục gốc và các thư mục con
   loadCommandsFromDirectory(client, commandsPath, commandsJson);
 
+  // Lưu vào cache
   commandsJsonCache = commandsJson;
 
-  logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh.`);
-  
-  const commandNames = Array.from(client.commands.keys()).join(', ');
-  logger.info('COMMAND', `Danh sách commands đã load: ${commandNames}`);
+  // Hiển thị thông tin tổng quan
+  logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh từ tất cả các danh mục.`);
 
   return client.commands.size;
 };
 
+// Lấy commands dưới dạng JSON từ cache hoặc tải mới
 const getCommandsJson = (client) => {
   if (!commandsJsonCache) {
     loadCommands(client);
@@ -74,11 +75,9 @@ const getCommandsJson = (client) => {
   return commandsJsonCache;
 };
 
+// Xử lý việc thực thi lệnh
 const handleCommand = async (interaction, client) => {
-  logger.info('COMMAND', `Nhận được interaction: ${interaction.commandName} từ ${interaction.user.tag}`);
-  
   if (!client.commands.size) {
-    logger.info('COMMAND', 'Commands chưa được load, đang load lại...');
     loadCommands(client);
   }
 
@@ -86,11 +85,8 @@ const handleCommand = async (interaction, client) => {
 
   if (!command) {
     logger.error('COMMAND', `Không tìm thấy lệnh nào khớp với ${interaction.commandName}.`);
-    logger.error('COMMAND', `Commands có sẵn: ${Array.from(client.commands.keys()).join(', ')}`);
     return;
   }
-  
-  logger.info('COMMAND', `Đã tìm thấy command: ${interaction.commandName}, đang thực thi...`);
 
   try {
     await command.execute(interaction);
@@ -98,9 +94,9 @@ const handleCommand = async (interaction, client) => {
   } catch (error) {
     logger.error('COMMAND', `Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
     if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', flags: MessageFlags.Ephemeral });
+      await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
     } else {
-      await interaction.reply({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
     }
   }
 };
