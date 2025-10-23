@@ -53,26 +53,20 @@ const loadCommands = (client) => {
   const commandsPath = path.join(__dirname, '../commands');
   const commandsJson = [];
 
-  // Xóa tất cả lệnh hiện tại
   client.commands.clear();
 
-  // Tải lệnh từ thư mục gốc và các thư mục con
   loadCommandsFromDirectory(client, commandsPath, commandsJson);
 
-  // Lưu vào cache
   commandsJsonCache = commandsJson;
 
-  // Hiển thị thông tin tổng quan
-  logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh từ tất cả các danh mục.`);
+  logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh.`);
   
-  // Log danh sách commands đã load
   const commandNames = Array.from(client.commands.keys()).join(', ');
   logger.info('COMMAND', `Danh sách commands đã load: ${commandNames}`);
 
   return client.commands.size;
 };
 
-// Lấy commands dưới dạng JSON từ cache hoặc tải mới
 const getCommandsJson = (client) => {
   if (!commandsJsonCache) {
     loadCommands(client);
@@ -80,7 +74,6 @@ const getCommandsJson = (client) => {
   return commandsJsonCache;
 };
 
-// Xử lý việc thực thi lệnh
 const handleCommand = async (interaction, client) => {
   logger.info('COMMAND', `Nhận được interaction: ${interaction.commandName} từ ${interaction.user.tag}`);
   
