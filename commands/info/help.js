@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, MessageFlags } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -68,7 +68,7 @@ module.exports = {
       if (i.user.id !== interaction.user.id) {
         return i.reply({ 
           content: 'Bạn không thể sử dụng menu này, vui lòng sử dụng lệnh `/help` để tạo menu riêng.', 
-          ephemeral: true 
+          flags: MessageFlags.Ephemeral 
         });
       }
       
@@ -77,7 +77,7 @@ module.exports = {
       if (category === 'setting' && !isOwner) {
         return i.reply({
           content: 'Bạn không có quyền xem danh mục này.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
       

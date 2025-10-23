@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } = require('discord.js');
 const NeuralNetworks = require('../../services/NeuralNetworks');
 const mongoClient = require('../../services/mongoClient');
 const packageJson = require('../../package.json');
@@ -11,7 +11,7 @@ module.exports = {
 	
 	async execute(interaction) {
 		// Đo thời gian phản hồi ban đầu
-		const sent = await interaction.deferReply({ fetchReply: true });
+		const sent = await interaction.deferReply({ withResponse: true });
 		const pingLatency = sent.createdTimestamp - interaction.createdTimestamp;
 		
 		// Tạo placeholder embed ban đầu
@@ -59,7 +59,7 @@ module.exports = {
 			if (i.user.id !== interaction.user.id) {
 				return i.reply({
 					content: 'Chỉ người dùng lệnh mới có thể sử dụng các nút này.',
-					ephemeral: true
+					flags: MessageFlags.Ephemeral
 				});
 			}
 
@@ -111,7 +111,7 @@ module.exports = {
 
 				await i.reply({
 					embeds: [detailedEmbed],
-					ephemeral: true
+					flags: MessageFlags.Ephemeral
 				});
 			}
 		});
