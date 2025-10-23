@@ -21,8 +21,16 @@ const client = new Client({
 		GatewayIntentBits.DirectMessages,
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessageReactions,
+		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildPresences,
 	],
-	partials: [Partials.Channel, Partials.Message, Partials.Reaction],
+	partials: [
+		Partials.Channel, 
+		Partials.Message, 
+		Partials.Reaction,
+		Partials.User,
+		Partials.GuildMember
+	],
 });
 
 client.commands = new Collection();

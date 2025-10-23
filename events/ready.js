@@ -1,4 +1,3 @@
-const NeuralNetworks = require('../services/NeuralNetworks');
 const mongoClient = require('../services/mongoClient.js');
 const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');

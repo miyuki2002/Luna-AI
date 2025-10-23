@@ -1,4 +1,3 @@
-// Import các service đã tách riêng
 const AICore = require("./AICore.js");
 const ImageService = require("./ImageService.js");
 const ConversationService = require("./ConversationService.js");

@@ -169,8 +169,9 @@ function handleGuildLeave(guild) {
  * Triển khai slash commands cho một guild cụ thể
  * @param {string} guildId - ID của guild cần triển khai lệnh
  * @param {Array} commands - Mảng các lệnh cần triển khai (tùy chọn)
+ * @param {Discord.Client} client - Discord client (tùy chọn)
  */
-async function deployCommandsToGuild(guildId, existingCommands = null) {
+async function deployCommandsToGuild(guildId, existingCommands = null, client = null) {
   try {
     const token = process.env.DISCORD_TOKEN;
     const clientId = process.env.CLIENT_ID;
@@ -183,20 +184,26 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
       throw new Error('CLIENT_ID không được thiết lập trong biến môi trường');
     }
 
-    // Tạo REST client
     const rest = new REST({ version: '10' }).setToken(token);
 
-    // Sử dụng commands từ cache hoặc từ tham số
-    const commands = existingCommands || getCommandsJson(client);
+    const commands = existingCommands || (client ? getCommandsJson(client) : []);
 
-    // Kiểm tra xem có lệnh nào để triển khai không
     if (!commands || commands.length === 0) {
       logger.warn('GUILD', `Không có lệnh nào để triển khai cho guild ID: ${guildId}`);
       return [];
     }
 
-    // Triển khai lệnh đến guild cụ thể
     logger.info('GUILD', `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
+    
+    const commandNames = commands.map(cmd => cmd.name).join(', ');
+    logger.info('GUILD', `Danh sách commands: ${commandNames}`);
+
+    try {
+      await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+      logger.info('GUILD', `Đã clear commands cũ cho guild ${guildId}`);
+    } catch (clearError) {
+      logger.warn('GUILD', `Không thể clear commands cũ cho guild ${guildId}:`, clearError.message);
+    }
 
     const data = await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
@@ -217,9 +224,6 @@ async function deployCommandsToGuild(guildId, existingCommands = null) {
  * @returns {Discord.TextChannel|null} - Kênh văn bản mặc định hoặc null nếu không tìm thấy
  */
 function findDefaultChannel(guild) {
-  // Các phương pháp tìm kênh mặc định theo thứ tự ưu tiên
-
-  // 1. Tìm kênh có tên 'general' hoặc 'chung'
   let channel = guild.channels.cache.find(
     channel => channel.type === 0 && // TextChannel
       (channel.name === 'general' || channel.name === 'chung') &&
@@ -228,13 +232,12 @@ function findDefaultChannel(guild) {
 
   if (channel) return channel;
 
-  // 2. Tìm kênh mà bot có quyền gửi tin nhắn và hiển thị
   channel = guild.channels.cache.find(
     channel => channel.type === 0 && // TextChannel
       channel.permissionsFor(guild.members.me).has(['SendMessages', 'ViewChannel'])
   );
 
-  return channel; // Có thể null nếu không tìm thấy kênh phù hợp
+  return channel;
 }
 
 /**
@@ -245,28 +248,22 @@ function findDefaultChannel(guild) {
 function setupGuildHandlers(client, commands = null) {
   const setupHandlers = async () => {
     try {
-      // Đảm bảo MongoDB đã sẵn sàng
       await mongoClient.getDbSafe();
 
-      // Tải lệnh nếu chưa được tải
       if (!commands && client.commands.size === 0) {
         logger.info('GUILD', 'Đang tải lệnh từ thư mục commands...');
         loadCommands(client);
       }
 
-      // Sự kiện khi bot tham gia guild mới
       client.on('guildCreate', guild => handleGuildJoin(guild, commands));
 
-      // Sự kiện khi bot rời khỏi guild
       client.on('guildDelete', guild => handleGuildLeave(guild));
 
-      // Đồng bộ tất cả guild hiện tại vào MongoDB và triển khai lệnh
       logger.info('GUILD', 'Đang đồng bộ thông tin servers với MongoDB...');
       const guilds = client.guilds.cache;
       let syncCount = 0;
       let deployCount = 0;
 
-      // Lấy danh sách lệnh từ commandHandler
       const commandsToRegister = commands || getCommandsJson(client);
 
       if (!commandsToRegister || commandsToRegister.length === 0) {
@@ -276,11 +273,9 @@ function setupGuildHandlers(client, commands = null) {
       }
 
       for (const guild of guilds.values()) {
-        // Lưu thông tin guild vào MongoDB
         await storeGuildInDB(guild);
         syncCount++;
 
-        // Triển khai lệnh cho guild
         if (commandsToRegister && commandsToRegister.length > 0) {
           try {
             await deployCommandsToGuild(guild.id, commandsToRegister);
