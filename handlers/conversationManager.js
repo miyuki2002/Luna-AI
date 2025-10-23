@@ -1,12 +1,9 @@
 const storageDB = require('../services/storagedb.js');
 const logger = require('../utils/logger.js');
 
-// Sử dụng closure để ngăn chặn truy cập trực tiếp
 const conversationManager = (() => {
-  // Lưu trữ cuộc trò chuyện trong bộ nhớ tạm thời theo userId
-  const userConversations = new Map();
   
-  // Dùng để theo dõi thời gian hoạt động cuối cùng của người dùng
+  const userConversations = new Map();
   const userLastActivity = new Map();
 
   /**
@@ -19,12 +16,12 @@ const conversationManager = (() => {
     if (!userId || typeof userId !== 'string') {
       throw new Error('UserId không hợp lệ: userId phải là một chuỗi không rỗng');
     }
-    
+
     const trimmedId = userId.trim();
     if (!trimmedId || trimmedId === 'null' || trimmedId === 'undefined') {
       throw new Error('UserId không hợp lệ: userId không thể rỗng, "null", hoặc "undefined"');
     }
-    
+
     return trimmedId;
   };
 
@@ -36,7 +33,7 @@ const conversationManager = (() => {
   const getUserHistory = (userId) => {
     try {
       const validUserId = validateUserId(userId);
-      
+
       if (!userConversations.has(validUserId)) {
         userConversations.set(validUserId, []);
         userLastActivity.set(validUserId, Date.now());
@@ -44,7 +41,7 @@ const conversationManager = (() => {
         // Cập nhật thời gian hoạt động mới nhất
         userLastActivity.set(validUserId, Date.now());
       }
-      
+
       return userConversations.get(validUserId);
     } catch (error) {
       logger.error('CONVERSATION', `Lỗi khi lấy lịch sử cuộc trò chuyện: ${error.message}`);
@@ -55,8 +52,8 @@ const conversationManager = (() => {
   // Dọn dẹp bộ nhớ định kỳ - xóa cuộc trò chuyện không hoạt động sau 30 phút
   setInterval(() => {
     const now = Date.now();
-    const inactiveThreshold = 30 * 60 * 1000; // 30 phút
-    
+    const inactiveThreshold = 30 * 60 * 1000;
+
     for (const [userId, lastActive] of userLastActivity.entries()) {
       if (now - lastActive > inactiveThreshold) {
         userConversations.delete(userId);
@@ -64,7 +61,7 @@ const conversationManager = (() => {
         logger.debug('CONVERSATION', `Đã xóa bộ đệm cuộc trò chuyện không hoạt động cho user ${userId}`);
       }
     }
-  }, 10 * 60 * 1000); // Kiểm tra mỗi 10 phút
+  }, 10 * 60 * 1000);
 
   return {
     /**
@@ -77,7 +74,7 @@ const conversationManager = (() => {
     async loadConversationHistory(userId, systemPrompt, modelName) {
       try {
         const validUserId = validateUserId(userId);
-        
+
         const history = await storageDB.getConversationHistory(validUserId, systemPrompt, modelName);
 
         // Cập nhật cache cục bộ cho user
@@ -106,7 +103,7 @@ const conversationManager = (() => {
     async addMessage(userId, role, content) {
       try {
         const validUserId = validateUserId(userId);
-        
+
         // Thêm vào cache cục bộ
         const userHistory = getUserHistory(validUserId);
         userHistory.push({ role, content });
@@ -164,7 +161,7 @@ const conversationManager = (() => {
         return false;
       }
     },
-    
+
     /**
      * Xóa hoàn toàn lịch sử cuộc trò chuyện (cả cục bộ và cơ sở dữ liệu)
      * @param {string} userId - Định danh người dùng
@@ -175,15 +172,9 @@ const conversationManager = (() => {
     async resetConversation(userId, systemPrompt, modelName) {
       try {
         const validUserId = validateUserId(userId);
-        
-        // Xóa khỏi bộ nhớ cục bộ
         this.clearLocalHistory(validUserId);
-        
-        // Xóa trong cơ sở dữ liệu và khởi tạo lại
         await storageDB.clearConversationHistory(validUserId, systemPrompt, modelName);
         logger.info('CONVERSATION', `Đã xóa hoàn toàn cuộc trò chuyện cho userId: ${validUserId}`);
-        
-        // Tải lịch sử mới (chỉ có system prompt)
         await this.loadConversationHistory(validUserId, systemPrompt, modelName);
         return true;
       } catch (error) {

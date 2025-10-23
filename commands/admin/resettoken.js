@@ -34,7 +34,7 @@ module.exports = {
       const executorRole = await TokenService.getUserRole(interaction.user.id);
       if (executorRole !== 'owner' && executorRole !== 'admin') {
         return await interaction.editReply({
-          content: '❌ Bạn không có quyền sử dụng lệnh này! Chỉ Owner và Admin mới có thể reset token.',
+          content: 'Bạn không có quyền sử dụng lệnh này! Chỉ Owner và Admin mới có thể reset token.',
           ephemeral: true
         });
       }
@@ -75,7 +75,7 @@ module.exports = {
     } catch (error) {
       logger.error('ADMIN', 'Lỗi khi reset token:', error);
       await interaction.editReply({
-        content: `❌ Lỗi khi reset token: ${error.message}`,
+        content: `Lỗi khi reset token: ${error.message}`,
         ephemeral: true
       });
     }

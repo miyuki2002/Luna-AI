@@ -1,4 +1,3 @@
-// Import các service đã tách riêng
 const AICore = require("./AICore.js");
 const ImageService = require("./ImageService.js");
 const ConversationService = require("./ConversationService.js");
@@ -12,17 +11,10 @@ class NeuralNetworks {
     SystemService.startPeriodicTasks();
 
     logger.info("NEURAL", `Initialized with AI Core models`);
-    logger.info("NEURAL", `Live Search: Enabled`);
     logger.info("NEURAL", `Image Service: Ready`);
     logger.info("NEURAL", `Conversation Service: Ready`);
   }
 
-  /**
-   * Thực hiện tìm kiếm web bằng Live Search
-   */
-  async performLiveSearch(query) {
-    return AICore.performLiveSearch(query);
-  }
 
   /**
    * Phân tích tin nhắn cho chức năng giám sát
@@ -81,24 +73,10 @@ class NeuralNetworks {
   }
 
   /**
-   * Dịch prompt tiếng Việt sang tiếng Anh
-   */
-  async translatePrompt(vietnamesePrompt) {
-    return AICore.translatePrompt(vietnamesePrompt);
-  }
-
-  /**
    * Phân tích nội dung prompt bằng AI
    */
   async analyzeContentWithAI(prompt) {
     return AICore.analyzeContentWithAI(prompt);
-  }
-
-  /**
-   * Xác định xem có nên thực hiện tìm kiếm web cho prompt hay không
-   */
-  shouldPerformWebSearch(prompt) {
-    return AICore.shouldPerformWebSearch(prompt);
   }
 
   /**
@@ -116,7 +94,7 @@ class NeuralNetworks {
   }
 
   /**
-   * Kiểm tra trạng thái sức khỏe hệ thống
+   * Kiểm tra trạng thái hệ thống
    */
   getHealthStatus() {
     return SystemService.getHealthStatus();

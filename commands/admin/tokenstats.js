@@ -37,7 +37,7 @@ module.exports = {
     } catch (error) {
       logger.error('ADMIN', 'Lỗi khi xem token stats:', error);
       await interaction.editReply({
-        content: `❌ Lỗi khi lấy thống kê: ${error.message}`,
+        content: `Lỗi khi lấy thống kê: ${error.message}`,
         ephemeral: true
       });
     }
@@ -53,7 +53,7 @@ async function handleUserStats(interaction) {
     const requesterRole = await TokenService.getUserRole(requesterId);
     if (requesterRole !== 'owner' && requesterRole !== 'admin') {
       return await interaction.editReply({
-        content: '❌ Bạn không có quyền xem thống kê của người khác!',
+        content: 'Bạn không có quyền xem thống kê của người khác!',
         ephemeral: true
       });
     }
@@ -104,7 +104,7 @@ async function handleSystemStats(interaction) {
   const requesterRole = await TokenService.getUserRole(interaction.user.id);
   if (requesterRole !== 'owner' && requesterRole !== 'admin') {
     return await interaction.editReply({
-      content: '❌ Bạn không có quyền xem thống kê hệ thống!',
+      content: 'Bạn không có quyền xem thống kê hệ thống!',
       ephemeral: true
     });
   }

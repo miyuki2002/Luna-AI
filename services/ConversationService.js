@@ -274,16 +274,6 @@ class ConversationService {
         return prompts.modelInfo.response;
       }
 
-      const shouldSearch = AICore.shouldPerformWebSearch(prompt);
-      let searchResults = null;
-
-      if (shouldSearch) {
-        logger.info("CONVERSATION", `Using Live Search for: "${prompt.substring(0, 50)}..."`);
-        searchResults = await AICore.performLiveSearch(prompt);
-      } else {
-        logger.info("CONVERSATION", `Using model knowledge for: "${prompt.substring(0, 50)}..."`);
-      }
-
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
 
       // Xử lý chat completion
@@ -297,7 +287,7 @@ class ConversationService {
       return content;
     } catch (error) {
       logger.error("CONVERSATION_SERVICE", "Error in getCompletion:", error.message);
-      return `Xin lỗi, tôi không thể kết nối với dịch vụ AI. Lỗi: ${error.message}`;
+      return `Xin lỗi, hệ thống xảy ra lỗi khi xử lý cuộc trò chuyện. Vui lòng thử lại sau.`;
     }
   }
 

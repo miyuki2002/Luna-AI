@@ -1,6 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks');
-const mongoClient = require('../../services/mongoClient');
 const packageJson = require('../../package.json');
 const stringUtils = require('../../utils/string');
 
@@ -10,36 +8,24 @@ module.exports = {
 		.setDescription('Kiểm tra độ trễ và trạng thái kết nối của bot'),
 	
 	async execute(interaction) {
-		// Đo thời gian phản hồi ban đầu
 		const sent = await interaction.deferReply({ fetchReply: true });
-		const pingLatency = sent.createdTimestamp - interaction.createdTimestamp;
+		const pingLatency = (sent.createdTimestamp - interaction.createdTimestamp) / 100;
 		
 		// Tạo placeholder embed ban đầu
 		const initialEmbed = createStatusEmbed({
 			ping: pingLatency,
 			ws: interaction.client.ws.ping,
-			mongo: "Đang kiểm tra...",
-			ai: "Đang kiểm tra..."
 		});
-
-		// Gửi phản hồi với embed ban đầu
 		const response = await interaction.editReply({
 			embeds: [initialEmbed],
 			components: [createActionRow(false)]
 		});
 
-		// Kiểm tra kết nối database và AI đồng thời
-		const [mongoResult, aiResult] = await Promise.all([
-			checkMongoDB(),
-			checkAIService()
-		]);
 
 		// Cập nhật embed với thông tin mới
 		const updatedEmbed = createStatusEmbed({
 			ping: pingLatency,
 			ws: interaction.client.ws.ping,
-			mongo: mongoResult,
-			ai: aiResult
 		});
 
 		// Cập nhật tin nhắn gốc với embed mới và các nút tương tác
@@ -196,32 +182,4 @@ function createActionRow(enabled = true) {
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(!enabled)
 	);
-}
-
-/**
- * Kiểm tra kết nối MongoDB
- */
-async function checkMongoDB() {
-	try {
-		const startTime = Date.now();
-		await mongoClient.ping();
-		const mongoLatency = Date.now() - startTime;
-		return `🟢 Kết nối (${mongoLatency}ms)`;
-	} catch (error) {
-		return "🔴 Ngắt kết nối";
-	}
-}
-
-/**
- * Kiểm tra kết nối dịch vụ AI
- */
-async function checkAIService() {
-	try {
-		const startTime = Date.now();
-		const connected = await NeuralNetworks.testConnection();
-		const aiLatency = Date.now() - startTime;
-		return connected ? `🟢 Kết nối (${aiLatency}ms)` : "🟠 Lỗi";
-	} catch (error) {
-		return "🔴 Ngắt kết nối";
-	}
 }
