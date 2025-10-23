@@ -30,13 +30,36 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
             logger.warn('COMMAND', `Lệnh "${commandName}" đã tồn tại và sẽ bị ghi đè bởi ${itemPath}`);
           }
 
-          // Thêm lệnh vào collection
-          client.commands.set(commandName, command);
-          commandsJson.push(command.data.toJSON());
+          // === LOG THÊM: Kiểm tra command.data trước khi toJSON ===
+          logger.debug('COMMAND', `Đang xử lý lệnh "${commandName}" từ ${itemPath}`);
 
-          // Hiển thị thông tin về thư mục chứa lệnh
-          const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
-          // logger.debug('COMMAND', `Đã tải lệnh "${commandName}" từ danh mục "${category}"`); // Tắt hiển thị thông tin chi tiết (log quá nhiều)
+          try {
+            const jsonData = command.data.toJSON();
+
+            // Kiểm tra xem toJSON có trả về object hợp lệ không
+            if (!jsonData || typeof jsonData !== 'object') {
+              logger.error('COMMAND', `Lệnh "${commandName}" có toJSON() không hợp lệ:`, jsonData);
+              continue;
+            }
+
+            // Kiểm tra các trường bắt buộc trong JSON
+            if (!jsonData.name || !jsonData.description) {
+              logger.error('COMMAND', `Lệnh "${commandName}" thiếu name hoặc description:`, jsonData);
+              continue;
+            }
+
+            // Thêm lệnh vào collection
+            client.commands.set(commandName, command);
+            commandsJson.push(jsonData);
+
+            // Log thành công với chi tiết
+            const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
+            logger.info('COMMAND', `✓ Đã tải lệnh "${commandName}" từ "${category}" - Description: "${jsonData.description}"`);
+
+          } catch (jsonError) {
+            logger.error('COMMAND', `Lỗi khi convert lệnh "${commandName}" sang JSON:`, jsonError);
+            continue;
+          }
         } else {
           logger.warn('COMMAND', `Lệnh tại ${itemPath} thiếu thuộc tính "data" hoặc "execute" bắt buộc.`);
         }
@@ -52,6 +75,8 @@ const loadCommands = (client) => {
   const commandsPath = path.join(__dirname, '../commands');
   const commandsJson = [];
 
+  logger.info('COMMAND', '=== BẮT ĐẦU TẢI LỆNH ===');
+
   // Xóa tất cả lệnh hiện tại
   client.commands.clear();
 
@@ -61,8 +86,17 @@ const loadCommands = (client) => {
   // Lưu vào cache
   commandsJsonCache = commandsJson;
 
-  // Hiển thị thông tin tổng quan
-  logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh từ tất cả các danh mục.`);
+  // === LOG THÊM: In ra tổng quan và sample commands ===
+  logger.info('COMMAND', `=== ĐÃ TẢI TỔNG CỘNG ${client.commands.size} LỆNH ===`);
+
+  if (commandsJson.length > 0) {
+    logger.info('COMMAND', `Danh sách lệnh đã tải: ${commandsJson.map(c => c.name).join(', ')}`);
+
+    // Log sample của lệnh đầu tiên để kiểm tra format
+    logger.debug('COMMAND', `Sample lệnh đầu tiên (${commandsJson[0].name}):`, JSON.stringify(commandsJson[0], null, 2));
+  } else {
+    logger.warn('COMMAND', '⚠️ KHÔNG CÓ LỆNH NÀO ĐƯỢC TẢI!');
+  }
 
   return client.commands.size;
 };
@@ -70,29 +104,35 @@ const loadCommands = (client) => {
 // Lấy commands dưới dạng JSON từ cache hoặc tải mới
 const getCommandsJson = (client) => {
   if (!commandsJsonCache) {
+    logger.info('COMMAND', 'Cache rỗng, đang tải lại commands...');
     loadCommands(client);
   }
+
+  // === LOG THÊM: Kiểm tra cache trước khi trả về ===
+  logger.debug('COMMAND', `Đang trả về ${commandsJsonCache?.length || 0} lệnh từ cache`);
+
   return commandsJsonCache;
 };
 
 // Xử lý việc thực thi lệnh
 const handleCommand = async (interaction, client) => {
   if (!client.commands.size) {
+    logger.warn('COMMAND', 'Commands chưa được tải, đang tải lại...');
     loadCommands(client);
   }
 
   const command = client.commands.get(interaction.commandName);
 
   if (!command) {
-    logger.error('COMMAND', `Không tìm thấy lệnh nào khớp với ${interaction.commandName}.`);
+    logger.error('COMMAND', `❌ Không tìm thấy lệnh nào khớp với ${interaction.commandName}.`);
     return;
   }
 
   try {
     await command.execute(interaction);
-    logger.info('COMMAND', `Người dùng ${interaction.user.tag} đã sử dụng lệnh /${interaction.commandName}`);
+    logger.info('COMMAND', `✓ Người dùng ${interaction.user.tag} đã sử dụng lệnh /${interaction.commandName}`);
   } catch (error) {
-    logger.error('COMMAND', `Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
+    logger.error('COMMAND', `❌ Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
     } else {
