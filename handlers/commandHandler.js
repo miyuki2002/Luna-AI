@@ -64,6 +64,10 @@ const loadCommands = (client) => {
 
   // Hiển thị thông tin tổng quan
   logger.info('COMMAND', `Đã tải tổng cộng ${client.commands.size} lệnh từ tất cả các danh mục.`);
+  
+  // Log danh sách commands đã load
+  const commandNames = Array.from(client.commands.keys()).join(', ');
+  logger.info('COMMAND', `Danh sách commands đã load: ${commandNames}`);
 
   return client.commands.size;
 };
@@ -78,7 +82,10 @@ const getCommandsJson = (client) => {
 
 // Xử lý việc thực thi lệnh
 const handleCommand = async (interaction, client) => {
+  logger.info('COMMAND', `Nhận được interaction: ${interaction.commandName} từ ${interaction.user.tag}`);
+  
   if (!client.commands.size) {
+    logger.info('COMMAND', 'Commands chưa được load, đang load lại...');
     loadCommands(client);
   }
 
@@ -86,8 +93,11 @@ const handleCommand = async (interaction, client) => {
 
   if (!command) {
     logger.error('COMMAND', `Không tìm thấy lệnh nào khớp với ${interaction.commandName}.`);
+    logger.error('COMMAND', `Commands có sẵn: ${Array.from(client.commands.keys()).join(', ')}`);
     return;
   }
+  
+  logger.info('COMMAND', `Đã tìm thấy command: ${interaction.commandName}, đang thực thi...`);
 
   try {
     await command.execute(interaction);
