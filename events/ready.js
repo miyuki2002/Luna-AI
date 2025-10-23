@@ -86,7 +86,7 @@ async function startbot(client, loadCommands) {
       for (const [guildId, guild] of client.guilds.cache) {
         try {
           const guildProfile = await GuildProfileDB.getGuildProfile(guildId);
-          logger.info('SYSTEM', `Đã tải cấu hình XP cho guild ${guild.name}`);
+          //  logger.info('SYSTEM', `Đã tải cấu hình XP cho guild ${guild.name}`);
         } catch (err) {
           logger.error('SYSTEM', `Lỗi khi tải cấu hình guild ${guild.name}:`, err);
         }
@@ -130,12 +130,12 @@ async function startbot(client, loadCommands) {
     /**
     try {
       // Khởi tạo hệ thống giám sát tin nhắn
-      console.log('🔍 Đang khởi tạo hệ thống giám sát tin nhắn...');
+      console.log('Đang khởi tạo hệ thống giám sát tin nhắn...');
       await messageMonitor.initialize(client);
-      console.log('✅ Đã khởi tạo hệ thống giám sát tin nhắn');
+      console.log('Đã khởi tạo hệ thống giám sát tin nhắn');
       initSystem.markReady('messageMonitor');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo hệ thống giám sát tin nhắn:', error);
       initSystem.markReady('messageMonitor');
     }
     */
