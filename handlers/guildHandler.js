@@ -122,17 +122,17 @@ async function handleGuildJoin(guild, commands) {
     // Lưu thông tin guild vào MongoDB
     await storeGuildInDB(guild);
 
-    // Đảm bảo rằng commands không rỗng
-    let commandsToRegister = commands;
-    if (!commandsToRegister || !commandsToRegister.length) {
-      // Nếu không có commands được truyền vào, lấy từ commandHandler
-      commandsToRegister = getCommandsJson(guild.client);
+    logger.info('GUILD', 'Đang reload commands cho guild mới...');
+    reloadCommands(guild.client);
+    const commandsToRegister = getCommandsJson(guild.client);
 
-      // Nếu vẫn không có lệnh, hiển thị cảnh báo
-      if (!commandsToRegister || !commandsToRegister.length) {
-        logger.warn('GUILD', `Không có lệnh nào được tải để triển khai cho server ${guild.name}!`);
-        commandsToRegister = [];
-      }
+    if (!commandsToRegister || !commandsToRegister.length) {
+      logger.warn('GUILD', `Không có lệnh nào được tải để triển khai cho server ${guild.name}!`);
+    } else {
+      logger.info('GUILD', `Đã load ${commandsToRegister.length} commands cho server ${guild.name}`);
+      // Log danh sách commands để debug
+      const commandNames = commandsToRegister.map(cmd => cmd.name).join(', ');
+      logger.info('GUILD', `Danh sách commands: ${commandNames}`);
     }
 
     // Triển khai slash commands cho guild mới
@@ -278,13 +278,18 @@ function setupGuildHandlers(client, commands = null) {
       let syncCount = 0;
       let deployCount = 0;
 
-      // Lấy danh sách lệnh từ commandHandler
-      const commandsToRegister = commands || getCommandsJson(client);
+      // Luôn reload commands để đảm bảo có commands mới nhất
+      logger.info('GUILD', 'Đang reload commands để đảm bảo có commands mới nhất...');
+      reloadCommands(client);
+      const commandsToRegister = getCommandsJson(client);
 
       if (!commandsToRegister || commandsToRegister.length === 0) {
         logger.warn('GUILD', 'Không có lệnh nào được tải để triển khai!');
       } else {
         logger.info('GUILD', `Đã tải ${commandsToRegister.length} lệnh để triển khai cho các server`);
+        // Log danh sách commands để debug
+        const commandNames = commandsToRegister.map(cmd => cmd.name).join(', ');
+        logger.info('GUILD', `Danh sách commands: ${commandNames}`);
       }
 
       for (const guild of guilds.values()) {
@@ -324,43 +329,6 @@ function setupGuildHandlers(client, commands = null) {
   logger.info('GUILD', 'Đã đăng ký handlers cho sự kiện guild');
 }
 
-/**
- * Force deploy commands cho tất cả guilds (dùng khi có commands mới)
- * @param {Discord.Client} client - Discord client
- */
-async function forceDeployCommandsToAllGuilds(client) {
-  try {
-    logger.info('GUILD', 'Bắt đầu force deploy commands cho tất cả guilds...');
-    
-    // Clear cache và reload commands
-    reloadCommands(client);
-    const commands = getCommandsJson(client);
-    
-    if (!commands || commands.length === 0) {
-      logger.warn('GUILD', 'Không có commands nào để deploy!');
-      return;
-    }
-    
-    logger.info('GUILD', `Đã load ${commands.length} commands, bắt đầu deploy...`);
-    
-    const guilds = client.guilds.cache;
-    let successCount = 0;
-    
-    for (const guild of guilds.values()) {
-      try {
-        await deployCommandsToGuild(guild.id, commands, client);
-        successCount++;
-        logger.info('GUILD', `Đã deploy commands cho guild: ${guild.name}`);
-      } catch (error) {
-        logger.error('GUILD', `Lỗi khi deploy commands cho guild ${guild.name}:`, error);
-      }
-    }
-    
-    logger.info('GUILD', `Đã deploy commands thành công cho ${successCount}/${guilds.size} guilds`);
-  } catch (error) {
-    logger.error('GUILD', 'Lỗi khi force deploy commands:', error);
-  }
-}
 
 // Export các hàm để sử dụng trong các file khác
 module.exports = {
@@ -370,6 +338,5 @@ module.exports = {
   setupGuildHandlers,
   getGuildFromDB,
   updateGuildSettings,
-  storeGuildInDB,
-  forceDeployCommandsToAllGuilds
+  storeGuildInDB
 };
