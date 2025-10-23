@@ -166,6 +166,57 @@ function handleGuildLeave(guild) {
 }
 
 /**
+ * Triển khai slash commands toàn cục (global)
+ * @param {Array} commands - Mảng các lệnh cần triển khai
+ */
+async function deployGlobalCommands(commands) {
+  try {
+    const token = process.env.DISCORD_TOKEN;
+    const clientId = process.env.CLIENT_ID;
+
+    if (!token) {
+      throw new Error('DISCORD_TOKEN không được thiết lập trong biến môi trường');
+    }
+
+    if (!clientId) {
+      throw new Error('CLIENT_ID không được thiết lập trong biến môi trường');
+    }
+
+    const rest = new REST({ version: '10' }).setToken(token);
+
+    if (!commands || commands.length === 0) {
+      logger.warn('GUILD', 'Không có lệnh nào để triển khai toàn cục');
+      return [];
+    }
+
+    logger.info('GUILD', `Bắt đầu triển khai ${commands.length} lệnh toàn cục`);
+    
+    const commandNames = commands.map(cmd => cmd.name).join(', ');
+    logger.info('GUILD', `Danh sách global commands: ${commandNames}`);
+
+    // Xóa tất cả global commands cũ
+    try {
+      await rest.put(Routes.applicationCommands(clientId), { body: [] });
+      logger.info('GUILD', 'Đã xóa tất cả global commands cũ');
+    } catch (clearError) {
+      logger.warn('GUILD', 'Không thể xóa global commands cũ:', clearError.message);
+    }
+
+    // Đăng ký global commands mới
+    const data = await rest.put(
+      Routes.applicationCommands(clientId),
+      { body: commands }
+    );
+
+    logger.info('GUILD', `Đã triển khai thành công ${data.length} lệnh toàn cục`);
+    return data;
+  } catch (error) {
+    logger.error('GUILD', 'Lỗi khi triển khai global commands:', error);
+    throw error;
+  }
+}
+
+/**
  * Triển khai slash commands cho một guild cụ thể
  * @param {string} guildId - ID của guild cần triển khai lệnh
  * @param {Array} commands - Mảng các lệnh cần triển khai (tùy chọn)
@@ -272,6 +323,16 @@ function setupGuildHandlers(client, commands = null) {
         logger.info('GUILD', `Đã tải ${commandsToRegister.length} lệnh để triển khai cho các server`);
       }
 
+      // Triển khai global commands trước
+      if (commandsToRegister && commandsToRegister.length > 0) {
+        try {
+          await deployGlobalCommands(commandsToRegister);
+          logger.info('GUILD', 'Đã triển khai thành công global commands');
+        } catch (error) {
+          logger.error('GUILD', 'Lỗi khi triển khai global commands:', error);
+        }
+      }
+
       for (const guild of guilds.values()) {
         await storeGuildInDB(guild);
         syncCount++;
@@ -312,6 +373,7 @@ module.exports = {
   handleGuildJoin,
   handleGuildLeave,
   deployCommandsToGuild,
+  deployGlobalCommands,
   setupGuildHandlers,
   getGuildFromDB,
   updateGuildSettings,
