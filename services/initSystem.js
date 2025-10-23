@@ -24,7 +24,7 @@ class InitSystem extends EventEmitter {
     }
 
     this.services[service] = true;
-    logger.info("SYSTEM", `✓ Service ${service} đã sẵn sàng`);
+    logger.info("SYSTEM", `Service ${service} đã sẵn sàng`);
 
     // Kiểm tra xem tất cả services đã sẵn sàng chưa
     if (Object.values(this.services).every((status) => status)) {

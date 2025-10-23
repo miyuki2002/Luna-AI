@@ -144,9 +144,9 @@ async function handleGuildJoin(guild, commands) {
     if (defaultChannel) {
       await defaultChannel.send({
         content: `👋 Xin chào! Luna đã sẵn sàng hỗ trợ server **${guild.name}**!\n` +
-                 `🔍 Tất cả các lệnh slash đã được tự động cài đặt.\n` +
-                 `💬 Bạn có thể chat với mình bằng cách @mention Luna hoặc sử dụng các lệnh slash.\n` +
-                 `✨ Cảm ơn đã thêm mình vào server!`
+          `🔍 Tất cả các lệnh slash đã được tự động cài đặt.\n` +
+          `💬 Bạn có thể chat với mình bằng cách @mention Luna hoặc sử dụng các lệnh slash.\n` +
+          `✨ Cảm ơn đã thêm mình vào server!`
       });
     }
   } catch (error) {
@@ -222,8 +222,8 @@ function findDefaultChannel(guild) {
   // 1. Tìm kênh có tên 'general' hoặc 'chung'
   let channel = guild.channels.cache.find(
     channel => channel.type === 0 && // TextChannel
-    (channel.name === 'general' || channel.name === 'chung') &&
-    channel.permissionsFor(guild.members.me).has(['SendMessages', 'ViewChannel'])
+      (channel.name === 'general' || channel.name === 'chung') &&
+      channel.permissionsFor(guild.members.me).has(['SendMessages', 'ViewChannel'])
   );
 
   if (channel) return channel;
@@ -231,7 +231,7 @@ function findDefaultChannel(guild) {
   // 2. Tìm kênh mà bot có quyền gửi tin nhắn và hiển thị
   channel = guild.channels.cache.find(
     channel => channel.type === 0 && // TextChannel
-    channel.permissionsFor(guild.members.me).has(['SendMessages', 'ViewChannel'])
+      channel.permissionsFor(guild.members.me).has(['SendMessages', 'ViewChannel'])
   );
 
   return channel; // Có thể null nếu không tìm thấy kênh phù hợp
