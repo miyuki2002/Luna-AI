@@ -1,7 +1,7 @@
 const { REST, Routes } = require('discord.js');
 const mongoClient = require('../services/mongoClient.js');
 const initSystem = require('../services/initSystem.js');
-const { getCommandsJson, loadCommands, reloadCommands } = require('./commandHandler');
+const { getCommandsJson, loadCommands } = require('./commandHandler');
 const logger = require('../utils/logger.js');
 
 /**
@@ -122,21 +122,21 @@ async function handleGuildJoin(guild, commands) {
     // Lưu thông tin guild vào MongoDB
     await storeGuildInDB(guild);
 
-    logger.info('GUILD', 'Đang reload commands cho guild mới...');
-    reloadCommands(guild.client);
-    const commandsToRegister = getCommandsJson(guild.client);
-
+    // Đảm bảo rằng commands không rỗng
+    let commandsToRegister = commands;
     if (!commandsToRegister || !commandsToRegister.length) {
-      logger.warn('GUILD', `Không có lệnh nào được tải để triển khai cho server ${guild.name}!`);
-    } else {
-      logger.info('GUILD', `Đã load ${commandsToRegister.length} commands cho server ${guild.name}`);
-      // Log danh sách commands để debug
-      const commandNames = commandsToRegister.map(cmd => cmd.name).join(', ');
-      logger.info('GUILD', `Danh sách commands: ${commandNames}`);
+      // Nếu không có commands được truyền vào, lấy từ commandHandler
+      commandsToRegister = getCommandsJson(guild.client);
+
+      // Nếu vẫn không có lệnh, hiển thị cảnh báo
+      if (!commandsToRegister || !commandsToRegister.length) {
+        logger.warn('GUILD', `Không có lệnh nào được tải để triển khai cho server ${guild.name}!`);
+        commandsToRegister = [];
+      }
     }
 
     // Triển khai slash commands cho guild mới
-    await deployCommandsToGuild(guild.id, commandsToRegister, guild.client);
+    await deployCommandsToGuild(guild.id, commandsToRegister);
     logger.info('GUILD', `Đã triển khai các lệnh slash cho server: ${guild.name}`);
 
     // Thông báo cho chủ sở hữu server hoặc kênh mặc định nếu có thể
@@ -169,9 +169,8 @@ function handleGuildLeave(guild) {
  * Triển khai slash commands cho một guild cụ thể
  * @param {string} guildId - ID của guild cần triển khai lệnh
  * @param {Array} commands - Mảng các lệnh cần triển khai (tùy chọn)
- * @param {Discord.Client} client - Discord client (tùy chọn)
  */
-async function deployCommandsToGuild(guildId, existingCommands = null, client = null) {
+async function deployCommandsToGuild(guildId, existingCommands = null) {
   try {
     const token = process.env.DISCORD_TOKEN;
     const clientId = process.env.CLIENT_ID;
@@ -188,14 +187,7 @@ async function deployCommandsToGuild(guildId, existingCommands = null, client = 
     const rest = new REST({ version: '10' }).setToken(token);
 
     // Sử dụng commands từ cache hoặc từ tham số
-    let commands = existingCommands;
-    if (!commands && client) {
-      // Force reload commands để đảm bảo có commands mới nhất
-      logger.info('GUILD', 'Đang reload commands để đảm bảo có commands mới nhất...');
-      reloadCommands(client);
-      commands = getCommandsJson(client);
-      logger.info('GUILD', `Đã load ${commands ? commands.length : 0} commands cho guild ${guildId}`);
-    }
+    const commands = existingCommands || getCommandsJson(client);
 
     // Kiểm tra xem có lệnh nào để triển khai không
     if (!commands || commands.length === 0) {
@@ -205,10 +197,6 @@ async function deployCommandsToGuild(guildId, existingCommands = null, client = 
 
     // Triển khai lệnh đến guild cụ thể
     logger.info('GUILD', `Bắt đầu triển khai ${commands.length} lệnh đến guild ID: ${guildId}`);
-    
-    // Log danh sách commands để debug
-    const commandNames = commands.map(cmd => cmd.name).join(', ');
-    logger.info('GUILD', `Danh sách commands: ${commandNames}`);
 
     const data = await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
@@ -216,11 +204,6 @@ async function deployCommandsToGuild(guildId, existingCommands = null, client = 
     );
 
     logger.info('GUILD', `Đã triển khai thành công ${data.length} lệnh đến guild ID: ${guildId}`);
-    
-    // Log chi tiết commands đã deploy
-    const deployedNames = data.map(cmd => cmd.name).join(', ');
-    logger.info('GUILD', `Commands đã deploy: ${deployedNames}`);
-    
     return data;
   } catch (error) {
     logger.error('GUILD', 'Lỗi khi triển khai lệnh đến guild:', error);
@@ -283,18 +266,13 @@ function setupGuildHandlers(client, commands = null) {
       let syncCount = 0;
       let deployCount = 0;
 
-      // Luôn reload commands để đảm bảo có commands mới nhất
-      logger.info('GUILD', 'Đang reload commands để đảm bảo có commands mới nhất...');
-      reloadCommands(client);
-      const commandsToRegister = getCommandsJson(client);
+      // Lấy danh sách lệnh từ commandHandler
+      const commandsToRegister = commands || getCommandsJson(client);
 
       if (!commandsToRegister || commandsToRegister.length === 0) {
         logger.warn('GUILD', 'Không có lệnh nào được tải để triển khai!');
       } else {
         logger.info('GUILD', `Đã tải ${commandsToRegister.length} lệnh để triển khai cho các server`);
-        // Log danh sách commands để debug
-        const commandNames = commandsToRegister.map(cmd => cmd.name).join(', ');
-        logger.info('GUILD', `Danh sách commands: ${commandNames}`);
       }
 
       for (const guild of guilds.values()) {
@@ -305,7 +283,7 @@ function setupGuildHandlers(client, commands = null) {
         // Triển khai lệnh cho guild
         if (commandsToRegister && commandsToRegister.length > 0) {
           try {
-            await deployCommandsToGuild(guild.id, commandsToRegister, client);
+            await deployCommandsToGuild(guild.id, commandsToRegister);
             deployCount++;
           } catch (error) {
             logger.error('GUILD', `Lỗi khi triển khai lệnh cho server ${guild.name}:`, error);
@@ -333,7 +311,6 @@ function setupGuildHandlers(client, commands = null) {
 
   logger.info('GUILD', 'Đã đăng ký handlers cho sự kiện guild');
 }
-
 
 // Export các hàm để sử dụng trong các file khác
 module.exports = {
