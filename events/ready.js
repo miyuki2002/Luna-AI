@@ -11,7 +11,7 @@ const logger = require('../utils/logger.js');
 const AutoUpdateService = require('../services/AutoUpdateService');
 
 async function startbot(client, loadCommands) {
-  client.once('ready', async () => {
+  client.once('clientReady', async () => {
     logger.info('SYSTEM', `\n\n
     ██╗     ██╗   ██╗███╗   ██╗ █████╗
     ██║     ██║   ██║██╔██╗ ██║███████║

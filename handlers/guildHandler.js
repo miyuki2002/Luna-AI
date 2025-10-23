@@ -216,6 +216,11 @@ async function deployCommandsToGuild(guildId, existingCommands = null, client = 
     );
 
     logger.info('GUILD', `Đã triển khai thành công ${data.length} lệnh đến guild ID: ${guildId}`);
+    
+    // Log chi tiết commands đã deploy
+    const deployedNames = data.map(cmd => cmd.name).join(', ');
+    logger.info('GUILD', `Commands đã deploy: ${deployedNames}`);
+    
     return data;
   } catch (error) {
     logger.error('GUILD', 'Lỗi khi triển khai lệnh đến guild:', error);
