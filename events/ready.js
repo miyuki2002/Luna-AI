@@ -116,19 +116,14 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('commands');
     }
 
-    // ========================================
     try {
-      logger.info('SYSTEM', '=== BẮT ĐẦU THIẾT LẬP GUILD HANDLERS VÀ DEPLOY COMMANDS ===');
-      
-      // Phải await để đợi hàm async hoàn thành
       await setupGuildHandlers(client);
-      
-      logger.info('SYSTEM', '✓ Đã thiết lập guild handlers và deploy commands thành công!');
+    
+      logger.info('SYSTEM', 'Đã thiết lập guild handlers và deploy commands thành công!');
     } catch (error) {
-      logger.error('SYSTEM', '❌ Lỗi khi thiết lập guild handlers:', error);
+      logger.error('SYSTEM', 'Lỗi khi thiết lập guild handlers:', error);
       logger.error('SYSTEM', 'Stack trace:', error.stack);
     }
-    // ========================================
 
     // Thiết lập trạng thái cho bot
     client.user.setPresence({
