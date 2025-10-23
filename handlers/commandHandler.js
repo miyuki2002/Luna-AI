@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { MessageFlags } = require('discord.js');
 const logger = require('../utils/logger.js');
 
 // Cache cho commands JSON
@@ -94,9 +95,9 @@ const handleCommand = async (interaction, client) => {
   } catch (error) {
     logger.error('COMMAND', `Lỗi khi thực thi lệnh ${interaction.commandName}:`, error);
     if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
+      await interaction.followUp({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', flags: MessageFlags.Ephemeral });
     } else {
-      await interaction.reply({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', ephemeral: true });
+      await interaction.reply({ content: 'Đã xảy ra lỗi khi thực thi lệnh này!', flags: MessageFlags.Ephemeral });
     }
   }
 };

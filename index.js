@@ -6,7 +6,6 @@ const {
 	Events,
 	Collection,
 } = require("discord.js");
-// Import the new handler function
 const { handleMentionMessage } = require("./handlers/messageHandler");
 const { handleCommand, loadCommands } = require("./handlers/commandHandler"); // Removed getCommandsJson as it's not used directly here
 const { startbot } = require("./events/ready");
@@ -17,12 +16,13 @@ const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.GuildIntegrations,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.DirectMessages,
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessageReactions,
 	],
-	partials: [Partials.Channel, Partials.Message, Partials.Reaction], // Thêm partials để xử lý tin nhắn cũ
+	partials: [Partials.Channel, Partials.Message, Partials.Reaction],
 });
 
 client.commands = new Collection();
@@ -47,5 +47,4 @@ process.on("unhandledRejection", (error) => {
 	logger.error("SYSTEM", "Lỗi không được xử lý:", error);
 });
 
-// Đăng nhập vào Discord bằng token của ứng dụng
 client.login(process.env.DISCORD_TOKEN);

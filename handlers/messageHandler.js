@@ -65,7 +65,6 @@ async function processXp(message, commandExecuted, execute) {
       'DISABLED_ON_CHANNEL',  // Tin nhắn được gửi trong kênh bị chặn XP
       'RECENTLY_TALKED'       // Người gửi vừa nói gần đây
     ].includes(response.reason)) {
-      // Ghi log lỗi nếu có
       logger.error('XP', `Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
     }
 

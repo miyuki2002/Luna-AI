@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const storageDB = require('../../services/storagedb.js');
 const NeuralNetworks = require('../../services/NeuralNetworks.js');
 
@@ -9,6 +9,6 @@ module.exports = {
 
   async execute(interaction) {
     await storageDB.clearConversationHistory(interaction.user.id, NeuralNetworks.systemPrompt, NeuralNetworks.Model);
-    await interaction.reply({ content: 'Tôi đã quên hết những cuộc trò chuyện trước đây của chúng ta rồi. Chúng ta có thể bắt đầu lại từ đầu!', ephemeral: true });
+    await interaction.reply({ content: 'Tôi đã quên hết những cuộc trò chuyện trước đây của chúng ta rồi. Chúng ta có thể bắt đầu lại từ đầu!', flags: MessageFlags.Ephemeral });
   },
 };
