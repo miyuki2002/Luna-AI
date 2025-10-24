@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks');
+const ImageService = require('../../services/ImageService');
 const logger = require('../../utils/logger.js');
 
 module.exports = {
@@ -18,11 +18,11 @@ module.exports = {
     let progressTracker = null;
 
     try {
-      progressTracker = NeuralNetworks.trackImageGenerationProgress(interaction, prompt);
+      progressTracker = ImageService.trackImageGenerationProgress(interaction, prompt);
 
       await progressTracker.update("Đang khởi tạo", 5);
 
-      const imageResult = await NeuralNetworks.generateImage(prompt, interaction, progressTracker);
+      const imageResult = await ImageService.generateImage(prompt, interaction, progressTracker);
       
       if (imageResult && imageResult.buffer) {
         const attachment = new AttachmentBuilder(imageResult.buffer, { name: 'generated-image.png' });

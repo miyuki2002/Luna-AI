@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks.js');
+const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
 
@@ -60,7 +60,7 @@ module.exports = {
       // Sử dụng NeuralNetworks để tạo thông báo
       const prompt = `Tạo một thông báo ngắn gọn, tích cực về việc unmute (bỏ timeout) thành viên ${targetUser.username} với lý do: "${reason}". Thông báo nên có giọng điệu của một mod thân thiện, không quá 2 câu. Có thể thêm 1 emoji phù hợp.`;
 
-      const aiResponse = await NeuralNetworks.getCompletion(prompt);
+      const aiResponse = await ConversationService.getCompletion(prompt);
 
       // Tạo embed thông báo
       const unmuteEmbed = new EmbedBuilder()

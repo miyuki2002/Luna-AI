@@ -1,5 +1,7 @@
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const NeuralNetworks = require('../services/NeuralNetworks');
+const ConversationService = require('../services/ConversationService');
+const ImageService = require('../services/ImageService');
+const AICore = require('../services/AICore');
 const experience = require('../utils/xp');
 const logger = require('../utils/logger.js');
 
@@ -117,7 +119,7 @@ async function handleChatRequest(message, content) {
       return;
     }
 
-    const response = await NeuralNetworks.getCompletion(content, message);
+    const response = await ConversationService.getCompletion(content, message);
 
     // Chia phản hồi nếu nó quá dài cho Discord
     if (response.length > 2000) {
@@ -151,7 +153,7 @@ async function handleImageGeneration(message, prompt) {
   await message.channel.sendTyping();
 
   try {
-    const imageResult = await NeuralNetworks.generateImage(prompt);
+    const imageResult = await ImageService.generateImage(prompt);
 
     if (typeof imageResult === 'string') {
       await message.reply(imageResult);
@@ -211,7 +213,7 @@ async function handleCodeRequest(message, prompt) {
       return;
     }
 
-    const result = await NeuralNetworks.getCodeCompletion(prompt, message);
+    const result = await AICore.getCodeCompletion(prompt, message);
     let formattedResponse = result.content || result;
 
     // Ghi nhận token usage nếu có

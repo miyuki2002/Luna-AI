@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks');
+const AICore = require('../../services/AICore');
 const { formatUptime } = require('../../utils/string');
 const { createCanvas, loadImage } = require('canvas');
 const packageJson = require('../../package.json');
@@ -14,7 +14,7 @@ module.exports = {
 		
 		try {
 			// Lấy thông tin cơ bản
-			const modelName = NeuralNetworks.getModelName() || "Anthropic Claude";
+			const modelName = AICore.getModelName() || "Anthropic Claude";
 			const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
 			const serverCount = interaction.client.guilds.cache.size;
 			
@@ -142,7 +142,7 @@ module.exports = {
 				.setThumbnail(interaction.client.user.displayAvatarURL({ dynamic: true, size: 512 }))
 				.setDescription('*Luna là trợ lý AI thân thiện, luôn sẵn sàng trò chuyện và giúp đỡ bạn với khả năng trí tuệ nhân tạo tiên tiến.*')
 				.addFields(
-					{ name: 'Model AI', value: NeuralNetworks.getModelName() || "Anthropic Claude", inline: true },
+					{ name: 'Model AI', value: AICore.getModelName() || "Anthropic Claude", inline: true },
 					{ name: 'Runtime', value: formatUptime(process.uptime(), true), inline: true },
 					{ name: 'Servers', value: `${interaction.client.guilds.cache.size}`, inline: true },
 					{ name: 'Memory', value: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`, inline: true },

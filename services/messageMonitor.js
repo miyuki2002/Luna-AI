@@ -1,4 +1,4 @@
-const NeuralNetworks = require("./NeuralNetworks.js");
+const AICore = require("./AICore.js");
 const mongoClient = require("./mongoClient.js");
 const { handleViolation } = require("./violationHandler.js");
 const logger = require("../utils/logger.js");
@@ -315,7 +315,7 @@ class MessageMonitor {
       const prompt = promptTemplate.replace("{{message}}", message.content);
 
       // Gọi NeuralNetworks để phân tích sử dụng phương thức riêng cho giám sát
-      const analysis = await NeuralNetworks.getMonitoringAnalysis(prompt);
+      const analysis = await AICore.getMonitoringAnalysis(prompt);
 
       // Phân tích kết quả
       const results = this.parseAnalysisResults(analysis);

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks.js');
+const AICore = require('../../services/AICore.js');
 const mongoClient = require('../../services/mongoClient.js');
 const messageMonitor = require('../../services/messageMonitor.js');
 

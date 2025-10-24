@@ -1,5 +1,5 @@
 const logger = require("../utils/logger.js");
-const neuralNetworks = require("./NeuralNetworks.js");
+const AICore = require("./AICore.js");
 const prompts = require("../config/prompts.js");
 
 class OwnerService {
@@ -130,7 +130,7 @@ class OwnerService {
         .replace("${ownerDisplayName}", this.ownerInfo.displayName)
         .replace("${context}", context);
 
-      const response = await neuralNetworks.getCompletion(prompt);
+      const response = await AICore.getCompletion(prompt);
       return response;
     } catch (error) {
       logger.error(
@@ -161,7 +161,7 @@ class OwnerService {
         "OWNER",
         `Đang tạo lời chào đặc biệt cho owner: ${this.ownerInfo.displayName}`
       );
-      const response = await neuralNetworks.getCompletion(prompt);
+      const response = await AICore.getCompletion(prompt);
       return response;
     } catch (error) {
       logger.error("OWNER", "Lỗi khi tạo lời chào động cho owner:", error);
