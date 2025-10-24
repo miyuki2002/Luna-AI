@@ -7,7 +7,7 @@ const ownerService = require('../services/ownerService.js');
 const { setupGuildHandlers } = require('../handlers/guildHandler');
 const logger = require('../utils/logger.js');
 const AutoUpdateService = require('../services/AutoUpdateService');
-const providerManager = require('../services/providers.js');
+const APIProviderManager = require('../services/providers.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -104,7 +104,9 @@ async function startbot(client, loadCommands) {
     });
 
     try {
-      await providerManager.initializeProviders();
+      const providerManager = new APIProviderManager();
+      const providers = providerManager.initializeProviders();
+      logger.info('SYSTEM', `Đã khởi tạo ${providers.length} providers: ${providers.map(p => p.name).join(", ")}`);
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo providers:', error);
     }

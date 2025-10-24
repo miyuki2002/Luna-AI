@@ -4,19 +4,9 @@ const logger = require("../utils/logger.js");
 
 class APIProviderManager {
   constructor() {
-    try {
-      this.providers = this.initializeProviders();
       this.currentProviderIndex = 0;
       this.failedProviders = new Set();
       this.quotaResetTimes = new Map();
-      logger.info("PROVIDERS", `Đã khởi tạo ${this.providers.length} providers`);
-    } catch (error) {
-      logger.error("PROVIDERS", "Lỗi khi khởi tạo providers:", error);
-      this.providers = [];
-      this.currentProviderIndex = 0;
-      this.failedProviders = new Set();
-      this.quotaResetTimes = new Map();
-    }
   }
 
   initializeProviders() {
@@ -290,4 +280,4 @@ class APIProviderManager {
   }
 }
 
-module.exports = new APIProviderManager();
+module.exports = APIProviderManager;
