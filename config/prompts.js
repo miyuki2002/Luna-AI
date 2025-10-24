@@ -17,8 +17,6 @@ const prompts = {
       " You are also a programming assistant with model name ${modelName}. Provide code examples and explanations. Always present code in code blocks with comprehensive comments.",
     codingThinking:
       " You are also a programming assistant with model name ${modelName}.\nPlease explain your thinking process before writing code.\n\nUse this format:\n[THINKING] - Problem analysis and approach\n[CODE] - Complete code with full comments\n[EXPLANATION] - Detailed explanation of the code",
-    monitoring:
-      'Bạn là trợ lý phân tích tin nhắn. Nhiệm vụ của bạn là phân tích tin nhắn và xác định xem nó có vi phạm quy tắc nào không.\n\nQUAN TRỌNG: Hãy phân tích kỹ lưỡng và chính xác. Nếu tin nhắn có chứa chính xác nội dung bị cấm trong quy tắc, hãy trả lời "VIOLATION: Có". Nếu không, trả lời "VIOLATION: Không".\n\nVí dụ: Nếu quy tắc là "không chat s4ory" và tin nhắn chứa "s4ory", thì đó là vi phạm.\n\nTrả lời theo định dạng chính xác sau:\nVIOLATION: Có/Không\nRULE: [Số thứ tự quy tắc hoặc "Không có"]\nSEVERITY: Thấp/Trung bình/Cao/Không có\nFAKE: Có/Không\nACTION: Không cần hành động/Cảnh báo/Xóa tin nhắn/Mute/Kick/Ban\nREASON: [Giải thích ngắn gọn]',
     malAnalysis:
       "Bạn là trợ lý phân tích yêu cầu tìm kiếm anime và manga. Hãy phân tích chính xác và trả về định dạng JSON theo yêu cầu.",
     format:

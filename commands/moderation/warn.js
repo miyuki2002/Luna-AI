@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks.js');
+const ConversationService = require('../../services/ConversationService.js');
 const mongoClient = require('../../services/mongoClient.js');
 
 module.exports = {
@@ -77,7 +77,7 @@ module.exports = {
       // Sử dụng NeuralNetworks để tạo thông báo
       const prompt = `Tạo một thông báo cảnh cáo nghiêm túc nhưng không quá gay gắt cho thành viên ${targetUser.username} với lý do: "${reason}". Đây là lần cảnh cáo thứ ${warningCount} của họ. Thông báo nên có giọng điệu của một mod nghiêm túc nhưng công bằng, không quá 3 câu. Có thể thêm 1 emoji phù hợp.`;
       
-      const aiResponse = await NeuralNetworks.getCompletion(prompt);
+      const aiResponse = await ConversationService.getCompletion(prompt);
       
       // Tạo embed thông báo
       const warnEmbed = new EmbedBuilder()

@@ -79,7 +79,7 @@ async function getModLogs(options) {
     // Truy vấn và sắp xếp kết quả
     const logs = await db
       .collection("modlog")
-      .find(filter)
+      .find(filter, { projection: { _id: 0, guildId: 1, targetId: 1, moderatorId: 1, action: 1, reason: 1, timestamp: 1, duration: 1, count: 1 } })
       .sort({ timestamp: -1 })
       .limit(options.limit || 10)
       .toArray();

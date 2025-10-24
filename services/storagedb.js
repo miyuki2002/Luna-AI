@@ -98,28 +98,23 @@ class StorageDB {
       // Tạo các chỉ mục khác
       await db.collection('conversation_meta').createIndex({ userId: 1 }, { unique: true });
 
-      // Tạo các collection cho hệ thống giám sát và quản lý
+      // Tạo các collection cho hệ thống quản lý
       try {
-        await db.createCollection('monitor_settings');
-        await db.createCollection('monitor_logs');
         await db.createCollection('mod_settings');
         await db.createCollection('image_blacklist');
-        logger.info('DATABASE', 'Đã tạo các collection cho hệ thống giám sát và moderation');
+        logger.info('DATABASE', 'Đã tạo các collection cho hệ thống moderation');
       } catch (error) {
-        logger.info('DATABASE', 'Các collection cho hệ thống giám sát đã tồn tại hoặc không thể tạo');
+        logger.info('DATABASE', 'Các collection cho hệ thống moderation đã tồn tại hoặc không thể tạo');
       }
 
-      // Tạo các chỉ mục cho hệ thống giám sát
+      // Tạo các chỉ mục cho hệ thống moderation
       try {
-        await db.collection('monitor_settings').createIndex({ guildId: 1 }, { unique: true });
-        await db.collection('monitor_logs').createIndex({ guildId: 1, timestamp: -1 });
-        await db.collection('monitor_logs').createIndex({ userId: 1 });
         await db.collection('mod_settings').createIndex({ guildId: 1 }, { unique: true });
         await db.collection('image_blacklist').createIndex({ category: 1 });
         await db.collection('image_blacklist').createIndex({ keyword: 1 });
-        logger.info('DATABASE', 'Đã tạo các chỉ mục cho hệ thống giám sát và moderation');
+        logger.info('DATABASE', 'Đã tạo các chỉ mục cho hệ thống moderation');
       } catch (error) {
-        logger.error('DATABASE', 'Lỗi khi tạo chỉ mục cho hệ thống giám sát:', error);
+        logger.error('DATABASE', 'Lỗi khi tạo chỉ mục cho hệ thống moderation:', error);
       }
 
       // Khởi tạo hệ thống token limit
@@ -402,7 +397,7 @@ class StorageDB {
 
         // Tìm tin nhắn cũ nhất để bảo toàn system prompt
         const oldestMsgs = await db.collection('conversations')
-          .find({ userId })
+          .find({ userId }, { projection: { messageIndex: 1, role: 1 } })
           .sort({ messageIndex: 1 })
           .limit(excessCount + 1)
           .toArray();
@@ -730,7 +725,7 @@ class StorageDB {
 
       const updatedProfile = await profiles.findOne(
         { _id: userId },
-        { projection: { 'data.economy': 1 } }
+        { projection: { 'data.economy': 1, _id: 0 } }
       );
 
       return updatedProfile?.data?.economy || null;
@@ -966,7 +961,7 @@ class StorageDB {
   async checkImageBlacklist(text) {
     try {
       const db = mongoClient.getDb();
-      const blacklist = await db.collection('image_blacklist').find().toArray();
+      const blacklist = await db.collection('image_blacklist').find({}, { projection: { keyword: 1, category: 1, _id: 0 } }).toArray();
 
       // Chuyển text về chữ thường để so sánh
       const lowerText = text.toLowerCase();
@@ -1055,7 +1050,7 @@ class StorageDB {
   async getImageBlacklist() {
     try {
       const db = mongoClient.getDb();
-      return await db.collection('image_blacklist').find().toArray();
+      return await db.collection('image_blacklist').find({}, { projection: { _id: 0, keyword: 1, category: 1 } }).toArray();
     } catch (error) {
       logger.error('DATABASE', 'Lỗi khi lấy danh sách blacklist:', error);
       return [];

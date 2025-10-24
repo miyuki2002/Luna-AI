@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const NeuralNetworks = require('../../services/NeuralNetworks');
+const AICore = require('../../services/AICore');
 const logger = require('../../utils/logger.js');
 const { splitMessageRespectWords } = require('../../handlers/messageHandler');
 
@@ -18,7 +18,18 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      const response = await NeuralNetworks.getThinkingResponse(prompt, interaction);
+      // Gọi trực tiếp AICore thay vì qua NeuralNetworks
+      const result = await AICore.getThinkingResponse(prompt);
+      let response = result.content;
+
+      // Format response
+      response = response.replace(/\[THINKING\]/gi, "🤔 **Quá trình suy nghĩ:**");
+      response = response.replace(/\[ANSWER\]/gi, "💡 **Câu trả lời:**");
+
+      // Thêm thông tin provider
+      const providerStatus = AICore.getProviderStatus();
+      const currentProvider = providerStatus.find(p => p.current);
+      response += `\n\n🔧 ${currentProvider?.name || 'Unknown'} | 🎯 ${result.usage?.total_tokens || 0} tokens`;
 
       if (response.length <= 2000) {
         await interaction.editReply({
@@ -26,12 +37,11 @@ module.exports = {
         });
       } else {
         const chunks = splitMessageRespectWords(response);
-        
 
         await interaction.editReply({
           content: chunks[0]
         });
-        
+
         for (let i = 1; i < chunks.length; i++) {
           await interaction.followUp({
             content: chunks[i]
@@ -40,7 +50,17 @@ module.exports = {
       }
     } catch (error) {
       logger.error('COMMAND', 'Lỗi khi xử lý câu hỏi:', error);
-      await interaction.editReply('Xin lỗi, tôi không thể phân tích câu hỏi này lúc này. Hãy thử lại sau nhé!');
+
+      const providerStatus = AICore.getProviderStatus();
+      const activeProviders = providerStatus.filter(p => p.active);
+
+      let errorMsg = 'Không thể phân tích câu hỏi này lúc này.';
+      if (activeProviders.length === 0) {
+        errorMsg += '\nTất cả API providers đã hết quota.';
+      }
+      errorMsg += '\n💭 Hãy thử lại sau nhé!';
+
+      await interaction.editReply(errorMsg);
     }
   }
 };
