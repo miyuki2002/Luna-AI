@@ -11,6 +11,9 @@ class AICore {
 
   async processChatCompletion(messages, config = {}) {
     try {
+      logger.debug("AI_CORE", "Bắt đầu processChatCompletion");
+      logger.debug("AI_CORE", `Messages count: ${messages.length}`);
+      
       const response = await providerManager.makeRequest("/chat/completions", {
         max_tokens: config.max_tokens || 2048,
         messages: messages,
