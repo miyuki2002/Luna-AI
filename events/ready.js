@@ -7,6 +7,7 @@ const ownerService = require('../services/ownerService.js');
 const { setupGuildHandlers } = require('../handlers/guildHandler');
 const logger = require('../utils/logger.js');
 const AutoUpdateService = require('../services/AutoUpdateService');
+const providerManager = require('../services/providers.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -101,6 +102,12 @@ async function startbot(client, loadCommands) {
       activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'
     });
+
+    try {
+      await providerManager.initializeProviders();
+    } catch (error) {
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo providers:', error);
+    }
 
     logger.info('SYSTEM', `Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
   });
