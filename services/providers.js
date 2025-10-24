@@ -4,16 +4,27 @@ const logger = require("../utils/logger.js");
 
 class APIProviderManager {
   constructor() {
-    this.providers = this.initializeProviders();
-    this.currentProviderIndex = 0;
-    this.failedProviders = new Set();
-    this.quotaResetTimes = new Map();
+    try {
+      this.providers = this.initializeProviders();
+      this.currentProviderIndex = 0;
+      this.failedProviders = new Set();
+      this.quotaResetTimes = new Map();
+      logger.info("PROVIDERS", `Đã khởi tạo ${this.providers.length} providers`);
+    } catch (error) {
+      logger.error("PROVIDERS", "Lỗi khi khởi tạo providers:", error);
+      this.providers = [];
+      this.currentProviderIndex = 0;
+      this.failedProviders = new Set();
+      this.quotaResetTimes = new Map();
+    }
   }
 
   initializeProviders() {
     const providers = [];
+    logger.debug("PROVIDERS", "Bắt đầu khởi tạo providers...");
 
     if (process.env.LUNA_BASE_URL && process.env.ENABLE_LOCAL_MODEL === 'true') {
+      logger.debug("PROVIDERS", "Thêm Local provider");
         providers.push({
           name: "Local",
           baseURL: process.env.LUNA_BASE_URL || "http://localhost:11434/v1",
@@ -31,6 +42,7 @@ class APIProviderManager {
       }
     
     if (process.env.PERPLEXITY_API_KEY) {
+      logger.debug("PROVIDERS", "Thêm Perplexity provider");
       providers.push({
         name: "Perplexity",
         baseURL: process.env.PERPLEXITY_BASE_URL || "https://api.perplexity.ai/",
@@ -48,14 +60,15 @@ class APIProviderManager {
     }
 
     if (process.env.OPENROUTER_API_KEY) {
+      logger.debug("PROVIDERS", "Thêm OpenRouter provider");
       providers.push({
         name: "OpenRouter",
         baseURL: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
         apiKey: process.env.OPENROUTER_API_KEY,
         models: {
-          default: "anthropic/claude-3.5-sonnet",
-          thinking: "deepseek/deepseek-r1-distill-llama-70b",
-          image: "anthropic/claude-3.5-sonnet"
+          default: "google/gemini-2.0-flash-exp:free",
+          thinking: "deepseek/deepseek-r1:free",
+          image: "google/gemini-2.0-flash-exp:free"
         },
         headers: {
           "Content-Type": "application/json",
@@ -200,6 +213,13 @@ class APIProviderManager {
   }
 
   async makeRequest(endpoint, requestBody, modelType = 'default') {
+    logger.debug("PROVIDERS", `makeRequest called with endpoint: ${endpoint}, modelType: ${modelType}`);
+    logger.debug("PROVIDERS", `Available providers: ${this.providers.length}`);
+    
+    if (this.providers.length === 0) {
+      throw new Error("Không có API provider nào được cấu hình");
+    }
+    
     let lastError;
     let attempts = 0;
     const maxAttempts = this.providers.length + 1;

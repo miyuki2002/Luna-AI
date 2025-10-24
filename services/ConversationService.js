@@ -341,7 +341,7 @@ class ConversationService {
         messages = conversationManager.getHistory(userId);
       }
 
-      // Gọi AI Core để xử lý
+      logger.debug("CONVERSATION_SERVICE", "Gọi AICore.processChatCompletion");
       const result = await AICore.processChatCompletion(messages, {
         model: additionalConfig.model || AICore.CoreModel,
         max_tokens: additionalConfig.max_tokens || 2048,
@@ -367,6 +367,7 @@ class ConversationService {
       return formattedContent;
     } catch (error) {
       logger.error("CONVERSATION_SERVICE", "Error in processChatCompletion:", error.message);
+      logger.error("CONVERSATION_SERVICE", "Error stack:", error.stack);
       throw error;
     }
   }

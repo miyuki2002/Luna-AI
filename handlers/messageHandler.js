@@ -90,6 +90,7 @@ async function processXp(message, commandExecuted, execute) {
  * @param {string} content - Nội dung tin nhắn đã xử lý
  */
 async function handleChatRequest(message, content) {
+  logger.debug('CHAT', 'Bắt đầu handleChatRequest');
   await message.channel.sendTyping();
 
   try {
@@ -119,7 +120,9 @@ async function handleChatRequest(message, content) {
       return;
     }
 
+    logger.debug('CHAT', 'Gọi ConversationService.getCompletion');
     const response = await ConversationService.getCompletion(content, message);
+    logger.debug('CHAT', 'ConversationService.getCompletion hoàn thành');
 
     // Chia phản hồi nếu nó quá dài cho Discord
     if (response.length > 2000) {
@@ -132,11 +135,17 @@ async function handleChatRequest(message, content) {
     }
   } catch (error) {
     logger.error('MESSAGE', `Lỗi khi nhận phản hồi trò chuyện cho ${message.author.tag}:`, error);
+    logger.error('MESSAGE', `Error stack:`, error.stack);
 
-    if (error.code === 'EPROTO' || error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
-      await message.reply('Xin lỗi, tôi đang gặp vấn đề xử lý yêu cầu của bạn. Vui lòng thử lại sau hoặc liên hệ quản trị viên để được hỗ trợ.');
+    // Kiểm tra loại lỗi để gửi thông báo phù hợp
+    if (error.message.includes('Không có API provider nào được cấu hình')) {
+      await message.reply('Xin lỗi, hệ thống AI hiện tại không khả dụng. Vui lòng thử lại sau.');
+    } else if (error.message.includes('Tất cả providers đã thất bại')) {
+      await message.reply('Xin lỗi, tất cả nhà cung cấp AI đều không khả dụng. Vui lòng thử lại sau.');
+    } else if (error.code === 'EPROTO' || error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
+      await message.reply('Xin lỗi, tôi đang gặp vấn đề kết nối. Vui lòng thử lại sau hoặc liên hệ quản trị viên để được hỗ trợ.');
     } else {
-      await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo phản hồi. Vui lòng thử lại sau.');
+      await message.reply('Xin lỗi, hệ thống xảy ra lỗi khi xử lý cuộc trò chuyện. Vui lòng thử lại sau.');
     }
   }
 }
@@ -376,7 +385,16 @@ async function handleMentionMessage(message, client) {
         logger.info('CHAT', `Đã xử lý tin nhắn trò chuyện thành công cho ${message.author.tag}`);
       } catch (error) {
         logger.error('CHAT', `Lỗi khi xử lý tin nhắn trò chuyện từ ${message.author.tag}:`, error);
-        await message.reply('Xin lỗi, đã có lỗi xảy ra khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.');
+        logger.error('CHAT', `Error stack:`, error.stack);
+        
+        // Kiểm tra loại lỗi để gửi thông báo phù hợp
+        if (error.message.includes('Không có API provider nào được cấu hình')) {
+          await message.reply('Xin lỗi, hệ thống AI hiện tại không khả dụng. Vui lòng thử lại sau.');
+        } else if (error.message.includes('Tất cả providers đã thất bại')) {
+          await message.reply('Xin lỗi, tất cả nhà cung cấp AI đều không khả dụng. Vui lòng thử lại sau.');
+        } else {
+          await message.reply('Xin lỗi, hệ thống xảy ra lỗi khi xử lý cuộc trò chuyện. Vui lòng thử lại sau.');
+        }
       }
     } else if (hasEveryoneOrRoleMention) {
       logger.debug('CHAT', `Bỏ qua tin nhắn có mention @everyone hoặc @role từ ${message.author.tag}`);
