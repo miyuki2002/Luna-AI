@@ -12,6 +12,23 @@ class APIProviderManager {
 
   initializeProviders() {
     const providers = [];
+
+    if (process.env.LUNA_BASE_URL && process.env.ENABLE_LOCAL_MODEL === 'true') {
+        providers.push({
+          name: "Local",
+          baseURL: process.env.LUNA_BASE_URL || "http://localhost:11434/v1",
+          apiKey: "local-dummy-key-idk-what-to-put-maybe-empty",
+          models: {
+            default: process.env.LUNA_DEFAULT_MODEL || "luna:30b",
+            thinking: process.env.LUNA_THINKING_MODEL || "luna:235b", 
+            image: process.env.GRADIO_IMAGE_SPACE || "stabilityai/stable-diffusion-3-medium"
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+          isLocal: true
+        });
+      }
     
     if (process.env.PERPLEXITY_API_KEY) {
       providers.push({
