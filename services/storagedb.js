@@ -725,7 +725,7 @@ class StorageDB {
 
       const updatedProfile = await profiles.findOne(
         { _id: userId },
-        { projection: { 'data.economy': 1 } }
+        { projection: { 'data.economy': 1, _id: 0 } }
       );
 
       return updatedProfile?.data?.economy || null;
@@ -961,7 +961,7 @@ class StorageDB {
   async checkImageBlacklist(text) {
     try {
       const db = mongoClient.getDb();
-      const blacklist = await db.collection('image_blacklist').find().toArray();
+      const blacklist = await db.collection('image_blacklist').find({}, { projection: { keyword: 1, category: 1, _id: 0 } }).toArray();
 
       // Chuyển text về chữ thường để so sánh
       const lowerText = text.toLowerCase();
@@ -1050,7 +1050,7 @@ class StorageDB {
   async getImageBlacklist() {
     try {
       const db = mongoClient.getDb();
-      return await db.collection('image_blacklist').find().toArray();
+      return await db.collection('image_blacklist').find({}, { projection: { _id: 0, keyword: 1, category: 1 } }).toArray();
     } catch (error) {
       logger.error('DATABASE', 'Lỗi khi lấy danh sách blacklist:', error);
       return [];

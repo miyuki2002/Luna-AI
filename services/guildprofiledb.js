@@ -84,7 +84,7 @@ const createDefaultGuildProfile = (guildId) => {
 const getAllGuildProfiles = async () => {
   try {
     const collection = await getGuildProfileCollection();
-    return await collection.find({}).toArray();
+    return await collection.find({}, { projection: { _id: 1, guildName: 1, xpSettings: 1 } }).toArray();
   } catch (error) {
     logger.error("SYSTEM", "Lỗi khi lấy tất cả hồ sơ guild:", error);
     return [];
