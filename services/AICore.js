@@ -9,39 +9,6 @@ class AICore {
     logger.info("AI_CORE", "Initialized with multi-provider support");
   }
 
-  async getMonitoringAnalysis(prompt) {
-    try {
-      logger.debug("AI_CORE", "Processing monitoring analysis");
-
-      const messages = [
-        {
-          role: "system",
-          content: prompts.system.monitoring,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ];
-
-      const response = await providerManager.makeRequest("/chat/completions", {
-        max_tokens: 1024,
-        messages: messages,
-      });
-
-      const content = response.choices[0].message.content;
-
-      if (!content.includes("VI_PHẠM:") && !content.includes("QUY_TẮC_VI_PHẠM:")) {
-        return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Không phát hiện vi phạm`;
-      }
-
-      return content;
-    } catch (error) {
-      logger.error("AI_CORE", "Monitoring analysis error:", error.message);
-      return `VI_PHẠM: Không\nQUY_TẮC_VI_PHẠM: Không có\nMỨC_ĐỘ: Không có\nDẤU_HIỆU_GIẢ_MẠO: Không\nĐỀ_XUẤT: Không cần hành động\nLÝ_DO: Lỗi kết nối API: ${error.message}`;
-    }
-  }
-
   async processChatCompletion(messages, config = {}) {
     try {
       const response = await providerManager.makeRequest("/chat/completions", {

@@ -214,11 +214,6 @@ class ConversationService {
    * Xử lý completion chính với tất cả logic cuộc trò chuyện
    */
   async getCompletion(prompt, message = null) {
-    // Kiểm tra monitoring analysis
-    if (!message && (prompt.includes("VI_PHẠM:") || prompt.includes("QUY_TẮC_VI_PHẠM:") || prompt.includes("MỨC_ĐỘ:"))) {
-      logger.debug("CONVERSATION_SERVICE", "Redirecting to monitoring analysis");
-      return AICore.getMonitoringAnalysis(prompt);
-    }
 
     try {
       const userId = this.extractUserId(message);
