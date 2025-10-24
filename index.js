@@ -29,8 +29,6 @@ client.features = ["EXPERIENCE_POINTS"];
 
 startbot(client, () => loadCommands(client));
 
-// setupGuildHandlers(client);
-
 client.on(Events.MessageCreate, async (message) => {
 	await handleMentionMessage(message, client);
 });

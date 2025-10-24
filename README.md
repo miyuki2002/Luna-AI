@@ -1,129 +1,123 @@
 # Luna - Bot Trợ Lý AI Cho Discord
 
 <div align="center">
-  <img src="./assets/luna-avatar.png" alt="Ảnh Đại Diện Bot Luna" width="200" height="200" style="border-radius: 50%;">
+  <img src="./assets/luna-avatar.png" alt="Ảnh đại diện bot Luna" width="200" height="200" style="border-radius: 50%;">
   <br>
-  <em>Người bạn đồng hành AI thân thiện của bạn</em>
+  <em>Trợ lý AI thông minh cho Discord của bạn</em>
 </div>
 
 ## Tổng Quan
 
-Luna là một bot Discord được hỗ trợ bởi API Anthropic/xAI. Cô ấy có tính cách thân thiện, gần gũi và có thể hỗ trợ nhiều nhiệm vụ bao gồm trò chuyện, tạo mã nguồn và tạo hình ảnh. Bot tích hợp hệ thống cấp độ và thành tựu để tạo động lực tương tác với người dùng.
+Luna là bot Discord được hỗ trợ bởi nhiều nhà cung cấp AI bao gồm Perplexity, Alibaba Qwen, OpenRouter và OpenAI. Bot có tính cách thân thiện và hỗ trợ nhiều tác vụ như trò chuyện, tạo mã nguồn và tạo hình ảnh. Tích hợp hệ thống cấp độ và thành tựu để khuyến khích tương tác người dùng.
+> Luna hỗ trợ cả **local offline models** và **cloud providers** để đảm bảo độ tin cậy tối đa.
+> Model Luna được build dựa trên Qwen3 2385B.
 
-**🚀 Phiên bản 1.0.4**: Kiến trúc mới được tái cấu trúc hoàn toàn với các service module riêng biệt, dễ bảo trì và nâng cấp hơn.
+**Phiên bản 1.1.0**: Kiến trúc hoàn toàn mới với hệ thống đa nhà cung cấp AI, tự động chuyển đổi khi lỗi và thiết kế modular để tăng độ tin cậy và dễ bảo trì.
 
-## Tính Năng
+## Tính Năng Chính
 
-- 💬 **Trò Chuyện Tự Nhiên**: Chat với Luna một cách thân thiện và tự nhiên.
-- 🖼️ **Tạo Hình Ảnh**: Tạo hình ảnh bằng các lệnh đơn giản như "vẽ, tạo hình [mô tả]".
-- 💻 **Hỗ Trợ Lập Trình**: Nhận trợ giúp cho các nhiệm vụ lập trình.
-- 🔄 **Lưu trữ**: Luna ghi nhớ ngữ cảnh cuộc trò chuyện để tương tác tự nhiên hơn.
-- ⚙️ **Quản Lý Máy Chủ**: Tự động triển khai lệnh khi tham gia máy chủ mới.
-- ⭐ **Hệ Thống Cấp Độ**: Tăng cấp và nhận thành tựu khi tương tác.
-- 🎨 **Profile Card**: Thẻ thông tin người dùng với thiết kế hiện đại.
-- 💾 **Đồng Bộ Dữ Liệu**: Lưu trữ thông tin người dùng và máy chủ với MongoDB.
-- 🔧 **Kiến Trúc Module**: Dễ dàng bảo trì, nâng cấp và thay đổi nhà cung cấp AI.
+**Trò chuyện thông minh**: Tương tác tự nhiên với khả năng ghi nhớ ngữ cảnh  
+**Tạo hình ảnh**: Tạo hình ảnh từ mô tả văn bản đơn giản  
+**Trợ lý lập trình**: Hỗ trợ lập trình và tạo mã nguồn  
+**Hệ thống bộ nhớ**: Ghi nhớ ngữ cảnh cuộc trò chuyện cho tương tác tự nhiên  
+**Quản lý máy chủ**: Tự động triển khai lệnh cho máy chủ mới  
+**Hệ thống tiến độ**: Hệ thống cấp độ với thành tựu và phần thưởng  
+**Thẻ hồ sơ**: Hiển thị thông tin người dùng hiện đại  
+**Đồng bộ dữ liệu**: Lưu trữ dữ liệu người dùng và máy chủ với MongoDB  
+**Kiến trúc đa nhà cung cấp**: Tự động chuyển đổi API để đảm bảo hoạt động liên tục
 
-## Kiến Trúc Mới (v1.0.4)
+## Kiến Trúc Mới (v1.1.0)
 
-Luna đã được tái cấu trúc hoàn toàn với kiến trúc module hóa:
+Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung cấp mạnh mẽ:
 
-### 🧠 **AICore.js** - Trung tâm AI
+### **AICore.js** - Trung tâm xử lý AI
 - Xử lý tất cả API calls và logic AI
-- Dễ dàng chuyển đổi nhà cung cấp AI (X.AI, Anthropic, OpenAI, v.v.)
+- Hỗ trợ đa nhà cung cấp với tự động chuyển đổi
 - Cấu hình API client bảo mật
+- Quản lý quota thông minh và chuyển đổi nhà cung cấp
 
-### 🖼️ **ImageService.js** - Dịch vụ hình ảnh
-- Tích hợp Gradio và xử lý hình ảnh
+### **providers.js** - Quản lý nhà cung cấp
+- Quản lý nhiều nhà cung cấp AI (Perplexity, Qwen, OpenRouter, OpenAI)
+- Tự động chuyển đổi khi hết quota
+- Giám sát sức khỏe và theo dõi trạng thái nhà cung cấp
+- Xác thực phản hồi và lọc chất lượng
+
+### **ImageService.js** - Xử lý hình ảnh
+- Tích hợp Gradio để tạo hình ảnh
 - Theo dõi tiến trình tạo hình ảnh
 - Chức năng hình ảnh độc lập
 
-### 💬 **ConversationService.js** - Quản lý hội thoại
-- Quản lý memory và context
+### **ConversationService.js** - Quản lý cuộc trò chuyện
+- Quản lý ngữ cảnh và bộ nhớ
 - Xử lý tương tác người dùng
-- Làm giàu hội thoại với memories liên quan
+- Làm phong phú cuộc trò chuyện với bộ nhớ liên quan
 
-### ⚙️ **SystemService.js** - Tiện ích hệ thống
-- Kiểm tra môi trường và hệ thống
+### **SystemService.js** - Tiện ích hệ thống
+- Xác thực môi trường và kiểm tra hệ thống
 - Khởi tạo logging và quản lý
-- Tắt máy graceful và bảo trì định kỳ
-
-### 🎯 **NeuralNetworks.js** - Orchestrator
-- Điều phối lightweight giữa các service
-- Duy trì backward compatibility hoàn toàn
-- Wrapper methods cho existing code
+- Tắt máy nhẹ nhàng và bảo trì định kỳ
 
 ## Cài Đặt
 
 1. Clone repository này
-2. Cài đặt dependencies với lệnh `npm install`
+2. Cài đặt dependencies: `npm install`
 3. Tạo file `.env` từ `example.env`
-4. Chạy bot với lệnh `npm run start` hoặc `npm run dev`
+4. Cấu hình API keys cho các nhà cung cấp mong muốn
+5. Chạy bot: `npm run start` hoặc `npm run dev`
 
-## Cấu Trúc Thư Mục
-
-```
-Luna/
-├── assets/         # Tài nguyên (hình ảnh, font)
-├── commands/       # Các lệnh slash
-├── events/         # Event handlers
-├── handlers/       # Logic xử lý
-├── services/       # Các dịch vụ (DB, AI, Canvas)
-│   ├── AICore.js           # 🧠 Trung tâm AI và API
-│   ├── ImageService.js     # 🖼️ Dịch vụ tạo hình ảnh
-│   ├── ConversationService.js # 💬 Quản lý hội thoại
-│   ├── SystemService.js    # ⚙️ Tiện ích hệ thống
-│   └── NeuralNetworks.js   # 🎯 Orchestrator chính
-└── utils/          # Tiện ích
-```
 
 ## Cách Sử Dụng
 
-- Nhắc đến Luna (`@Luna`) trong bất kỳ kênh nào để bắt đầu trò chuyện.
-- Sử dụng lệnh `/` cho các chức năng cụ thể.
-- Gõ `/help` để xem các chức năng của bot.
-- Tương tác với bot thường xuyên để tăng cấp độ và nhận thành tựu.
-- Sử dụng `/profile` để xem thẻ thông tin của bạn.
+**Nhắc đến Luna** (`@Luna`) trong bất kỳ kênh nào để bắt đầu cuộc trò chuyện  
+**Sử dụng lệnh slash** (`/`) cho các chức năng cụ thể  
+**Gõ `/help`** để xem các chức năng có sẵn của bot  
+**Tương tác thường xuyên** để tăng cấp độ và mở khóa thành tựu  
+**Sử dụng `/profile`** để xem thẻ thông tin của bạn
 
-## Các Lệnh
+## Các Lệnh Có Sẵn
 
 | Lệnh | Mô Tả |
 |---------|-------------|
 | `/help` | Hiển thị các lệnh có sẵn |
-| `/ping` | Kiểm tra thời gian phản hồi của bot |
+| `/ping` | Kiểm tra thời gian phản hồi bot |
 | `/about` | Thông tin về Luna |
-| `/image` | Tạo hình ảnh bằng các lệnh đơn giản |
+| `/think` | Hiển thị quá trình suy nghĩ của AI |
+| `/image` | Tạo hình ảnh từ văn bản |
 | `/reset` | Đặt lại cuộc trò chuyện với bot |
-| `/profile` | Xem thẻ thông tin người dùng |
+| `/profile` | Xem thẻ hồ sơ người dùng |
 
-## Lợi Ích Kiến Trúc Mới
+## Lợi Ích Kiến Trúc
 
-### 🔄 **Dễ Nâng Cấp**
-- Chỉ cần sửa `AICore.js` để thay đổi nhà cung cấp AI 
-- Các service độc lập, dễ test và debug
-- Backward compatibility hoàn toàn
+### **Độ tin cậy cao**
+- Nhiều nhà cung cấp AI với tự động chuyển đổi
+- Không bao giờ offline do lỗi một nhà cung cấp
+- Quản lý quota thông minh trên các nhà cung cấp
+- Xác thực chất lượng phản hồi
 
-### 🛠️ **Bảo Trì Tốt Hơn**
-- Separation of concerns rõ ràng
-- Bug fixes được cô lập trong service liên quan
-- Code organization được cải thiện
+### **Dễ bảo trì**
+- Kiến trúc dịch vụ modular
+- Phân tách trách nhiệm rõ ràng
+- Sửa lỗi và cập nhật được cô lập
+- Tổ chức code được cải thiện
 
-### 📈 **Khả Năng Mở Rộng**
-- Các service có thể scale độc lập
-- Dễ dàng thêm tính năng mới
-- Logging với prefix riêng cho từng service
+### **Khả năng mở rộng**
+- Các dịch vụ có thể mở rộng độc lập
+- Dễ dàng thêm nhà cung cấp AI mới
+- Thêm tính năng đơn giản
+- Hệ thống logging toàn diện
 
 ## Đóng Góp
 
-Chào đón mọi đóng góp, báo lỗi và yêu cầu tính năng mới! Bot được thiết kế với kiến trúc module hóa mới, cực kỳ dễ dàng mở rộng và tùy chỉnh.
+Chúng tôi chào đón mọi đóng góp, báo cáo lỗi và yêu cầu tính năng! Bot được thiết kế với kiến trúc modular mới giúp việc mở rộng và tùy chỉnh trở nên cực kỳ dễ dàng.
 
 ### Hướng Dẫn Phát Triển
-- Sử dụng service tương ứng cho từng loại chức năng
-- Tất cả AI logic → `AICore.js`
-- Tất cả image processing → `ImageService.js`
-- Tất cả conversation logic → `ConversationService.js`
-- Tất cả system utilities → `SystemService.js`
+- Sử dụng dịch vụ phù hợp cho từng loại chức năng
+- Tất cả logic AI đi vào `AICore.js`
+- Tất cả quản lý nhà cung cấp đi vào `providers.js`
+- Tất cả xử lý hình ảnh đi vào `ImageService.js`
+- Tất cả logic cuộc trò chuyện đi vào `ConversationService.js`
+- Tất cả tiện ích hệ thống đi vào `SystemService.js`
 
 ## Giấy Phép
 
-[MIT](LICENSE) [Terms of service](./docs/legal/terms-of-service.md) [Privacy](./docs/legal/privacy-policy.md)
+[MIT](LICENSE) | [Điều Khoản Dịch Vụ](./docs/legal/terms-of-service.md) | [Chính Sách Bảo Mật](./docs/legal/privacy-policy.md)
