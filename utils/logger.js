@@ -1,8 +1,3 @@
-/**
- * Hệ thống ghi log tập trung
- * Cho phép bật/tắt log và phân loại log theo mức độ
- */
-
 const fs = require("fs");
 const path = require("path");
 
@@ -52,7 +47,7 @@ async function initializeFileLogging() {
     logStream = fs.createWriteStream(currentLogFile, { flags: "a" });
 
     // Ghi thông tin khởi động
-    const startupMessage = `\n=== LUNA AI STARTUP LOG ===\nStartup Time: ${new Date().toISOString()}\nEnvironment: ${
+    const startupMessage = `\nLUNA AI STARTUP LOG\nStartup Time: ${new Date().toISOString()}\nEnvironment: ${
       process.env.NODE_ENV || "development"
     }\n=========================\n\n`;
     logStream.write(startupMessage);
@@ -60,13 +55,13 @@ async function initializeFileLogging() {
     // Xử lý khi process kết thúc
     process.on("exit", () => {
       if (logStream) {
-        logStream.end("\n=== LUNA AI SHUTDOWN ===\n");
+        logStream.end("\nLUNA AI SHUTDOWN\n");
       }
     });
 
     process.on("SIGINT", () => {
       if (logStream) {
-        logStream.end("\n=== LUNA AI INTERRUPTED ===\n");
+        logStream.end("\nLUNA AI INTERRUPTED\n");
       }
       process.exit();
     });

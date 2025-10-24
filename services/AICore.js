@@ -50,7 +50,6 @@ class AICore {
       });
       logger.info("AI_CORE", `Using custom CA cert: ${certPath}`);
     } else if (!rejectUnauthorized) {
-      // Bypass SSL verification nếu NODE_TLS_REJECT_UNAUTHORIZED=0
       options.httpsAgent = new https.Agent({
         rejectUnauthorized: false
       });
