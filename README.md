@@ -9,24 +9,23 @@
 ## Tổng Quan
 
 Luna là bot Discord được hỗ trợ bởi nhiều nhà cung cấp AI bao gồm Perplexity, Alibaba Qwen, OpenRouter và OpenAI. Bot có tính cách thân thiện và hỗ trợ nhiều tác vụ như trò chuyện, tạo mã nguồn và tạo hình ảnh. Tích hợp hệ thống cấp độ và thành tựu để khuyến khích tương tác người dùng.
-> Luna hỗ trợ cả **local offline models** và **cloud providers** để đảm bảo độ tin cậy tối đa.
-> Model Luna được build dựa trên Qwen3 2385B.
+> Luna Bot hỗ trợ cả **local offline models** và **cloud providers** để đảm bảo độ tin cậy tối đa. Ngoài ra model LLM Luna được build dựa trên Qwen3 2385B (sẽ được cập nhật sau tại Hugging Face).
 
 **Phiên bản 1.1.0**: Kiến trúc hoàn toàn mới với hệ thống đa nhà cung cấp AI, tự động chuyển đổi khi lỗi và thiết kế modular để tăng độ tin cậy và dễ bảo trì.
 
 ## Tính Năng Chính
 
-**Trò chuyện thông minh**: Tương tác tự nhiên với khả năng ghi nhớ ngữ cảnh  
-**Tạo hình ảnh**: Tạo hình ảnh từ mô tả văn bản đơn giản  
-**Trợ lý lập trình**: Hỗ trợ lập trình và tạo mã nguồn  
-**Hệ thống bộ nhớ**: Ghi nhớ ngữ cảnh cuộc trò chuyện cho tương tác tự nhiên  
-**Quản lý máy chủ**: Tự động triển khai lệnh cho máy chủ mới  
-**Hệ thống tiến độ**: Hệ thống cấp độ với thành tựu và phần thưởng  
-**Thẻ hồ sơ**: Hiển thị thông tin người dùng hiện đại  
-**Đồng bộ dữ liệu**: Lưu trữ dữ liệu người dùng và máy chủ với MongoDB  
-**Kiến trúc đa nhà cung cấp**: Tự động chuyển đổi API để đảm bảo hoạt động liên tục
+- **Trò chuyện thông minh**: Tương tác tự nhiên với khả năng ghi nhớ ngữ cảnh  
+- **Tạo hình ảnh**: Tạo hình ảnh từ mô tả văn bản đơn giản  
+- **Trợ lý lập trình**: Hỗ trợ lập trình và tạo mã nguồn  
+- **Hệ thống bộ nhớ**: Ghi nhớ ngữ cảnh cuộc trò chuyện cho tương tác tự nhiên  
+- **Quản lý máy chủ**: Tự động triển khai lệnh cho máy chủ mới  
+- **Hệ thống tiến độ**: Hệ thống cấp độ với thành tựu và phần thưởng  
+- **Thẻ hồ sơ**: Hiển thị thông tin người dùng hiện đại  
+- **Đồng bộ dữ liệu**: Lưu trữ dữ liệu người dùng và máy chủ với MongoDB  
+- **Kiến trúc đa nhà cung cấp**: Tự động chuyển đổi API để đảm bảo hoạt động liên tục
 
-## Kiến Trúc Mới (v1.1.0)
+## Kiến Trúc Hệ Thống
 
 Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung cấp mạnh mẽ:
 
@@ -63,16 +62,7 @@ Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung
 2. Cài đặt dependencies: `npm install`
 3. Tạo file `.env` từ `example.env`
 4. Cấu hình API keys cho các nhà cung cấp mong muốn
-5. Chạy bot: `npm run start` hoặc `npm run dev`
-
-
-## Cách Sử Dụng
-
-**Nhắc đến Luna** (`@Luna`) trong bất kỳ kênh nào để bắt đầu cuộc trò chuyện  
-**Sử dụng lệnh slash** (`/`) cho các chức năng cụ thể  
-**Gõ `/help`** để xem các chức năng có sẵn của bot  
-**Tương tác thường xuyên** để tăng cấp độ và mở khóa thành tựu  
-**Sử dụng `/profile`** để xem thẻ thông tin của bạn
+5. Chạy bot: `npm start` 
 
 ## Các Lệnh Có Sẵn
 
@@ -108,7 +98,7 @@ Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung
 
 ## Đóng Góp
 
-Chúng tôi chào đón mọi đóng góp, báo cáo lỗi và yêu cầu tính năng! Bot được thiết kế với kiến trúc modular mới giúp việc mở rộng và tùy chỉnh trở nên cực kỳ dễ dàng.
+Tôi chào đón mọi đóng góp, báo cáo lỗi và yêu cầu tính năng! Bot được thiết kế với kiến trúc modular mới giúp việc mở rộng và tùy chỉnh trở nên cực kỳ dễ dàng.
 
 ### Hướng Dẫn Phát Triển
 - Sử dụng dịch vụ phù hợp cho từng loại chức năng
