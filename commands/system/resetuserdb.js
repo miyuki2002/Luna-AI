@@ -1,19 +1,19 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const storageDB = require('../../services/storagedb.js');
+const ProfileDB = require('../../services/profiledb.js');
 const logger = require('../../utils/logger.js');
 require('dotenv').config();
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('resetdb')
-    .setDescription('Xóa và tạo lại cơ sở dữ liệu (chỉ dành cho owner)')
+    .setName('resetuserdb')
+    .setDescription('Xóa tất cả user profiles (chỉ dành cho owner)')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
     const ownerId = process.env.OWNER_ID;
     if (interaction.user.id !== ownerId) {
       return interaction.reply({ 
-        content: 'Bạn không có quyền sử dụng lệnh này. Chỉ owner mới có thể reset cơ sở dữ liệu.', 
+        content: 'Bạn không có quyền sử dụng lệnh này. Chỉ owner mới có thể reset user database.', 
         ephemeral: true 
       });
     }
@@ -21,24 +21,25 @@ module.exports = {
     const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId('resetdb_confirm')
+          .setCustomId('resetuser_confirm')
           .setLabel('Đồng ý')
           .setStyle(ButtonStyle.Success)
           .setEmoji('✅'),
         new ButtonBuilder()
-          .setCustomId('resetdb_cancel')
+          .setCustomId('resetuser_cancel')
           .setLabel('Từ chối')
           .setStyle(ButtonStyle.Danger)
           .setEmoji('❌')
       );
 
     await interaction.reply({
-      content: `⚠️ **XÁC NHẬN RESET DATABASE** ⚠️\n\n` +
-               `Bạn có chắc chắn muốn xóa và tạo lại toàn bộ cơ sở dữ liệu không?\n\n` +
+      content: `⚠️ **XÁC NHẬN RESET USER DATABASE** ⚠️\n\n` +
+               `Bạn có chắc chắn muốn xóa tất cả user profiles không?\n\n` +
                `**Cảnh báo:**\n` +
-               `> Tất cả dữ liệu sẽ bị xóa vĩnh viễn\n` +
+               `> Tất cả user profiles sẽ bị xóa vĩnh viễn\n` +
                `> Không thể khôi phục sau khi reset\n` +
-               `> Bot sẽ mất tất cả cuộc trò chuyện trước đây\n\n` +
+               `> Tất cả XP, level, achievements sẽ mất\n` +
+               `> Users sẽ phải đồng ý consent lại\n\n` +
                `**Hành động này không thể hoàn tác!**`,
       components: [row],
       ephemeral: true

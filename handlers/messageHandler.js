@@ -3,6 +3,7 @@ const ConversationService = require('../services/ConversationService');
 const ImageService = require('../services/ImageService');
 const AICore = require('../services/AICore');
 const experience = require('../utils/xp');
+const consentService = require('../services/consentService');
 const logger = require('../utils/logger.js');
 
 
@@ -16,7 +17,6 @@ async function processXp(message, commandExecuted, execute) {
   try {
     const response = await experience(message, commandExecuted, execute);
 
-    // Ghi log lỗi không gây ra bởi lý do đã biết
     if (!response.xpAdded && ![
       'DISABLED',             // XP bị tắt, cần EXPERIENCE_POINTS trong client#features
       'COMMAND_EXECUTED',     // Lệnh đã được thực thi thành công
@@ -27,13 +27,10 @@ async function processXp(message, commandExecuted, execute) {
       'DISABLED_ON_CHANNEL',  // Tin nhắn được gửi trong kênh bị chặn XP
       'RECENTLY_TALKED'       // Người gửi vừa nói gần đây
     ].includes(response.reason)) {
-      // Ghi log lỗi nếu có
       logger.error('XP', `Lỗi XP: ${response.reason} tại ${message.guild.id}<${message.guild.name}> bởi ${message.author.tag}<${message.author.id}> lúc ${new Date()}`);
     }
 
-    // Nếu người dùng lên cấp, có thể hiển thị thông báo
     if (response.xpAdded && response.level && response.previousLevel && response.level > response.previousLevel) {
-      // Tùy chọn: Thông báo người dùng đã lên cấp
       logger.info('XP', `${message.author.tag} đã lên cấp ${response.level} trong server ${message.guild.name}`);
 
       // Tùy chọn: Gửi thông báo lên cấp trong kênh
@@ -57,6 +54,14 @@ async function handleMentionMessage(message, client) {
 
     if (!hasEveryoneOrRoleMention) {
       logger.info('CHAT', `Xử lý tin nhắn trò chuyện từ ${message.author.tag} (ID: ${message.author.id})`);
+      
+      const hasConsented = await consentService.hasUserConsented(message.author.id);
+      
+      if (!hasConsented) {
+        const consentData = consentService.createConsentEmbed(message.author);
+        await message.reply(consentData);
+        return;
+      }
       
       await message.channel.sendTyping();
 

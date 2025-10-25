@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const consentService = require('../services/consentService');
 const logger = require('../utils/logger.js');
 
 let commandsJsonCache = null;
 
-// Hàm để tải lệnh từ một thư mục
 const loadCommandsFromDirectory = (client, dir, commandsJson) => {
   const items = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -86,6 +86,17 @@ const handleCommand = async (interaction, client) => {
     return;
   }
   try {
+    const aiCommands = ['chat', 'think', 'image', 'reset'];
+    if (aiCommands.includes(interaction.commandName)) {
+      const hasConsented = await consentService.hasUserConsented(interaction.user.id);
+      
+      if (!hasConsented) {
+        const consentData = consentService.createConsentEmbed(interaction.user);
+        await interaction.reply(consentData);
+        return;
+      }
+    }
+
     await command.execute(interaction);
     logger.info('COMMAND', `Người dùng ${interaction.user.tag} đã sử dụng lệnh /${interaction.commandName}`);
   } catch (error) {
