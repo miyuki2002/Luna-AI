@@ -7,9 +7,7 @@ class InitSystem extends EventEmitter {
     this.initialized = false;
     this.services = {
       mongodb: false,
-      greetingPatterns: false,
       commands: false,
-      api: false,
       providers: false,
       profiles: false,
       conversationHistory: false,
