@@ -8,6 +8,8 @@ const {
 	} = require("discord.js");
 const { handleMentionMessage } = require("./handlers/messageHandler");
 const { handleCommand, loadCommands } = require("./handlers/commandHandler");
+const { handleConsentInteraction } = require("./handlers/consentHandler");
+const { handleResetdbInteraction } = require("./handlers/resetdbHandler");
 const { startbot } = require("./events/ready");
 const { setupGuildHandlers } = require("./handlers/guildHandler");
 const logger = require("./utils/logger.js");
@@ -34,8 +36,15 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-	if (!interaction.isChatInputCommand()) return;
-	await handleCommand(interaction, client);
+	if (interaction.isChatInputCommand()) {
+		await handleCommand(interaction, client);
+	} else if (interaction.isButton()) {
+		if (interaction.customId.startsWith('consent_')) {
+			await handleConsentInteraction(interaction);
+		} else if (interaction.customId.startsWith('resetdb_') || interaction.customId.startsWith('resetuser_')) {
+			await handleResetdbInteraction(interaction);
+		}
+	}
 });
 
 process.on("unhandledRejection", (error) => {

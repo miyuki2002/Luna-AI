@@ -14,6 +14,7 @@ const createProfileStructure = (userId) => ({
     global_xp: 0,
     global_level: 1,
     role: 'user', // Vai trò mặc định: user, admin, helper, owner
+    consent: false, // Mặc định chưa đồng ý sử dụng dịch vụ
     profile: {
       bio: "No bio written.",
       background: null,
