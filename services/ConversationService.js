@@ -220,7 +220,6 @@ class ConversationService {
         }
       }
 
-      // Kiểm tra lệnh tạo hình ảnh
       const imageCommandRegex = /^(vẽ|tạo hình|vẽ hình|hình|tạo ảnh ai|tạo ảnh)\s+(.+)$/i;
       const imageMatch = prompt.match(imageCommandRegex);
 
@@ -231,7 +230,6 @@ class ConversationService {
         return `Để tạo hình ảnh, vui lòng sử dụng lệnh /image với nội dung bạn muốn tạo. Ví dụ:\n/image ${imagePrompt}`;
       }
 
-      // Kiểm tra lệnh memory analysis
       const memoryAnalysisRegex = /^(nhớ lại|trí nhớ|lịch sử|conversation history|memory|như nãy|vừa gửi|vừa đề cập)\s*(.*)$/i;
       const memoryMatch = prompt.match(memoryAnalysisRegex);
 
@@ -317,7 +315,6 @@ class ConversationService {
         logger.error("CONVERSATION_SERVICE", "waitForProviders timeout:", error.message);
       }
       
-      // Thêm timeout để tránh hang
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('AICore timeout after 30 seconds')), 30000);
       });
@@ -335,7 +332,6 @@ class ConversationService {
       const tokenUsage = result.usage;
 
 
-      // Ghi nhận token usage
       if (tokenUsage && tokenUsage.total_tokens) {
         const TokenService = require('./TokenService.js');
         await TokenService.recordTokenUsage(userId, tokenUsage.total_tokens, 'chat');

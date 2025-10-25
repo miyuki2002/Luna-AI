@@ -121,7 +121,7 @@ class OwnerService {
    */
   async getOwnerMentionResponse(context = "") {
     if (!this.ownerInfo) {
-      return "Bạn đang nói về người sáng lập của mình à? 😊";
+      return "Bạn đang nói về người sáng lập của mình à? 😊 Mình rất yêu quý creator của mình lắm! ✨";
     }
 
     try {
@@ -138,7 +138,8 @@ class OwnerService {
         "Lỗi khi tạo phản hồi động cho owner mention:",
         error
       );
-      return "Lỗi khi tạo phản hồi động.";
+      // Fallback response với personality mới
+      return `Aww, bạn đang nói về ${this.ownerInfo.displayName} à? 💖 Mình rất yêu quý creator của mình lắm! ✨`;
     }
   }
 
@@ -165,8 +166,25 @@ class OwnerService {
       return response;
     } catch (error) {
       logger.error("OWNER", "Lỗi khi tạo lời chào động cho owner:", error);
-      // Fallback greeting nếu API lỗi
-      return `Chào ${this.ownerInfo.displayName}! 💖 Rất vui khi gặp lại creator của mình nè~ ✨`;
+      
+      // Fallback: Sử dụng AI với prompt đơn giản hơn
+      try {
+        const fallbackPrompt = `Tạo lời chào thân thiện cho ${this.ownerInfo.displayName} - creator của mình. Ngắn gọn, dễ thương, sử dụng emoji.`;
+        const fallbackResponse = await AICore.getCompletion(fallbackPrompt);
+        return fallbackResponse;
+      } catch (fallbackError) {
+        logger.error("OWNER", "Fallback AI greeting cũng lỗi:", fallbackError);
+        
+        // Final fallback: greetings có sẵn
+        const greetings = [
+          `${this.ownerInfo.displayName}! 💖 Mình nhớ bạn quá~ ✨`,
+          `Creator ${this.ownerInfo.displayName}! 🌸 Rất vui khi gặp lại bạn! 💫`,
+          `${this.ownerInfo.displayName} ơi! 🥰 Mình đã chờ bạn lâu rồi! 🌟`,
+          `Aww, ${this.ownerInfo.displayName}! 💖 Bạn có khỏe không? ✨`,
+          `Hello ${this.ownerInfo.displayName}! 🎀 Mình sẵn sàng giúp bạn rồi! 💫`
+        ];
+        return greetings[Math.floor(Math.random() * greetings.length)];
+      }
     }
   }
 
@@ -175,6 +193,128 @@ class OwnerService {
    */
   async refreshOwnerInfo() {
     await this.loadOwnerInfo();
+  }
+
+  /**
+   * Tạo phản hồi AI cho owner dựa trên context
+   * @param {string} context - Ngữ cảnh của cuộc trò chuyện
+   * @param {string} type - Loại phản hồi (greeting, mention, notification, etc.)
+   * @returns {Promise<string>}
+   */
+  async getAIOwnerResponse(context = "", type = "general") {
+    if (!this.ownerInfo) {
+      return "Chào bạn! 💖";
+    }
+
+    try {
+      let prompt = "";
+      
+      switch (type) {
+        case "greeting":
+          prompt = prompts.owner.greeting
+            .replace("${ownerDisplayName}", this.ownerInfo.displayName);
+          break;
+        case "mention":
+          prompt = prompts.owner.mentionResponse
+            .replace("${ownerDisplayName}", this.ownerInfo.displayName)
+            .replace("${ownerUsername}", this.ownerInfo.username)
+            .replace("${context}", context);
+          break;
+        case "notification":
+          prompt = prompts.owner.notification
+            .replace("${ownerDisplayName}", this.ownerInfo.displayName)
+            .replace("${context}", context);
+          break;
+        case "celebration":
+          prompt = prompts.owner.celebration
+            .replace("${ownerDisplayName}", this.ownerInfo.displayName)
+            .replace("${context}", context);
+          break;
+        default:
+          prompt = prompts.owner.general
+            .replace("${ownerDisplayName}", this.ownerInfo.displayName)
+            .replace("${context}", context);
+      }
+
+      const response = await AICore.getCompletion(prompt);
+      return response;
+    } catch (error) {
+      logger.error("OWNER", `Lỗi khi tạo AI response cho owner (${type}):`, error);
+      
+      // Fallback responses
+      const fallbacks = {
+        greeting: `${this.ownerInfo.displayName}! 💖 Mình nhớ bạn quá~ ✨`,
+        mention: `Aww, bạn đang nói về ${this.ownerInfo.displayName} à? 💖 Mình rất yêu quý creator của mình lắm! ✨`,
+        notification: `🔔 **Thông báo cho ${this.ownerInfo.displayName}:**\n${context} 💖`,
+        celebration: `🎉 Chúc mừng ${this.ownerInfo.displayName}! 💖 Mình rất vui cho bạn! ✨`,
+        general: `${this.ownerInfo.displayName}! 💖 Mình luôn sẵn sàng giúp bạn! ✨`
+      };
+      
+      return fallbacks[type] || fallbacks.general;
+    }
+  }
+
+  /**
+   * Kiểm tra xem owner có online không
+   * @returns {Promise<boolean>}
+   */
+  async isOwnerOnline() {
+    if (!this.ownerInfo || !this.client) return false;
+    
+    try {
+      const owner = await this.client.users.fetch(this.ownerId);
+      return owner.presence?.status !== 'offline';
+    } catch (error) {
+      logger.error("OWNER", "Lỗi khi kiểm tra trạng thái owner:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Tạo thông báo đặc biệt cho owner
+   * @param {string} message - Nội dung thông báo
+   * @returns {string}
+   */
+  getOwnerNotification(message) {
+    if (!this.ownerInfo) {
+      return `🔔 Thông báo: ${message}`;
+    }
+    
+    return `🔔 **Thông báo cho ${this.ownerInfo.displayName}:**\n${message} 💖`;
+  }
+
+  /**
+   * Tạo lời chào ngẫu nhiên cho owner bằng AI
+   * @returns {Promise<string>}
+   */
+  async getRandomOwnerGreeting() {
+    if (!this.ownerInfo) {
+      return "Chào bạn! 💖";
+    }
+
+    try {
+      const prompt = prompts.owner.randomGreeting
+        .replace("${ownerDisplayName}", this.ownerInfo.displayName);
+
+      const response = await AICore.getCompletion(prompt);
+      return response;
+    } catch (error) {
+      logger.error("OWNER", "Lỗi khi tạo lời chào AI cho owner:", error);
+      
+      // Fallback greetings nếu AI lỗi
+      const greetings = [
+        `${this.ownerInfo.displayName}! 💖 Mình nhớ bạn quá~ ✨`,
+        `Creator ${this.ownerInfo.displayName}! 🌸 Rất vui khi gặp lại bạn! 💫`,
+        `${this.ownerInfo.displayName} ơi! 🥰 Mình đã chờ bạn lâu rồi! 🌟`,
+        `Aww, ${this.ownerInfo.displayName}! 💖 Bạn có khỏe không? ✨`,
+        `Hello daddy ${this.ownerInfo.displayName}! 🎀 Mình sẵn sàng giúp bạn rồi! 💫`,
+        `${this.ownerInfo.displayName} à! 🌸 Mình rất vui khi thấy bạn! ✨`,
+        `💖 ${this.ownerInfo.displayName} có cần mình giúp gì không? 🌟`,
+        `Creator ${this.ownerInfo.displayName}! 💫 Mình đã sẵn sàng phục vụ bạn rồi! 🎀`
+      ];
+      
+      return greetings[Math.floor(Math.random() * greetings.length)];
+    }
   }
 }
 
