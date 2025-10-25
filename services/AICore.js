@@ -63,7 +63,7 @@ class AICore {
       });
 
       let content = result.content;
-      content = content.replace("[THINKING]", "**Quá trình suy nghĩ:**\n");
+      content = "**Quá trình suy nghĩ:**\n" + content;
       content = content.replace("[ANSWER]", "\n\n**Câu trả lời:**\n");
 
       return {
