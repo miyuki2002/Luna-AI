@@ -53,7 +53,7 @@ class FontManager {
     const fontKey = `${fontPath}-${JSON.stringify(options)}`;
     
     if (this.registeredFonts.has(fontKey)) {
-      return true; // Đã đăng ký rồi
+      return true;
     }
 
     if (!this.fontExists(fontPath)) {
@@ -104,7 +104,6 @@ class FontManager {
         'Black': { numeric: 900, css: '900' }
       };
 
-      // Danh sách fonts Montserrat cần đăng ký
       const fontVariants = this.generateFontVariants();
       
       let successCount = 0;
@@ -152,7 +151,6 @@ class FontManager {
 
       logger.info('FONTS', `Đăng ký thành công ${successCount}/${totalCount} fonts`);
       
-      // Đăng ký fonts dự phòng hệ thống nếu cần
       this.registerSystemFallbacks();
       
       this.initialized = true;
@@ -199,11 +197,7 @@ class FontManager {
     return variants;
   }
 
-  /**
-   * Đăng ký fonts dự phòng hệ thống
-   */
   registerSystemFallbacks() {
-    // Không cần đăng ký fonts hệ thống, chúng đã có sẵn
     logger.info('FONTS', 'Fonts dự phòng hệ thống:', this.fallbackFonts.join(', '));
   }
 

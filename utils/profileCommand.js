@@ -19,10 +19,8 @@ async function handleProfileCommand(interaction) {
   }
 
   try {
-    // Sử dụng hàm getProfile từ ProfileDB
     const doc = await ProfileDB.getProfile(member.id);
 
-    // Kiểm tra cẩn thận cấu trúc dữ liệu
     if (!doc || !doc.data || !doc.data.xp || !Array.isArray(doc.data.xp)) {
       return interaction.editReply(
         `❌ **${member.user.username}** chưa có dữ liệu XP nào!`
@@ -38,7 +36,6 @@ async function handleProfileCommand(interaction) {
       );
     }
 
-    // Lấy collection để tính xếp hạng
     const profileCollection = await ProfileDB.getProfileCollection();
 
     // Lấy tất cả profile có XP trong server này
@@ -75,7 +72,6 @@ async function handleProfileCommand(interaction) {
         .sort((a, b) => b.totalXP - a.totalXP)
         .findIndex((x) => x.id === doc._id) + 1;
 
-    // Chuẩn bị dữ liệu để vẽ profile
     const profileData = {
       username: member.user.username,
       discriminator: member.user.discriminator,
@@ -90,13 +86,12 @@ async function handleProfileCommand(interaction) {
         global: globalRank,
       },
       customization: {
-        color: doc.data.profile?.color || "#7F5AF0", // Màu tím mặc định
+        color: doc.data.profile?.color || "#7F5AF0", // màu tím
         banner: doc.data.profile?.background,
         pattern: doc.data.profile?.pattern,
         wreath: doc.data.profile?.wreath,
         emblem: doc.data.profile?.emblem,
       },
-      // Thêm thông tin huy hiệu nếu có
       badges: doc.data.achievements
         ? doc.data.achievements
             .filter((a) => a.unlocked)
@@ -104,15 +99,12 @@ async function handleProfileCommand(interaction) {
         : [],
     };
 
-    // Tạo hình ảnh profile card
     const cardBuffer = await profileCanvas.createProfileCard(profileData);
 
-    // Tạo attachment từ buffer
     const attachment = new AttachmentBuilder(cardBuffer, {
       name: "profile.png",
     });
 
-    // Phản hồi với hình ảnh
     await interaction.editReply({
       files: [attachment],
     });
