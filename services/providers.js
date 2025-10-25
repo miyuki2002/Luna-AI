@@ -46,6 +46,23 @@ class APIProviderManager {
       });
     }
 
+
+    if (process.env.ALIBABA_API_KEY) {
+      providers.push({
+        name: "Alibaba",
+        baseURL: process.env.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        apiKey: process.env.ALIBABA_API_KEY,
+        models: {
+          default: "qwen-plus",
+          thinking: "qwen-max",
+          image: "qwen-vl-plus"
+        },
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    }
+
     if (process.env.OPENROUTER_API_KEY) {
       providers.push({
         name: "OpenRouter",
@@ -60,22 +77,6 @@ class APIProviderManager {
           "Content-Type": "application/json",
           "HTTP-Referer": process.env.OPENROUTER_REFERER || "https://lunaby.io.vn",
           "X-Title": process.env.OPENROUTER_TITLE || "Luna-AI"
-        }
-      });
-    }
-
-    if (process.env.ALIBABA_API_KEY) {
-      providers.push({
-        name: "Alibaba",
-        baseURL: process.env.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-        apiKey: process.env.ALIBABA_API_KEY,
-        models: {
-          default: "qwen-plus",
-          thinking: "qwen-max",
-          image: "qwen-vl-plus"
-        },
-        headers: {
-          "Content-Type": "application/json"
         }
       });
     }
@@ -116,20 +117,16 @@ class APIProviderManager {
     const originalIndex = this.currentProviderIndex;
     let attempts = 0;
     
+    // Kiểm tra xem có provider nào đã hết thời gian retry không
+    this.checkAndResetExpiredProviders();
+    
     do {
       this.currentProviderIndex = (this.currentProviderIndex + 1) % this.providers.length;
       attempts++;
       
       const provider = this.providers[this.currentProviderIndex];
-      const resetTime = this.quotaResetTimes.get(provider.name);
       
-      if (!this.failedProviders.has(provider.name) || 
-          (resetTime && Date.now() > resetTime)) {
-        if (resetTime && Date.now() > resetTime) {
-          this.failedProviders.delete(provider.name);
-          this.quotaResetTimes.delete(provider.name);
-        }
-        
+      if (!this.failedProviders.has(provider.name)) {
         if (this.currentProviderIndex !== originalIndex) {
           logger.info("PROVIDERS", `Switched to ${provider.name}`);
         }
@@ -140,6 +137,25 @@ class APIProviderManager {
     throw new Error("Tất cả API providers đã hết quota hoặc lỗi");
   }
 
+  checkAndResetExpiredProviders() {
+    const now = Date.now();
+    let hasReset = false;
+    
+    for (const [providerName, resetTime] of this.quotaResetTimes.entries()) {
+      if (now > resetTime) {
+        this.failedProviders.delete(providerName);
+        this.quotaResetTimes.delete(providerName);
+        logger.info("PROVIDERS", `${providerName} retry time expired, reset to available`);
+        hasReset = true;
+      }
+    }
+    
+    if (hasReset && this.currentProviderIndex > 0) {
+      this.currentProviderIndex = 0;
+      logger.info("PROVIDERS", "Reset to first provider after retry time expired");
+    }
+  }
+
   markProviderAsFailed(providerName, retryAfter = null) {
     this.failedProviders.add(providerName);
     
@@ -148,8 +164,9 @@ class APIProviderManager {
       this.quotaResetTimes.set(providerName, resetTime);
       logger.warn("PROVIDERS", `${providerName} quota exceeded, retry after ${retryAfter}s`);
     } else {
-      this.quotaResetTimes.set(providerName, Date.now() + (60 * 60 * 1000)); // 1 hour default
-      logger.warn("PROVIDERS", `${providerName} failed, retry in 1 hour`);
+      const resetTime = Date.now() + (10 * 1000);
+      this.quotaResetTimes.set(providerName, resetTime);
+      logger.warn("PROVIDERS", `${providerName} failed, retry in 10s`);
     }
   }
 
@@ -214,6 +231,8 @@ class APIProviderManager {
     const maxAttempts = this.providers.length + 1;
 
     while (attempts < maxAttempts) {
+      this.checkAndResetExpiredProviders();
+      
       const provider = this.getCurrentProvider();
       
       try {
@@ -263,7 +282,7 @@ class APIProviderManager {
         
         if (error.response?.status === 429) {
           const retryAfter = error.response.headers['retry-after'] || 
-                           error.response.headers['x-ratelimit-reset-requests'];
+                             error.response.headers['x-ratelimit-reset-requests'];
           this.markProviderAsFailed(provider.name, retryAfter);
           logger.warn("PROVIDERS", `Rate limit hit for ${provider.name}`);
         } else if (error.response?.status >= 400 && error.response?.status < 500) {

@@ -71,7 +71,7 @@ module.exports = {
 				{ icon: '	', label: 'Model AI', value: modelName },
 				{ icon: '	', label: 'Uptime', value: formatUptime(process.uptime(), false) },
 				{ icon: '	', label: 'Node', value: process.version },
-				{ icon: '	', label: 'Memory', value: `${memoryUsage} MB` },
+				{ icon: '	', label: 'Memory', value: `${memoryUsage} * 1024 * 1024 MB` },
 				{ icon: '	', label: 'Servers', value: serverCount.toString() }
 			]);
 			
@@ -86,7 +86,7 @@ module.exports = {
 			// Footer
 			ctx.font = '16px Sans';
 			ctx.fillStyle = '#94A1B2';
-			const footerText = `Luna Bot v1.0.2 • Developed by s4ory • ${new Date().toISOString().split('T')[0]}`;
+			const footerText = `Luna Bot v${packageJson.version} • Developed by s4ory • ${new Date().toISOString().split('T')[0]}`;
 			const footerWidth = ctx.measureText(footerText).width;
 			ctx.fillText(footerText, 450 - footerWidth / 2, 470);
 			
