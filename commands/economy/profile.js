@@ -11,6 +11,9 @@ module.exports = {
         .setRequired(false)),
     
   async execute(interaction) {
-    await handleProfileCommand(interaction);
+    await interaction.reply({
+      content: '🚧 **Lệnh profile tạm thời bị vô hiệu hóa!**\n\nTính năng profile và achievements đang được bảo trì. XP vẫn được tính bình thường! 💖',
+      ephemeral: true
+    });
   }
 };
