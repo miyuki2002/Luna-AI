@@ -109,7 +109,7 @@ async function startbot(client, loadCommands) {
     }
 
     client.user.setPresence({
-      activities: [{ name: 'Không phải người | @Luna', type: 4 }],
+      activities: [{ name: '/help', type: 1 }],
       status: 'online'
     });
 
