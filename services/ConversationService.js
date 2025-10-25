@@ -65,7 +65,6 @@ class ConversationService {
           relevantMessages.join(". ")
         );
         enhancedPrompt = memoryContext + enhancedPrompt;
-        logger.debug("CONVERSATION_SERVICE", "Enhanced prompt with memory context");
       }
 
       return enhancedPrompt;
@@ -203,7 +202,6 @@ class ConversationService {
       content += `\n\n*Thông tin được cập nhật từ Live Search.*`;
 
       if (searchResult.searchMetadata) {
-        logger.debug("CONVERSATION_SERVICE", `Live Search metadata: ${JSON.stringify(searchResult.searchMetadata)}`);
       }
     }
 
@@ -272,7 +270,7 @@ class ConversationService {
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
 
       // Xử lý chat completion
-      let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, searchResults);
+      let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, null);
 
       // Xử lý phản hồi khi owner được mention
       if (ownerSpecialResponse) {
@@ -309,7 +307,6 @@ class ConversationService {
       // Xử lý search results nếu có
       if (searchResult && searchResult.hasSearchResults && searchResult.content) {
         logger.info("CONVERSATION_SERVICE", "Integrating Live Search results into prompt");
-        logger.debug("CONVERSATION_SERVICE", `Search result content: ${searchResult.content.substring(0, 200)}...`);
         
         enhancedPrompt += prompts.chat.webSearch;
         // Tích hợp kết quả search vào prompt
@@ -317,7 +314,6 @@ class ConversationService {
           .replace("${originalPrompt}", prompt)
           .replace("${searchContent}", searchResult.content);
         
-        logger.debug("CONVERSATION_SERVICE", `Enhanced prompt with search: ${enhancedPrompt.substring(0, 300)}...`);
         
         // Sử dụng system prompt đặc biệt cho Live Search
         systemPrompt = prompts.web.liveSearchSystem + "\n\n" + systemPrompt;
@@ -325,7 +321,6 @@ class ConversationService {
         // Reset conversation với system prompt mới
         await conversationManager.resetConversation(userId, systemPrompt, AICore.getModelName());
       } else {
-        logger.debug("CONVERSATION_SERVICE", "No search results, using model knowledge");
         enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
       }
 
@@ -341,7 +336,8 @@ class ConversationService {
         messages = conversationManager.getHistory(userId);
       }
 
-      logger.debug("CONVERSATION_SERVICE", "Gọi AICore.processChatCompletion");
+      await AICore.waitForProviders();
+      
       const result = await AICore.processChatCompletion(messages, {
         model: additionalConfig.model || AICore.CoreModel,
         max_tokens: additionalConfig.max_tokens || 2048,
@@ -353,7 +349,6 @@ class ConversationService {
       const tokenUsage = result.usage;
 
       logger.info("CONVERSATION_SERVICE", `Chat completion processed for userId: ${userId}`);
-      logger.debug("CONVERSATION_SERVICE", `Token usage: ${JSON.stringify(tokenUsage)}`);
 
       // Ghi nhận token usage
       if (tokenUsage && tokenUsage.total_tokens) {

@@ -1,26 +1,30 @@
 const logger = require("../utils/logger.js");
 const prompts = require("../config/prompts.js");
-const providerManager = require("./providers.js");
+const APIProviderManager = require("./providers.js");
+const initSystem = require("./initSystem.js");
 
 class AICore {
   constructor() {
     this.systemPrompt = prompts.system.main;
     this.Model = "luna-v3";
+    this.providerManager = new APIProviderManager();
+    this.providerManager.initializeProviders();
     logger.info("AI_CORE", "Initialized with multi-provider support");
+  }
+
+  async waitForProviders() {
+    await initSystem.waitForReady();
+    return this.providerManager;
   }
 
   async processChatCompletion(messages, config = {}) {
     try {
-      logger.debug("AI_CORE", "Bắt đầu processChatCompletion");
-      logger.debug("AI_CORE", `Messages count: ${messages.length}`);
-      
-      const response = await providerManager.makeRequest("/chat/completions", {
+      const response = await this.providerManager.makeRequest("/chat/completions", {
         max_tokens: config.max_tokens || 2048,
         messages: messages,
         ...config,
       }, config.modelType || 'default');
 
-      logger.info("AI_CORE", "Chat completion processed successfully");
       
       const tokenUsage = response.usage || {
         prompt_tokens: 0,
@@ -59,7 +63,7 @@ class AICore {
       });
 
       let content = result.content;
-      content = content.replace("[THINKING]", "**Quá trình suy nghĩ:**\n");
+      content = "**Quá trình suy nghĩ:**\n" + content;
       content = content.replace("[ANSWER]", "\n\n**Câu trả lời:**\n");
 
       return {
@@ -139,7 +143,11 @@ class AICore {
   }
 
   getProviderStatus() {
-    return providerManager.getProviderStatus();
+    return this.providerManager.getProviderStatus();
+  }
+
+  isProvidersReady() {
+    return initSystem.getStatus().services.providers;
   }
 }
 

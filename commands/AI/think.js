@@ -18,18 +18,12 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // Gọi trực tiếp AICore thay vì qua NeuralNetworks
       const result = await AICore.getThinkingResponse(prompt);
       let response = result.content;
 
-      // Format response
-      response = response.replace(/\[THINKING\]/gi, "🤔 **Quá trình suy nghĩ:**");
-      response = response.replace(/\[ANSWER\]/gi, "💡 **Câu trả lời:**");
-
-      // Thêm thông tin provider
       const providerStatus = AICore.getProviderStatus();
       const currentProvider = providerStatus.find(p => p.current);
-      response += `\n\n🔧 ${currentProvider?.name || 'Unknown'} | 🎯 ${result.usage?.total_tokens || 0} tokens`;
+      logger.debug('AI_CORE', `Provider: ${currentProvider?.name || 'Unknown'} | Tokens: ${result.usage?.total_tokens || 0}`);
 
       if (response.length <= 2000) {
         await interaction.editReply({

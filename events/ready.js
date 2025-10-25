@@ -32,6 +32,16 @@ async function startbot(client, loadCommands) {
     }
 
     try {
+      const providerManager = new APIProviderManager();
+      const providers = providerManager.initializeProviders();
+      logger.info('SYSTEM', `Đã khởi tạo ${providers.length} providers: ${providers.map(p => p.name).join(", ")}`);
+      initSystem.markReady('providers');
+    } catch (error) {
+      logger.error('SYSTEM', 'Lỗi khi khởi tạo providers:', error);
+      initSystem.markReady('providers'); // Vẫn mark ready để không block system
+    }
+
+    try {
       await mongoClient.connect();
       await storageDB.setupCollections();
       initSystem.markReady('mongodb');
@@ -102,14 +112,6 @@ async function startbot(client, loadCommands) {
       activities: [{ name: 'Không phải người | @Luna', type: 4 }],
       status: 'online'
     });
-
-    try {
-      const providerManager = new APIProviderManager();
-      const providers = providerManager.initializeProviders();
-      logger.info('SYSTEM', `Đã khởi tạo ${providers.length} providers: ${providers.map(p => p.name).join(", ")}`);
-    } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi khởi tạo providers:', error);
-    }
 
     logger.info('SYSTEM', `Bot đã sẵn sàng! Đã đăng nhập với tên ${client.user.tag}`);
   });
