@@ -49,12 +49,12 @@ Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung
 ### **ConversationService.js** - Quản lý cuộc trò chuyện
 - Quản lý ngữ cảnh và bộ nhớ
 - Xử lý tương tác người dùng
-- Làm phong phú cuộc trò chuyện với bộ nhớ liên quan
+- Khả năng ghi nhớ cao
 
 ### **SystemService.js** - Tiện ích hệ thống
 - Xác thực môi trường và kiểm tra hệ thống
 - Khởi tạo logging và quản lý
-- Tắt máy nhẹ nhàng và bảo trì định kỳ
+- Bảo trì định kỳ tự động
 
 ## Cài Đặt
 
@@ -80,21 +80,20 @@ Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung
 
 ### **Độ tin cậy cao**
 - Nhiều nhà cung cấp AI với tự động chuyển đổi
-- Không bao giờ offline do lỗi một nhà cung cấp
-- Quản lý quota thông minh trên các nhà cung cấp
+- Hạn chế gặp vấn đề do lỗi từ một vài nhà cung cấp
+- Quản lý quota thông minh
 - Xác thực chất lượng phản hồi
 
 ### **Dễ bảo trì**
 - Kiến trúc dịch vụ modular
-- Phân tách trách nhiệm rõ ràng
-- Sửa lỗi và cập nhật được cô lập
+- Sửa lỗi và cập nhật được tách biệt
 - Tổ chức code được cải thiện
 
 ### **Khả năng mở rộng**
-- Các dịch vụ có thể mở rộng độc lập
+- Các dịch vụ có thể mở rộng dễ dàng
 - Dễ dàng thêm nhà cung cấp AI mới
 - Thêm tính năng đơn giản
-- Hệ thống logging toàn diện
+- Hệ thống logger thay thế console.log
 
 ## Đóng Góp
 
@@ -102,11 +101,11 @@ Tôi chào đón mọi đóng góp, báo cáo lỗi và yêu cầu tính năng! 
 
 ### Hướng Dẫn Phát Triển
 - Sử dụng dịch vụ phù hợp cho từng loại chức năng
-- Tất cả logic AI đi vào `AICore.js`
-- Tất cả quản lý nhà cung cấp đi vào `providers.js`
-- Tất cả xử lý hình ảnh đi vào `ImageService.js`
-- Tất cả logic cuộc trò chuyện đi vào `ConversationService.js`
-- Tất cả tiện ích hệ thống đi vào `SystemService.js`
+- Tất cả logic AI: `AICore.js`
+- Quản lý nhà cung cấp: `providers.js`
+- Xử lý hình ảnh: `ImageService.js`
+- Xử lý logic cuộc trò chuyện: `ConversationService.js`
+- Tiện ích hệ thống: `SystemService.js`
 
 ## Giấy Phép
 
