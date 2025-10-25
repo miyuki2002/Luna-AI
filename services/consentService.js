@@ -49,8 +49,8 @@ class ConsentService {
       .setColor(0x5865F2)
       .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 512 }))
       .setFooter({ 
-        text: 'Luna AI • Được tạo bởi s4ory', 
-        iconURL: 'https://cdn.discordapp.com/emojis/1234567890123456789.png' 
+        text: 'Luna AI • Developed by s4ory', 
+        iconURL: 'https://raw.githubusercontent.com/miyuki2002/Luna-AI/refs/heads/main/assets/luna-avatar.png' 
       })
       .setTimestamp();
 
