@@ -21,7 +21,6 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
           if (client.commands.has(commandName)) {
             logger.warn('COMMAND', `Lệnh "${commandName}" đã tồn tại và sẽ bị ghi đè bởi ${itemPath}`);
           }
-          logger.debug('COMMAND', `Đang xử lý lệnh "${commandName}" từ ${itemPath}`);
 
           try {
             const jsonData = command.data.toJSON();
@@ -35,7 +34,7 @@ const loadCommandsFromDirectory = (client, dir, commandsJson) => {
             }
             client.commands.set(commandName, command);
             commandsJson.push(jsonData);
-            const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
+            // const category = path.relative(path.join(__dirname, '../commands'), dir).split(path.sep)[0] || 'root';
             // logger.info('COMMAND', `Đã tải lệnh "${commandName}" từ "${category}" - Description: "${jsonData.description}"`);
           } catch (jsonError) {
             logger.error('COMMAND', `Lỗi khi convert lệnh "${commandName}" sang JSON:`, jsonError);

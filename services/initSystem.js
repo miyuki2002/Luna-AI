@@ -10,6 +10,7 @@ class InitSystem extends EventEmitter {
       greetingPatterns: false,
       commands: false,
       api: false,
+      providers: false,
       profiles: false,
       conversationHistory: false,
       guildProfiles: false,
