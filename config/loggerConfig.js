@@ -25,6 +25,11 @@ const defaultConfig = {
     SYSTEM: true, // Thông tin hệ thống
     CHAT: true, // Chức năng trò chuyện
     API: true, // Gọi API
+    CONVERSATION_SERVICE: true, // Conversation service logs
+    PROVIDERS: true, // API providers logs
+    AI_CORE: true, // AI Core logs
+    INIT_SYSTEM: true, // Init system logs
+    DEBUG: false, // Debug logs (tắt mặc định để tránh spam)
   },
 };
 

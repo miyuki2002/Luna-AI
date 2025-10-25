@@ -19,17 +19,17 @@ async function startbot(client, loadCommands) {
     ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝
     `);
 
-    try {
-      const autoUpdateService = new AutoUpdateService();
-      const currentVersion = autoUpdateService.getCurrentVersion();
-      logger.info('SYSTEM', `Version hiện tại: v${currentVersion}`);
-      const hasUpdate = await autoUpdateService.checkAndUpdate();
-      if (hasUpdate) {
-        return;
-      }
-    } catch (error) {
-      logger.error('SYSTEM', `Lỗi khi auto-update:`, error);
-    }
+    // try {
+    //   const autoUpdateService = new AutoUpdateService();
+    //   const currentVersion = autoUpdateService.getCurrentVersion();
+    //   logger.info('SYSTEM', `Version hiện tại: v${currentVersion}`);
+    //   const hasUpdate = await autoUpdateService.checkAndUpdate();
+    //   if (hasUpdate) {
+    //     return;
+    //   }
+    // } catch (error) {
+    //   logger.error('SYSTEM', `Lỗi khi auto-update:`, error);
+    // }
 
     try {
       const providerManager = new APIProviderManager();
@@ -38,7 +38,7 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('providers');
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo providers:', error);
-      initSystem.markReady('providers'); // Vẫn mark ready để không block system
+      initSystem.markReady('providers');
     }
 
     try {

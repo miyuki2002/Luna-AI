@@ -35,7 +35,7 @@ class APIProviderManager {
         baseURL: process.env.PERPLEXITY_BASE_URL || "https://api.perplexity.ai/",
         apiKey: process.env.PERPLEXITY_API_KEY,
         models: {
-          default: "sonar-pro",
+          default: "sonar",
           thinking: "sonar-reasoning",
           image: "sonar-pro"
         },
@@ -97,7 +97,11 @@ class APIProviderManager {
     }
 
     this.providers = providers;
-    logger.info("PROVIDERS", `Initialized ${providers.length} providers: ${providers.map(p => p.name).join(", ")}`);
+    
+    if (providers.length === 0) {
+      logger.error("PROVIDERS", "Không có provider nào được khởi tạo! Kiểm tra environment variables.");
+    }
+    
     return providers;
   }
 
@@ -201,6 +205,7 @@ class APIProviderManager {
 
   async makeRequest(endpoint, requestBody, modelType = 'default') {
     if (this.providers.length === 0) {
+      logger.error("PROVIDERS", "Không có provider nào được cấu hình!");
       throw new Error("Không có API provider nào được cấu hình");
     }
     
@@ -218,9 +223,11 @@ class APIProviderManager {
           model: model
         };
 
-        
+        logger.info("PROVIDERS", `Sử dụng model: ${model}`);
         const axiosInstance = this.createAxiosInstance(provider);
+        logger.info("PROVIDERS", `Đang gửi request đến ${provider.baseURL}${endpoint}`);
         const response = await axiosInstance.post(endpoint, finalRequestBody);
+        logger.info("PROVIDERS", `Request thành công với ${provider.name}`);
         
         const content = response.data.choices?.[0]?.message?.content;
         
@@ -238,6 +245,21 @@ class APIProviderManager {
       } catch (error) {
         lastError = error;
         attempts++;
+        if (provider.isFallback) {
+          logger.warn("PROVIDERS", "Fallback provider bị lỗi, trả về response mặc định");
+          return {
+            choices: [{
+              message: {
+                content: "Xin lỗi, tôi hiện tại không thể kết nối đến AI service. Vui lòng thử lại sau hoặc liên hệ admin để được hỗ trợ."
+              }
+            }],
+            usage: {
+              prompt_tokens: 0,
+              completion_tokens: 0,
+              total_tokens: 0
+            }
+          };
+        }
         
         if (error.response?.status === 429) {
           const retryAfter = error.response.headers['retry-after'] || 

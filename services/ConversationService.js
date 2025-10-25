@@ -212,14 +212,11 @@ class ConversationService {
    * Xử lý completion chính với tất cả logic cuộc trò chuyện
    */
   async getCompletion(prompt, message = null) {
-
     try {
       const userId = this.extractUserId(message);
       if (userId === "anonymous-user") {
         logger.warn("CONVERSATION_SERVICE", "Cannot determine userId, using default");
       }
-
-      logger.info("CONVERSATION_SERVICE", `Processing chat completion for userId: ${userId}`);
 
       let isOwnerInteraction = false;
       let ownerMentioned = false;
@@ -269,10 +266,8 @@ class ConversationService {
 
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
 
-      // Xử lý chat completion
       let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, null);
 
-      // Xử lý phản hồi khi owner được mention
       if (ownerSpecialResponse) {
         content = `${ownerSpecialResponse}\n\n${content}`;
       }
@@ -336,19 +331,35 @@ class ConversationService {
         messages = conversationManager.getHistory(userId);
       }
 
-      await AICore.waitForProviders();
-      
-      const result = await AICore.processChatCompletion(messages, {
-        model: additionalConfig.model || AICore.CoreModel,
-        max_tokens: additionalConfig.max_tokens || 2048,
-        enableLiveSearch: searchResult && searchResult.hasSearchResults,
-        ...additionalConfig,
+      // Thêm timeout cho waitForProviders
+      const waitTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('waitForProviders timeout after 10 seconds')), 10000);
       });
+      
+      try {
+        await Promise.race([AICore.waitForProviders(), waitTimeout]);
+      } catch (error) {
+        logger.error("CONVERSATION_SERVICE", "waitForProviders timeout:", error.message);
+      }
+      
+      // Thêm timeout để tránh hang
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('AICore timeout after 30 seconds')), 30000);
+      });
+      
+      const result = await Promise.race([
+        AICore.processChatCompletion(messages, {
+          model: additionalConfig.model || AICore.CoreModel,
+          max_tokens: additionalConfig.max_tokens || 2048,
+          enableLiveSearch: searchResult && searchResult.hasSearchResults,
+          ...additionalConfig,
+        }),
+        timeoutPromise
+      ]);
 
       const content = result.content;
       const tokenUsage = result.usage;
 
-      logger.info("CONVERSATION_SERVICE", `Chat completion processed for userId: ${userId}`);
 
       // Ghi nhận token usage
       if (tokenUsage && tokenUsage.total_tokens) {
@@ -363,6 +374,12 @@ class ConversationService {
     } catch (error) {
       logger.error("CONVERSATION_SERVICE", "Error in processChatCompletion:", error.message);
       logger.error("CONVERSATION_SERVICE", "Error stack:", error.stack);
+      
+      if (error.message.includes('timeout')) {
+        logger.error("CONVERSATION_SERVICE", "AICore bị timeout, có thể do network hoặc provider issues");
+        throw new Error("AI service timeout. Vui lòng thử lại sau.");
+      }
+      
       throw error;
     }
   }
