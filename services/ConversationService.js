@@ -32,10 +32,6 @@ class ConversationService {
 
     return userId;
   }
-
-  /**
-   * Trích xuất thông tin từ trí nhớ cuộc trò chuyện
-   */
   async enrichPromptWithMemory(originalPrompt, userId) {
     try {
       const fullHistory = await storageDB.getConversationHistory(
@@ -196,15 +192,7 @@ class ConversationService {
   /**
    * Xử lý và định dạng nội dung phản hồi
    */
-  async formatResponseContent(content, isNewConversation, searchResult) {
-    if (searchResult && searchResult.hasSearchResults) {
-      content = `${content}`;
-      content += `\n\n*Thông tin được cập nhật từ Live Search.*`;
-
-      if (searchResult.searchMetadata) {
-      }
-    }
-
+  async formatResponseContent(content, isNewConversation) {
     return content;
   }
 
@@ -252,21 +240,26 @@ class ConversationService {
         return await this.getMemoryAnalysis(userId, memoryRequest);
       }
 
-      // Kiểm tra câu hỏi về training data
       if (prompts.trainingData.keywords.test(prompt)) {
         logger.info("CONVERSATION_SERVICE", "Training data question detected, returning direct response");
         return prompts.trainingData.response;
       }
 
-      // Kiểm tra câu hỏi về model info/version
       if (prompts.modelInfo.keywords.test(prompt)) {
-        logger.info("CONVERSATION_SERVICE", "Model info question detected, returning direct response");
-        return prompts.modelInfo.response;
+        logger.info("CONVERSATION_SERVICE", "Model info question detected, returning summarized and customized response");
+        const rawResponse = prompts.modelInfo.response;
+        let summarized = { content: rawResponse };
+        try {
+          summarized = await AICore.processChatCompletion([{ role: "user", content: rawResponse }], { max_tokens: 1000 });
+        } catch (e) {
+          logger.warn("CONVERSATION_SERVICE", "AI summarization failed, falling back to default modelInfo.response");
+        }
+        return summarized.content;
       }
 
       const enhancedPromptWithMemory = await this.enrichPromptWithMemory(prompt, userId);
 
-      let content = await this.processChatCompletion(enhancedPromptWithMemory, userId, null);
+      let content = await this.processChatCompletion(enhancedPromptWithMemory, userId);
 
       if (ownerSpecialResponse) {
         content = `${ownerSpecialResponse}\n\n${content}`;
@@ -282,7 +275,7 @@ class ConversationService {
   /**
    * Xử lý chat completion với conversation manager
    */
-  async processChatCompletion(prompt, userId, searchResult = null, additionalConfig = {}) {
+  async processChatCompletion(prompt, userId, additionalConfig = {}) {
     try {
       let systemPrompt = additionalConfig.systemPrompt || prompts.system.main;
 
@@ -299,25 +292,7 @@ class ConversationService {
         enhancedPrompt += prompts.chat.newConversation;
       }
 
-      // Xử lý search results nếu có
-      if (searchResult && searchResult.hasSearchResults && searchResult.content) {
-        logger.info("CONVERSATION_SERVICE", "Integrating Live Search results into prompt");
-        
-        enhancedPrompt += prompts.chat.webSearch;
-        // Tích hợp kết quả search vào prompt
-        enhancedPrompt = prompts.web.liveSearchEnhanced
-          .replace("${originalPrompt}", prompt)
-          .replace("${searchContent}", searchResult.content);
-        
-        
-        // Sử dụng system prompt đặc biệt cho Live Search
-        systemPrompt = prompts.web.liveSearchSystem + "\n\n" + systemPrompt;
-        
-        // Reset conversation với system prompt mới
-        await conversationManager.resetConversation(userId, systemPrompt, AICore.getModelName());
-      } else {
-        enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
-      }
+      enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
 
       // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, "user", enhancedPrompt);
@@ -351,7 +326,6 @@ class ConversationService {
         AICore.processChatCompletion(messages, {
           model: additionalConfig.model || AICore.CoreModel,
           max_tokens: additionalConfig.max_tokens || 2048,
-          enableLiveSearch: searchResult && searchResult.hasSearchResults,
           ...additionalConfig,
         }),
         timeoutPromise
@@ -368,7 +342,7 @@ class ConversationService {
       }
 
       await conversationManager.addMessage(userId, "assistant", content);
-      const formattedContent = await this.formatResponseContent(content, isNewConversation, searchResult);
+      const formattedContent = await this.formatResponseContent(content, isNewConversation);
 
       return formattedContent;
     } catch (error) {

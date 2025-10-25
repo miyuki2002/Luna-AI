@@ -2,6 +2,7 @@ const axios = require("axios");
 const fs = require("fs");
 const logger = require("../utils/logger.js");
 
+
 class APIProviderManager {
   constructor() {
       this.currentProviderIndex = 0;
@@ -9,8 +10,10 @@ class APIProviderManager {
       this.quotaResetTimes = new Map();
   }
 
+
   initializeProviders() {
     const providers = [];
+
 
     if (process.env.LUNA_BASE_URL && process.env.ENABLE_LOCAL_MODEL === 'true') {
         providers.push({
@@ -46,6 +49,44 @@ class APIProviderManager {
       });
     }
 
+
+
+    if (process.env.ALIBABA_API_KEY) {
+      providers.push({
+        name: "Alibaba",
+        baseURL: process.env.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        apiKey: process.env.ALIBABA_API_KEY,
+        models: {
+          default: "qwen-max",
+          thinking: "qwen-max",
+          image: "qwen-vl-plus"
+        },
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    }
+
+    if (process.env.AWS_BEARER_TOKEN_BEDROCK) {
+      const awsRegion = process.env.AWS_REGION || "ap-southeast-1";
+      providers.push({
+        name: "AWS-Bedrock",
+        baseURL: `https://bedrock-runtime.${awsRegion}.amazonaws.com`,
+        apiKey: process.env.AWS_BEARER_TOKEN_BEDROCK,
+        models: {
+          default: process.env.AWS_BEDROCK_DEFAULT_MODEL || "anthropic.claude-haiku-4-5-20251001-v1:0",
+          thinking: process.env.AWS_BEDROCK_THINKING_MODEL || "anthropic.claude-haiku-4-5-20251001-v1:0",
+          image: process.env.AWS_BEDROCK_IMAGE_MODEL || "anthropic.claude-haiku-4-5-20251001-v1:0"
+        },
+        headers: {
+          "Content-Type": "application/json"
+        },
+        isAWSBedrock: true,
+        awsRegion: awsRegion
+      });
+    }
+
+
     if (process.env.OPENROUTER_API_KEY) {
       providers.push({
         name: "OpenRouter",
@@ -64,21 +105,6 @@ class APIProviderManager {
       });
     }
 
-    if (process.env.ALIBABA_API_KEY) {
-      providers.push({
-        name: "Alibaba",
-        baseURL: process.env.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-        apiKey: process.env.ALIBABA_API_KEY,
-        models: {
-          default: "qwen-plus",
-          thinking: "qwen-max",
-          image: "qwen-vl-plus"
-        },
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-    }
 
     if (process.env.OPENAI_API_KEY) {
       providers.push({
@@ -96,6 +122,7 @@ class APIProviderManager {
       });
     }
 
+
     this.providers = providers;
     
     if (providers.length === 0) {
@@ -105,6 +132,7 @@ class APIProviderManager {
     return providers;
   }
 
+
   getCurrentProvider() {
     if (this.providers.length === 0) {
       throw new Error("Không có API provider nào được cấu hình");
@@ -112,24 +140,20 @@ class APIProviderManager {
     return this.providers[this.currentProviderIndex];
   }
 
+
   switchToNextProvider() {
     const originalIndex = this.currentProviderIndex;
     let attempts = 0;
+    
+    this.checkAndResetExpiredProviders();
     
     do {
       this.currentProviderIndex = (this.currentProviderIndex + 1) % this.providers.length;
       attempts++;
       
       const provider = this.providers[this.currentProviderIndex];
-      const resetTime = this.quotaResetTimes.get(provider.name);
       
-      if (!this.failedProviders.has(provider.name) || 
-          (resetTime && Date.now() > resetTime)) {
-        if (resetTime && Date.now() > resetTime) {
-          this.failedProviders.delete(provider.name);
-          this.quotaResetTimes.delete(provider.name);
-        }
-        
+      if (!this.failedProviders.has(provider.name)) {
         if (this.currentProviderIndex !== originalIndex) {
           logger.info("PROVIDERS", `Switched to ${provider.name}`);
         }
@@ -137,8 +161,30 @@ class APIProviderManager {
       }
     } while (attempts < this.providers.length);
 
+
     throw new Error("Tất cả API providers đã hết quota hoặc lỗi");
   }
+
+
+  checkAndResetExpiredProviders() {
+    const now = Date.now();
+    let hasReset = false;
+    
+    for (const [providerName, resetTime] of this.quotaResetTimes.entries()) {
+      if (now > resetTime) {
+        this.failedProviders.delete(providerName);
+        this.quotaResetTimes.delete(providerName);
+        logger.info("PROVIDERS", `${providerName} retry time expired, reset to available`);
+        hasReset = true;
+      }
+    }
+    
+    if (hasReset && this.currentProviderIndex > 0) {
+      this.currentProviderIndex = 0;
+      logger.info("PROVIDERS", "Reset to first provider after retry time expired");
+    }
+  }
+
 
   markProviderAsFailed(providerName, retryAfter = null) {
     this.failedProviders.add(providerName);
@@ -148,10 +194,12 @@ class APIProviderManager {
       this.quotaResetTimes.set(providerName, resetTime);
       logger.warn("PROVIDERS", `${providerName} quota exceeded, retry after ${retryAfter}s`);
     } else {
-      this.quotaResetTimes.set(providerName, Date.now() + (60 * 60 * 1000)); // 1 hour default
-      logger.warn("PROVIDERS", `${providerName} failed, retry in 1 hour`);
+      const resetTime = Date.now() + (10 * 1000);
+      this.quotaResetTimes.set(providerName, resetTime);
+      logger.warn("PROVIDERS", `${providerName} failed, retry in 10s`);
     }
   }
+
 
   createAxiosInstance(provider) {
     const https = require("https");
@@ -164,6 +212,7 @@ class APIProviderManager {
       },
       timeout: 30000,
     };
+
 
     const certPath = process.env.CUSTOM_CA_CERT_PATH;
     const rejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0';
@@ -184,8 +233,10 @@ class APIProviderManager {
       });
     }
 
+
     return axios.create(options);
   }
+
 
   isValidResponse(content) {
     if (!content || typeof content !== 'string') return false;
@@ -203,6 +254,7 @@ class APIProviderManager {
     return !warningPatterns.some(pattern => lowerContent.includes(pattern));
   }
 
+
   async makeRequest(endpoint, requestBody, modelType = 'default') {
     if (this.providers.length === 0) {
       logger.error("PROVIDERS", "Không có provider nào được cấu hình!");
@@ -213,11 +265,59 @@ class APIProviderManager {
     let attempts = 0;
     const maxAttempts = this.providers.length + 1;
 
+
     while (attempts < maxAttempts) {
+      this.checkAndResetExpiredProviders();
+      
       const provider = this.getCurrentProvider();
       
       try {
         const model = provider.models[modelType] || provider.models.default;
+        
+        if (provider.isAWSBedrock) {
+          const bedrockEndpoint = `/model/${model}/converse`;
+          logger.info("PROVIDERS", `Sử dụng AWS Bedrock model: ${model}`);
+          
+          const bedrockRequestBody = {
+            messages: requestBody.messages || [],
+            inferenceConfig: {
+              maxTokens: requestBody.max_tokens || 4096,
+              temperature: requestBody.temperature || 0.7,
+              topP: requestBody.top_p || 0.9
+            }
+          };
+          
+          const axiosInstance = this.createAxiosInstance(provider);
+          logger.info("PROVIDERS", `Đang gửi request đến ${provider.baseURL}${bedrockEndpoint}`);
+          const response = await axiosInstance.post(bedrockEndpoint, bedrockRequestBody);
+          
+          const bedrockContent = response.data?.output?.message?.content?.[0]?.text;
+          
+          if (!this.isValidResponse(bedrockContent)) {
+            logger.warn("PROVIDERS", `Invalid response from ${provider.name}, switching provider`);
+            this.markProviderAsFailed(provider.name);
+            this.switchToNextProvider();
+            attempts++;
+            continue;
+          }
+          
+          logger.info("PROVIDERS", `Successful request using ${provider.name}`);
+          
+          return {
+            choices: [{
+              message: {
+                content: bedrockContent,
+                role: "assistant"
+              }
+            }],
+            usage: {
+              prompt_tokens: response.data?.usage?.inputTokens || 0,
+              completion_tokens: response.data?.usage?.outputTokens || 0,
+              total_tokens: response.data?.usage?.totalTokens || 0
+            }
+          };
+        }
+        
         const finalRequestBody = {
           ...requestBody,
           model: model
@@ -242,6 +342,7 @@ class APIProviderManager {
         logger.info("PROVIDERS", `Successful request using ${provider.name}`);
         return response.data;
 
+
       } catch (error) {
         lastError = error;
         attempts++;
@@ -263,7 +364,7 @@ class APIProviderManager {
         
         if (error.response?.status === 429) {
           const retryAfter = error.response.headers['retry-after'] || 
-                           error.response.headers['x-ratelimit-reset-requests'];
+                             error.response.headers['x-ratelimit-reset-requests'];
           this.markProviderAsFailed(provider.name, retryAfter);
           logger.warn("PROVIDERS", `Rate limit hit for ${provider.name}`);
         } else if (error.response?.status >= 400 && error.response?.status < 500) {
@@ -272,6 +373,7 @@ class APIProviderManager {
         } else {
           logger.error("PROVIDERS", `Network error for ${provider.name}: ${error.message}`);
         }
+
 
         try {
           this.switchToNextProvider();
@@ -282,8 +384,10 @@ class APIProviderManager {
       }
     }
 
+
     throw new Error(`Tất cả providers đã thất bại. Lỗi cuối: ${lastError?.message}`);
   }
+
 
   getProviderStatus() {
     return this.providers.map(provider => ({
@@ -294,5 +398,6 @@ class APIProviderManager {
     }));
   }
 }
+
 
 module.exports = APIProviderManager;
