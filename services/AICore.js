@@ -63,8 +63,11 @@ class AICore {
       });
 
       let content = result.content;
-      content = "**Quá trình suy nghĩ:**\n" + content;
-      content = content.replace("[ANSWER]", "\n\n**Câu trả lời:**\n");
+      
+      if (!content.includes("🧠 QUÁ TRÌNH SUY NGHĨ:") && !content.includes("💡 CÂU TRẢ LỜI:")) {
+        content = "🧠 **QUÁ TRÌNH SUY NGHĨ:**\n" + content;
+        content = content.replace("**💡 CÂU TRẢ LỜI:**", "\n\n💡 **CÂU TRẢ LỜI:**");
+      }
 
       return {
         content,
