@@ -101,43 +101,6 @@ class AICore {
     }
   }
 
-  async analyzeContentWithAI(prompt) {
-    try {
-      logger.info("AI_CORE", "Analyzing content with AI");
-
-      const analysisPrompt = prompts.system.analysis.replace("${promptText}", prompt);
-      const messages = [
-        {
-          role: "system",
-          content: prompts.system.format,
-        },
-        {
-          role: "user",
-          content: analysisPrompt,
-        },
-      ];
-
-      const result = await this.processChatCompletion(messages, {
-        modelType: 'thinking',
-        max_tokens: 1000,
-      });
-
-      const analysisResult = JSON.parse(result.content);
-      logger.info("AI_CORE", "Content analysis completed");
-
-      return analysisResult;
-    } catch (error) {
-      logger.error("AI_CORE", "Content analysis error:", error.message);
-      return {
-        isInappropriate: false,
-        categories: [],
-        severity: "low",
-        explanation: "Không thể phân tích do lỗi: " + error.message,
-        suggestedKeywords: [],
-      };
-    }
-  }
-
   getModelName() {
     return this.Model;
   }

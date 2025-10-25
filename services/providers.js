@@ -41,7 +41,7 @@ class APIProviderManager {
         },
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "Luna/v3"
+          "User-Agent": "Luna/v3" 
         }
       });
     }

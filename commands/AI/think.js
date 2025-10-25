@@ -21,10 +21,6 @@ module.exports = {
       const result = await AICore.getThinkingResponse(prompt);
       let response = result.content;
 
-      const providerStatus = AICore.getProviderStatus();
-      const currentProvider = providerStatus.find(p => p.current);
-      logger.debug('AI_CORE', `Provider: ${currentProvider?.name || 'Unknown'} | Tokens: ${result.usage?.total_tokens || 0}`);
-
       if (response.length <= 2000) {
         await interaction.editReply({
           content: response
