@@ -140,7 +140,7 @@ async function handleChatRequest(message, content) {
     } else if (error.code === 'EPROTO' || error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
       await message.reply('Xin lỗi, tôi đang gặp vấn đề kết nối. Vui lòng thử lại sau hoặc liên hệ quản trị viên để được hỗ trợ.');
     } else {
-      await message.reply(error.stack);
+      await message.reply('Xin lỗi, hệ thống xảy ra lỗi khi xử lý cuộc trò chuyện. Vui lòng thử lại sau.');
     }
   }
 }
@@ -388,13 +388,9 @@ async function handleMentionMessage(message, client) {
         } else if (error.message.includes('Tất cả providers đã thất bại')) {
           await message.reply('Xin lỗi, tất cả nhà cung cấp AI đều không khả dụng. Vui lòng thử lại sau.');
         } else {
-          await message.reply(error.stack);
+          await message.reply('Xin lỗi, hệ thống xảy ra lỗi khi xử lý cuộc trò chuyện. Vui lòng thử lại sau.');
         }
       }
-    } else if (hasEveryoneOrRoleMention) {
-      // Bỏ qua tin nhắn có mention @everyone hoặc @role
-    } else if (isMonitorWarning) {
-      // Bỏ qua tin nhắn cảnh báo từ monitor
     }
   }
 }
