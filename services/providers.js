@@ -57,7 +57,7 @@ class APIProviderManager {
         baseURL: process.env.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
         apiKey: process.env.ALIBABA_API_KEY,
         models: {
-          default: "qwen-plus",
+          default: "qwen-max",
           thinking: "qwen-max",
           image: "qwen-vl-plus"
         },
