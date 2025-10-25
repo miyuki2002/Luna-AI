@@ -71,7 +71,7 @@ module.exports = {
 				{ icon: '	', label: 'Model AI', value: modelName },
 				{ icon: '	', label: 'Uptime', value: formatUptime(process.uptime(), false) },
 				{ icon: '	', label: 'Node', value: process.version },
-				{ icon: '	', label: 'Memory', value: `${memoryUsage} * 1024 * 1024 MB` },
+				{ icon: '	', label: 'Memory', value: `${memoryUsage} MB` },
 				{ icon: '	', label: 'Servers', value: serverCount.toString() }
 			]);
 			
