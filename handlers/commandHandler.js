@@ -59,7 +59,7 @@ const loadCommands = (client) => {
   commandsJsonCache = commandsJson;
   logger.info('COMMAND', `ĐÃ TẢI TỔNG CỘNG ${client.commands.size} LỆNH`);
   if (commandsJson.length > 0) {
-    logger.info('COMMAND', `Danh sách lệnh đã tải: ${commandsJson.map(c => c.name).join(', ')}`);
+    // logger.info('COMMAND', `Danh sách lệnh đã tải: ${commandsJson.map(c => c.name).join(', ')}`);
   } else {
     logger.warn('COMMAND', 'KHÔNG CÓ LỆNH NÀO ĐƯỢC TẢI!');
   }
@@ -68,10 +68,10 @@ const loadCommands = (client) => {
 
 const getCommandsJson = (client) => {
   if (!commandsJsonCache) {
-    logger.info('COMMAND', 'Cache rỗng, đang tải lại commands...');
+    // logger.info('COMMAND', 'Cache rỗng, đang tải lại commands...');
     loadCommands(client);
   }
-  logger.debug('COMMAND', `Đang trả về ${commandsJsonCache?.length || 0} lệnh từ cache`);
+  // logger.debug('COMMAND', `Đang trả về ${commandsJsonCache?.length || 0} lệnh từ cache`);
   return commandsJsonCache;
 };
 

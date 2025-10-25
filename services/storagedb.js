@@ -41,10 +41,10 @@ class StorageDB {
         }
 
         if (hasUserIdMessageIndexIndex) {
-          logger.info('DATABASE', 'Phát hiện chỉ mục userId_1_messageIndex_1 hiện có...');
+          // logger.info('DATABASE', 'Phát hiện chỉ mục userId_1_messageIndex_1 hiện có...');
           try {
             await db.collection('conversations').dropIndex('userId_1_messageIndex_1');
-            logger.info('DATABASE', 'Đã xóa chỉ mục userId_1_messageIndex_1');
+            // logger.info('DATABASE', 'Đã xóa chỉ mục userId_1_messageIndex_1');
           } catch (dropIndexError) {
             logger.error('DATABASE', 'Không thể xóa chỉ mục userId_1_messageIndex_1:', dropIndexError.message);
           }
@@ -89,7 +89,7 @@ class StorageDB {
       // Tạo index cần thiết
       try {
         await db.collection('conversations').createIndex({ userId: 1, messageIndex: 1 }, { unique: true });
-        logger.info('DATABASE', 'Đã tạo chỉ mục userId_1_messageIndex_1');
+        // logger.info('DATABASE', 'Đã tạo chỉ mục userId_1_messageIndex_1');
       } catch (indexError) {
         logger.error('DATABASE', 'Lỗi khi tạo chỉ mục userId_1_messageIndex_1:', indexError);
         await this.resetConversationsCollection();

@@ -2,6 +2,7 @@ const { registerFont } = require('canvas');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const logger = require('../../utils/logger.js');
 
 class FontManager {
   constructor() {
@@ -64,7 +65,7 @@ class FontManager {
       this.registeredFonts.add(fontKey);
       return true;
     } catch (error) {
-      console.warn(`Không thể đăng ký font ${path.basename(fontPath)}:`, error.message);
+      logger.warn('FONTS', `Không thể đăng ký font ${path.basename(fontPath)}: ${error.message}`);
       return false;
     }
   }
@@ -77,7 +78,6 @@ class FontManager {
     if (this.initialized) return;
 
     try {
-      // Thiết lập biến môi trường để tránh lỗi Fontconfig trên Windows
       if (os.platform() === 'win32') {
         process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || '';
         process.env.FC_DEBUG = '0'; // Tắt debug fontconfig
@@ -86,7 +86,7 @@ class FontManager {
       const fontsPath = path.join(assetsPath, 'fonts');
       
       if (!fs.existsSync(fontsPath)) {
-        console.warn(`Thư mục fonts không tồn tại: ${fontsPath}`);
+        logger.warn('FONTS', `Thư mục fonts không tồn tại: ${fontsPath}`);
         this.initialized = true;
         return;
       }
@@ -150,15 +150,15 @@ class FontManager {
         }
       }
 
-      console.log(`Fonts: Đăng ký thành công ${successCount}/${totalCount} fonts`);
+      logger.info('FONTS', `Đăng ký thành công ${successCount}/${totalCount} fonts`);
       
       // Đăng ký fonts dự phòng hệ thống nếu cần
       this.registerSystemFallbacks();
       
       this.initialized = true;
     } catch (error) {
-      console.error('Lỗi khi khởi tạo FontManager:', error);
-      console.warn('Sẽ sử dụng fonts hệ thống mặc định');
+      logger.error('FONTS', 'Lỗi khi khởi tạo FontManager:', error);
+      logger.warn('FONTS', 'Sẽ sử dụng fonts hệ thống mặc định');
       this.initialized = true;
     }
   }
@@ -204,7 +204,7 @@ class FontManager {
    */
   registerSystemFallbacks() {
     // Không cần đăng ký fonts hệ thống, chúng đã có sẵn
-    console.log('Fonts dự phòng hệ thống:', this.fallbackFonts.join(', '));
+    logger.info('FONTS', 'Fonts dự phòng hệ thống:', this.fallbackFonts.join(', '));
   }
 
   /**

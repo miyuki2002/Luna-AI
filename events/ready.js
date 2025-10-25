@@ -11,7 +11,7 @@ const APIProviderManager = require('../services/providers.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
-    logger.info('SYSTEM', `\n\n
+    console.log(`
     ██╗     ██╗   ██╗███╗   ██╗ █████╗
     ██║     ██║   ██║██╔██╗ ██║███████║
     ██║     ██║   ██║██║╚██╗██║██╔══██║
@@ -72,6 +72,15 @@ async function startbot(client, loadCommands) {
     }
 
     try {
+      const commandCount = loadCommands(client);
+      logger.info('SYSTEM', `Đã tải tổng cộng ${commandCount} lệnh!`);
+      initSystem.markReady('commands');
+    } catch (error) {
+      logger.error('SYSTEM', 'Lỗi khi tải commands:', error);
+      initSystem.markReady('commands');
+    }
+
+    try {
       await GuildProfileDB.setupGuildProfileIndexes();
       for (const [guildId, guild] of client.guilds.cache) {
         try {
@@ -90,15 +99,6 @@ async function startbot(client, loadCommands) {
       ownerService.initialize(client);
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo OwnerService:', error);
-    }
-
-    try {
-      const commandCount = loadCommands(client);
-      logger.info('SYSTEM', `Đã tải tổng cộng ${commandCount} lệnh!`);
-      initSystem.markReady('commands');
-    } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi tải commands:', error);
-      initSystem.markReady('commands');
     }
 
     try {

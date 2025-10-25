@@ -3,13 +3,10 @@ const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const fs = require('fs');
 const fontManager = require('../fonts/fonts');
+const logger = require('../../utils/logger.js');
 
-// Định nghĩa đường dẫn tới thư mục assets
 const ASSETS_PATH = path.join(__dirname, '../../assets');
 
-/**
- * Tối ưu hóa Achievement Canvas với caching và performance
- */
 class AchievementCanvas {
   constructor() {
     this.initializeFonts();
@@ -17,15 +14,12 @@ class AchievementCanvas {
     this.colors = this.getColorPalette();
   }
 
-  /**
-   * Khởi tạo fonts
-   */
   async initializeFonts() {
     try {
       await fontManager.initialize(ASSETS_PATH);
-      console.log('AchievementCanvas: Fonts initialized successfully');
+      logger.info('ACHIEVEMENT', 'Fonts initialized successfully');
     } catch (error) {
-      console.error('AchievementCanvas: Font initialization failed:', error);
+      logger.error('ACHIEVEMENT', 'Font initialization failed:', error);
     }
   }
 
@@ -70,7 +64,7 @@ class AchievementCanvas {
       this.imageCache.set(imagePath, image);
       return image;
     } catch (error) {
-      console.warn(`Không thể tải hình ảnh achievement ${path.basename(imagePath)}:`, error.message);
+      logger.warn('ACHIEVEMENT', `Không thể tải hình ảnh achievement ${path.basename(imagePath)}:`, error.message);
       
       // Fallback to default icon
       const fallbackPath = path.join(ASSETS_PATH, 'luna-avatar.png');
@@ -279,7 +273,7 @@ class AchievementCanvas {
       ctx.lineWidth = 3;
       ctx.stroke();
     } catch (error) {
-      console.error('Lỗi khi vẽ icon achievement:', error);
+      logger.error('ACHIEVEMENT', 'Lỗi khi vẽ icon achievement:', error);
     }
   }
 
@@ -398,7 +392,7 @@ class AchievementCanvas {
 
       return canvas.toBuffer();
     } catch (error) {
-      console.error('Lỗi khi tạo achievement canvas:', error);
+      logger.error('ACHIEVEMENT', 'Lỗi khi tạo achievement canvas:', error);
       throw error;
     }
   }
@@ -475,7 +469,7 @@ async function checkAchievements(message, xpResult) {
       });
     }
   } catch (error) {
-    console.error('Lỗi khi kiểm tra thành tựu:', error);
+    logger.error('ACHIEVEMENT', 'Lỗi khi kiểm tra thành tựu:', error);
   }
 }
 

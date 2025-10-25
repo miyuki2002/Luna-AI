@@ -3,23 +3,17 @@ const path = require('path');
 const fs = require('fs').promises;
 const fontManager = require('../fonts/fonts');
 const stringUtils = require('../../utils/string');
+const logger = require('../../utils/logger.js');
 
 // Định nghĩa đường dẫn tới thư mục assets
 const ASSETS_PATH = path.join(__dirname, '../../assets');
 
 class ProfileCanvas {
   constructor() {
-    // Khởi tạo fonts thông qua FontManager
     this.initializeFonts();
-    
-    // Cấu hình màu sắc tối ưu
     this.colors = this.getColorPalette();
-    
-    // Cache hình ảnh và tài nguyên
     this.imageCache = new Map();
     this.gradientCache = new Map();
-    
-    // Cấu hình canvas mặc định
     this.defaultConfig = {
       width: 900,
       height: 420,
@@ -35,9 +29,9 @@ class ProfileCanvas {
   async initializeFonts() {
     try {
       await fontManager.initialize(ASSETS_PATH);
-      console.log('ProfileCanvas: Fonts initialized successfully');
+      logger.info('PROFILE_CANVAS', 'Fonts initialized successfully');
     } catch (error) {
-      console.error('ProfileCanvas: Font initialization failed:', error);
+      logger.error('PROFILE_CANVAS', 'Font initialization failed:', error);
     }
   }
 
@@ -72,7 +66,7 @@ class ProfileCanvas {
       this.imageCache.set(imagePath, image);
       return image;
     } catch (error) {
-      console.warn(`Không thể tải hình ảnh ${path.basename(imagePath)}:`, error.message);
+      logger.warn('PROFILE_CANVAS', `Không thể tải hình ảnh ${path.basename(imagePath)}:`, error.message);
       
       // Fallback to default avatar
       const fallbackPath = path.join(ASSETS_PATH, 'luna-avatar.png');
@@ -186,7 +180,7 @@ class ProfileCanvas {
 
       return canvas.toBuffer('image/png');
     } catch (error) {
-      console.error('Lỗi khi tạo profile card:', error);
+      logger.error('PROFILE_CANVAS', 'Lỗi khi tạo profile card:', error);
       throw error;
     }
   }
@@ -224,7 +218,7 @@ class ProfileCanvas {
       ctx.fillStyle = overlay;
       ctx.fillRect(0, 0, width, height);
     } catch (error) {
-      console.warn('Không thể tải banner, sử dụng nền mặc định');
+      logger.warn('PROFILE_CANVAS', 'Không thể tải banner, sử dụng nền mặc định');
     }
   }
 
@@ -331,7 +325,7 @@ class ProfileCanvas {
       );
       ctx.restore();
     } catch (error) {
-      console.warn('Không thể vẽ avatar:', error.message);
+      logger.warn('PROFILE_CANVAS', 'Không thể vẽ avatar:', error.message);
     }
   }
 

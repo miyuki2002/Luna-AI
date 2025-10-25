@@ -67,7 +67,7 @@ const getGuildProfileCollection = async () => {
 const createDefaultGuildProfile = (guildId) => {
   // Chỉ in thông báo khi thực sự tạo mới, không phải khi hàm được gọi
   if (!profileCache.has(guildId)) {
-    logger.info("SYSTEM", `Tạo profile mới cho guild: ${guildId}`);
+    // logger.info("SYSTEM", `Tạo profile mới cho guild: ${guildId}`);
     profileCache.add(guildId);
   }
 

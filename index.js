@@ -9,7 +9,7 @@ const {
 const { handleMentionMessage } = require("./handlers/messageHandler");
 const { handleCommand, loadCommands } = require("./handlers/commandHandler");
 const { startbot } = require("./events/ready");
-// const { setupGuildHandlers } = require("./handlers/guildHandler");
+const { setupGuildHandlers } = require("./handlers/guildHandler");
 const logger = require("./utils/logger.js");
 
 const client = new Client({
