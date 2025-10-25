@@ -270,9 +270,6 @@ class ConversationService {
     }
   }
 
-  /**
-   * Xử lý chat completion với conversation manager
-   */
   async processChatCompletion(prompt, userId, additionalConfig = {}) {
     try {
       let systemPrompt = additionalConfig.systemPrompt || prompts.system.main;
@@ -292,10 +289,8 @@ class ConversationService {
 
       enhancedPrompt += prompts.chat.generalInstructions + ` ${prompt}`;
 
-      // Thêm tin nhắn người dùng vào lịch sử
       await conversationManager.addMessage(userId, "user", enhancedPrompt);
 
-      // Đảm bảo messages không rỗng
       let messages = conversationManager.getHistory(userId);
       if (!messages || messages.length === 0) {
         logger.error("CONVERSATION_SERVICE", `Empty conversation history for userId: ${userId}, reinitializing`);
@@ -304,7 +299,6 @@ class ConversationService {
         messages = conversationManager.getHistory(userId);
       }
 
-      // Thêm timeout cho waitForProviders
       const waitTimeout = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('waitForProviders timeout after 10 seconds')), 10000);
       });

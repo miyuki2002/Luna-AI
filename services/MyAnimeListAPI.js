@@ -284,10 +284,8 @@ class MyAnimeListAPI {
       return embed;
     }
 
-    // Lấy tối đa 5 kết quả để hiển thị
     const topResults = animeList.slice(0, 5);
 
-    // Thêm thumbnail cho embed là ảnh của anime đầu tiên
     if (topResults[0].node.main_picture) {
       embed.thumbnail = { url: topResults[0].node.main_picture.medium };
     }
@@ -368,7 +366,6 @@ class MyAnimeListAPI {
         break;
     }
 
-    // Rút gọn synopsis nếu quá dài
     let synopsis = anime.synopsis || "Không có mô tả.";
     if (synopsis.length > 500) {
       synopsis = synopsis.substring(0, 500) + "...";
@@ -410,7 +407,6 @@ class MyAnimeListAPI {
       timestamp: new Date(),
     };
 
-    // Thêm thông tin mùa
     if (anime.start_season) {
       let season = "";
       switch (anime.start_season.season) {
@@ -434,7 +430,6 @@ class MyAnimeListAPI {
       });
     }
 
-    // Thêm thông tin studio
     if (anime.studios && anime.studios.length > 0) {
       const studioNames = anime.studios.map((s) => s.name).join(", ");
       embed.fields.push({
@@ -444,7 +439,6 @@ class MyAnimeListAPI {
       });
     }
 
-    // Thêm thông tin thể loại
     if (anime.genres && anime.genres.length > 0) {
       const genreList = anime.genres.map((g) => g.name).join(", ");
       embed.fields.push({
@@ -491,10 +485,8 @@ class MyAnimeListAPI {
       return embed;
     }
 
-    // Chỉ lấy 5 kết quả đầu để tránh lỗi
     const topResults = rankingList.slice(0, 5);
 
-    // Thêm thumbnail cho embed là ảnh của anime đầu tiên
     if (topResults[0]?.node?.main_picture) {
       embed.thumbnail = { url: topResults[0].node.main_picture.medium };
     }
