@@ -1,0 +1,546 @@
+[
+  {
+    "name": "image",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "AIcore",
+    "description": "Vẽ một hình ảnh từ trí tưởng tượng của bạn",
+    "parameters": [
+      "Hãy mô tả bức tranh bạn muốn tôi vẽ (bắt buộc)"
+    ],
+    "examples": [
+      "/image",
+      "/image <prompt>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "reset",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "AIcore",
+    "description": "Xóa lịch sử trò chuyện của chúng ta",
+    "parameters": [],
+    "examples": [
+      "/reset"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "think",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "AIcore",
+    "description": "Hiển thị quá trình suy nghĩ của AI khi trả lời câu hỏi của bạn",
+    "parameters": [
+      "Nhập câu hỏi hoặc vấn đề bạn muốn AI phân tích (bắt buộc)"
+    ],
+    "examples": [
+      "/think",
+      "/think <prompt>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "about",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "Core",
+    "description": "Hiển thị thông tin chi tiết về Luna bot",
+    "parameters": [],
+    "examples": [
+      "/about"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "help",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "Core",
+    "description": "Hiển thị danh sách lệnh và thông tin trợ giúp",
+    "parameters": [],
+    "examples": [
+      "/help"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "ping",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "Core",
+    "description": "Kiểm tra độ trễ và trạng thái kết nối của bot",
+    "parameters": [],
+    "examples": [
+      "/ping"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "quotas",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "Core",
+    "description": "Xem thống kê lượt nhắn tin đã sử dụng",
+    "parameters": [
+      "Xem thống kê lượt nhắn tin đã sử dụng của một người dùng (tùy chọn)",
+      "Xem thống kê lượt nhắn tin đã sử dụng của toàn hệ thống (Owner/Admin only) (tùy chọn)"
+    ],
+    "examples": [
+      "/quotas"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "ban",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Ban một thành viên khỏi server",
+    "parameters": [
+      "Thành viên cần ban (bắt buộc)",
+      "Lý do ban (tùy chọn)",
+      "Số ngày xóa tin nhắn (0-7) (tùy chọn)"
+    ],
+    "examples": [
+      "/ban",
+      "/ban <user>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "clearwarnings",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Xóa cảnh cáo của một thành viên",
+    "parameters": [
+      "Thành viên cần xóa cảnh cáo (bắt buộc)",
+      "Loại xóa cảnh cáo (bắt buộc) - Lựa chọn: Tất cả, Mới nhất",
+      "Lý do xóa cảnh cáo (tùy chọn)"
+    ],
+    "examples": [
+      "/clearwarnings",
+      "/clearwarnings <user> Tất cả"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "kick",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Kick một thành viên khỏi server",
+    "parameters": [
+      "Thành viên cần kick (bắt buộc)",
+      "Lý do kick (tùy chọn)"
+    ],
+    "examples": [
+      "/kick",
+      "/kick <user>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "logchannel",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Xem cài đặt kênh log hiện tại",
+    "parameters": [],
+    "examples": [
+      "/logchannel"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "modlog",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Xem nhật ký hành động moderation",
+    "parameters": [
+      "Lọc theo thành viên (tùy chọn) (tùy chọn)",
+      "Lọc theo loại hành động (tùy chọn) (tùy chọn) - Lựa chọn: Ban, Unban, Kick, Mute, Unmute, Warn, Clear Warnings",
+      "Số lượng hành động hiển thị (mặc định: 10) (tùy chọn)"
+    ],
+    "examples": [
+      "/modlog"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "mute",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Mute (timeout) một thành viên",
+    "parameters": [
+      "Thành viên cần mute (bắt buộc)",
+      "Thời gian mute (phút) (bắt buộc)",
+      "Lý do mute (tùy chọn)"
+    ],
+    "examples": [
+      "/mute",
+      "/mute <user> <duration>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "setlogchannel",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Thiết lập kênh gửi log cho các lệnh moderation",
+    "parameters": [
+      "Kênh để gửi log moderation (bắt buộc)",
+      "Áp dụng cho log giám sát chat (tùy chọn)",
+      "Áp dụng cho log hành động moderation (mute/ban/kick) (tùy chọn)"
+    ],
+    "examples": [
+      "/setlogchannel",
+      "/setlogchannel <channel>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "unban",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Unban một người dùng khỏi server",
+    "parameters": [
+      "ID của người dùng cần unban (bắt buộc)",
+      "Lý do unban (tùy chọn)"
+    ],
+    "examples": [
+      "/unban",
+      "/unban <userid>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "unmute",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Unmute (bỏ timeout) một thành viên",
+    "parameters": [
+      "Thành viên cần unmute (bắt buộc)",
+      "Lý do unmute (tùy chọn)"
+    ],
+    "examples": [
+      "/unmute",
+      "/unmute <user>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "warn",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Cảnh cáo một thành viên",
+    "parameters": [
+      "Thành viên cần cảnh cáo (bắt buộc)",
+      "Lý do cảnh cáo (bắt buộc)"
+    ],
+    "examples": [
+      "/warn",
+      "/warn <user> <reason>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "warnings",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "moderation",
+    "description": "Xem danh sách cảnh cáo của một thành viên",
+    "parameters": [
+      "Thành viên cần xem cảnh cáo (bắt buộc)"
+    ],
+    "examples": [
+      "/warnings",
+      "/warnings <user>"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "profile",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "social",
+    "description": "Hiển thị XP hiện tại, cấp độ, xếp hạng và các thông tin khác của người dùng",
+    "parameters": [
+      "Người dùng mà bạn muốn xem hồ sơ (tùy chọn)"
+    ],
+    "examples": [
+      "/profile"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "generatecommands",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "Tạo file JSON chứa thông tin tất cả lệnh của bot (chỉ dành cho owner)",
+    "parameters": [],
+    "examples": [
+      "/generatecommands"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "logger",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "Quản lý cài đặt hệ thống ghi log",
+    "parameters": [
+      "Xem trạng thái hiện tại của hệ thống ghi log (tùy chọn)",
+      "Bật hệ thống ghi log (tùy chọn)",
+      "Tắt hệ thống ghi log (tùy chọn)",
+      "Đặt mức độ ghi log (tùy chọn)",
+      "Bật/tắt ghi log cho một danh mục (tùy chọn)",
+      "Khôi phục cài đặt ghi log về mặc định (tùy chọn)"
+    ],
+    "examples": [
+      "/logger"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "resetdb",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "Xóa và tạo lại cơ sở dữ liệu (chỉ dành cho owner)",
+    "parameters": [],
+    "examples": [
+      "/resetdb"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "resetquotas",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "Reset lượt nhắn tin cho người dùng (Owner/Admin only)",
+    "parameters": [
+      "Người dùng cần reset lượt nhắn tin đã sử dụng (bắt buộc)",
+      "Loại reset (bắt buộc) - Lựa chọn: Hàng ngày, Hàng tuần, Hàng tháng, Tất cả"
+    ],
+    "examples": [
+      "/resetquotas",
+      "/resetquotas <user> Hàng ngày"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "resetuserdb",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "Xóa tất cả user profiles (chỉ dành cho owner)",
+    "parameters": [],
+    "examples": [
+      "/resetuserdb"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "setrole",
+    "aliases": [],
+    "clientPermissions": [
+      "ADMINISTRATOR",
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "Đặt vai trò cho người dùng (Owner/Admin only)",
+    "parameters": [
+      "Người dùng cần đặt vai trò (bắt buộc)",
+      "Vai trò mới (bắt buộc) - Lựa chọn: Owner, Admin, Helper, User"
+    ],
+    "examples": [
+      "/setrole",
+      "/setrole <user> Owner"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  },
+  {
+    "name": "update",
+    "aliases": [],
+    "clientPermissions": [
+      "EMBED_LINKS"
+    ],
+    "group": "system",
+    "description": "[ADMIN] Kiểm tra và cập nhật bot từ GitHub",
+    "parameters": [],
+    "examples": [
+      "/update"
+    ],
+    "guildOnly": false,
+    "requiresDatabase": false,
+    "rankcommand": false,
+    "nsfw": false,
+    "cooldown": null
+  }
+]
