@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const mongoClient = require('../../services/mongoClient.js');
 const { getModLogChannel } = require('../../utils/modLogUtils.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -9,7 +10,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({ 
         content: 'Bạn không có quyền xem cài đặt kênh log!', 
@@ -22,17 +22,14 @@ module.exports = {
     try {
       const db = mongoClient.getDb();
       
-      // Lấy cài đặt kênh log từ cơ sở dữ liệu
       const logSettings = await db.collection('mod_settings').findOne({ 
         guildId: interaction.guild.id 
       });
       
-      // Tìm kênh log hiện tại
       const modActionLogChannel = await getModLogChannel(interaction.guild, true);
       const monitorLogChannel = await getModLogChannel(interaction.guild, false);
       
       if (!logSettings) {
-        // Nếu không có cài đặt, hiển thị thông tin về kênh mặc định
         const defaultLogEmbed = new EmbedBuilder()
           .setColor(0x3498DB)
           .setTitle('📋 Cài đặt kênh log')
@@ -48,12 +45,11 @@ module.exports = {
         return interaction.editReply({ embeds: [defaultLogEmbed] });
       }
       
-      // Nếu có cài đặt, hiển thị thông tin chi tiết
       let logChannel;
       try {
         logChannel = await interaction.guild.channels.fetch(logSettings.logChannelId);
       } catch (error) {
-        console.error(`Không thể tìm thấy kênh log ${logSettings.logChannelId}:`, error);
+        logger.error('MODERATION', `Không thể tìm thấy kênh log ${logSettings.logChannelId}:`, error);
       }
       
       const logEmbed = new EmbedBuilder()
@@ -69,7 +65,6 @@ module.exports = {
         .setFooter({ text: `Server: ${interaction.guild.name}` })
         .setTimestamp();
       
-      // Thêm thông tin về người cài đặt và thời gian
       if (logSettings.updatedBy) {
         logEmbed.addFields(
           { name: 'Người cài đặt', value: `<@${logSettings.updatedBy}>`, inline: true },
@@ -81,7 +76,6 @@ module.exports = {
         );
       }
       
-      // Thêm hướng dẫn cài đặt lại
       logEmbed.addFields({
         name: 'Cách cài đặt lại',
         value: 'Sử dụng lệnh `/setlogchannel` để thay đổi kênh log hoặc cài đặt lại.',
@@ -91,7 +85,7 @@ module.exports = {
       await interaction.editReply({ embeds: [logEmbed] });
       
     } catch (error) {
-      console.error('Lỗi khi xem cài đặt kênh log:', error);
+      logger.error('MODERATION', 'Lỗi khi xem cài đặt kênh log:', error);
       await interaction.editReply({ 
         content: `Đã xảy ra lỗi khi xem cài đặt kênh log: ${error.message}`, 
         ephemeral: true 

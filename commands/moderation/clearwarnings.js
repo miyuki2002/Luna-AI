@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const mongoClient = require('../../services/mongoClient.js');
 const ConversationService = require('../../services/ConversationService.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -25,7 +26,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({ 
         content: 'Bạn không có quyền xóa cảnh cáo của thành viên!', 
@@ -41,8 +41,7 @@ module.exports = {
     
     try {
       const db = mongoClient.getDb();
-      
-      // Kiểm tra xem thành viên có cảnh cáo không
+   
       const warningCount = await db.collection('warnings').countDocuments({
         userId: targetUser.id,
         guildId: interaction.guild.id
@@ -58,7 +57,6 @@ module.exports = {
       let deletedCount = 0;
       
       if (type === 'all') {
-        // Xóa tất cả cảnh cáo
         const result = await db.collection('warnings').deleteMany({
           userId: targetUser.id,
           guildId: interaction.guild.id
@@ -66,7 +64,6 @@ module.exports = {
         
         deletedCount = result.deletedCount;
       } else if (type === 'latest') {
-        // Xóa cảnh cáo mới nhất
         const latestWarning = await db.collection('warnings')
           .findOne({
             userId: targetUser.id,
@@ -81,12 +78,15 @@ module.exports = {
         }
       }
       
-      // Sử dụng NeuralNetworks để tạo thông báo
-      const prompt = `Tạo một thông báo ngắn gọn, tích cực về việc xóa ${type === 'all' ? 'tất cả' : 'cảnh cáo mới nhất'} của thành viên ${targetUser.username} với lý do: "${reason}". Đã xóa ${deletedCount} cảnh cáo. Thông báo nên có giọng điệu của một mod công bằng và khoan dung, không quá 2 câu. Có thể thêm 1 emoji phù hợp.`;
+      const prompts = require('../../config/prompts.js');
+      const prompt = prompts.moderation.clearwarnings
+        .replace('${type}', type === 'all' ? 'tất cả' : 'cảnh cáo mới nhất')
+        .replace('${username}', targetUser.username)
+        .replace('${reason}', reason)
+        .replace('${deletedCount}', deletedCount);
       
       const aiResponse = await ConversationService.getCompletion(prompt);
       
-      // Tạo embed thông báo
       const clearEmbed = new EmbedBuilder()
         .setColor(0x00FF00)
         .setTitle(`🧹 Đã xóa cảnh cáo`)
@@ -101,10 +101,8 @@ module.exports = {
         .setFooter({ text: `Cleared by ${interaction.user.tag}` })
         .setTimestamp();
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [clearEmbed] });
       
-      // Gửi DM cho người được xóa cảnh cáo (nếu có thể)
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0x00FF00)
@@ -115,11 +113,11 @@ module.exports = {
           
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        console.log(`Không thể gửi DM cho ${targetUser.tag}`);
+        logger.error('MODERATION', `Không thể gửi DM cho ${targetUser.tag}`);
       }
       
     } catch (error) {
-      console.error('Lỗi khi xóa cảnh cáo của thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi xóa cảnh cáo của thành viên:', error);
       await interaction.editReply({ 
         content: `Đã xảy ra lỗi khi xóa cảnh cáo của ${targetUser.tag}: ${error.message}`, 
         ephemeral: true 

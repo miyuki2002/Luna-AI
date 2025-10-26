@@ -194,6 +194,9 @@ Text to translate: "\${vietnameseText}"`,
     warning: `Tạo một thông báo cảnh cáo nghiêm túc nhưng không quá gay gắt cho thành viên \${username} với lý do: "\${reason}". Đây là lần cảnh cáo thứ \${warningCount} của họ. Thông báo nên có giọng điệu của một mod nghiêm túc nhưng công bằng, không quá 3 câu.`,
     unmute: `Tạo một thông báo ngắn gọn, tích cực về việc unmute (bỏ timeout) thành viên \${username} với lý do: "\${reason}". Thông báo nên có giọng điệu của một mod thân thiện, không quá 2 câu.`,
     ban: `Tạo một thông báo nghiêm túc nhưng có chút hài hước về việc ban thành viên \${username} khỏi server với lý do: "\${reason}". Thông báo nên có giọng điệu của một admin công bằng nhưng cứng rắn, không quá 3 câu.`,
+    clearwarnings: `Tạo một thông báo ngắn gọn, tích cực về việc xóa \${type} của thành viên \${username} với lý do: "\${reason}". Đã xóa \${deletedCount} cảnh cáo. Thông báo nên có giọng điệu của một mod công bằng và khoan dung, không quá 2 câu.`,
+    kick: `Tạo một thông báo ngắn gọn, chuyên nghiệp nhưng hơi hài hước về việc kick thành viên \${username} khỏi server với lý do: "\${reason}". Thông báo nên có giọng điệu của một admin nghiêm túc nhưng thân thiện, không quá 3 câu.`,
+    mute: `Tạo một thông báo ngắn gọn, chuyên nghiệp nhưng hơi hài hước về việc mute (timeout) thành viên \${username} trong \${duration} với lý do: "\${reason}". Thông báo nên có giọng điệu của một mod nghiêm túc nhưng thân thiện, không quá 3 câu.`,
   },
 };
 

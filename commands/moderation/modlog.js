@@ -31,7 +31,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({ 
         content: 'Bạn không có quyền xem nhật ký moderation!', 
@@ -48,14 +47,11 @@ module.exports = {
     try {
       const db = mongoClient.getDb();
       
-      // Tạo collection modlog nếu chưa tồn tại
       try {
         await db.createCollection('modlog');
       } catch (error) {
-        // Bỏ qua lỗi nếu collection đã tồn tại
       }
       
-      // Tạo filter dựa trên các tùy chọn
       const filter = { guildId: interaction.guild.id };
       
       if (targetUser) {
@@ -66,7 +62,6 @@ module.exports = {
         filter.action = actionType;
       }
       
-      // Lấy dữ liệu từ cơ sở dữ liệu
       const logs = await db.collection('modlog')
         .find(filter)
         .sort({ timestamp: -1 })
@@ -80,7 +75,6 @@ module.exports = {
         });
       }
       
-      // Tạo embed thông báo
       const logEmbed = new EmbedBuilder()
         .setColor(0x3498DB)
         .setTitle('📋 Nhật ký Moderation')
@@ -88,12 +82,10 @@ module.exports = {
         .setFooter({ text: `Server: ${interaction.guild.name}` })
         .setTimestamp();
 
-      // Thêm các hành động vào embed
       for (const log of logs) {
         const date = new Date(log.timestamp).toLocaleDateString('vi-VN');
         const time = new Date(log.timestamp).toLocaleTimeString('vi-VN');
         
-        // Lấy thông tin người thực hiện và mục tiêu
         let moderator = 'Không rõ';
         let target = 'Không rõ';
         
@@ -136,7 +128,6 @@ module.exports = {
         });
       }
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [logEmbed] });
       
     } catch (error) {
