@@ -190,6 +190,11 @@ Text to translate: "\${vietnameseText}"`,
     - Phù hợp với personality của Luna: ngọt ngào, dễ thương, thân thiện
     - Sử dụng tiếng Việt với tông điệu cute và affectionate`,
   },
+  moderation: {
+    warning: `Tạo một thông báo cảnh cáo nghiêm túc nhưng không quá gay gắt cho thành viên \${username} với lý do: "\${reason}". Đây là lần cảnh cáo thứ \${warningCount} của họ. Thông báo nên có giọng điệu của một mod nghiêm túc nhưng công bằng, không quá 3 câu.`,
+    unmute: `Tạo một thông báo ngắn gọn, tích cực về việc unmute (bỏ timeout) thành viên \${username} với lý do: "\${reason}". Thông báo nên có giọng điệu của một mod thân thiện, không quá 2 câu.`,
+    ban: `Tạo một thông báo nghiêm túc nhưng có chút hài hước về việc ban thành viên \${username} khỏi server với lý do: "\${reason}". Thông báo nên có giọng điệu của một admin công bằng nhưng cứng rắn, không quá 3 câu.`,
+  },
 };
 
 module.exports = prompts;

@@ -37,7 +37,6 @@ module.exports = {
     const reason = interaction.options.getString('reason') || 'Không có lý do được cung cấp';
     const deleteMessageDays = interaction.options.getInteger('days') || 1;
 
-    // Kiểm tra xem có thể ban thành viên không
     if (targetMember && !targetMember.bannable) {
       return interaction.reply({
         content: 'Tôi không thể ban thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.',
@@ -45,16 +44,16 @@ module.exports = {
       });
     }
 
-    // Tạo thông báo AI về việc ban
     await interaction.deferReply();
 
     try {
-      // Sử dụng NeuralNetworks để tạo thông báo
-      const prompt = `Tạo một thông báo nghiêm túc nhưng có chút hài hước về việc ban thành viên ${targetUser.username} khỏi server với lý do: "${reason}". Thông báo nên có giọng điệu của một admin công bằng nhưng cứng rắn, không quá 3 câu. Có thể thêm 1-2 emoji phù hợp.`;
+      const prompts = require('../../config/prompts.js');
+      const prompt = prompts.moderation.ban
+        .replace('${username}', targetUser.username)
+        .replace('${reason}', reason);
 
       const aiResponse = await ConversationService.getCompletion(prompt);
 
-      // Tạo embed thông báo
       const banEmbed = new EmbedBuilder()
         .setColor(0xFF0000)
         .setTitle(`🔨 Thành viên đã bị ban`)
@@ -68,13 +67,11 @@ module.exports = {
         .setFooter({ text: `Banned by ${interaction.user.tag}` })
         .setTimestamp();
 
-      // Ban thành viên
       await interaction.guild.members.ban(targetUser, {
         deleteMessageDays: deleteMessageDays,
         reason: `${reason} - Ban bởi ${interaction.user.tag}`
       });
 
-      // Ghi nhật ký hành động
       await logModAction({
         guildId: interaction.guild.id,
         targetId: targetUser.id,
@@ -83,10 +80,8 @@ module.exports = {
         reason: reason
       });
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [banEmbed] });
 
-      // Gửi log đến kênh log moderation
       const logEmbed = createModActionEmbed({
         title: `🔨 Thành viên đã bị ban`,
         description: `${targetUser.tag} đã bị ban khỏi server.`,
@@ -104,7 +99,6 @@ module.exports = {
 
       await sendModLog(interaction.guild, logEmbed, true);
 
-      // Gửi DM cho người bị ban (nếu có thể)
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0xFF0000)
