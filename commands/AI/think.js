@@ -19,11 +19,11 @@ module.exports = {
 
     try {
       // Kiểm tra token limit trước khi xử lý
-      const TokenService = require('../../services/TokenService.js');
+      const MessageService = require('../../services/TokenService.js');
       const userId = interaction.user.id;
-      const tokenCheck = await TokenService.canUseTokens(userId, 4000); // Thinking requests thường dùng nhiều tokens
+      const messageCheck = await MessageService.canUseMessages(userId, 1);
 
-      if (!tokenCheck.allowed) {
+      if (!messageCheck.allowed) {
         const roleNames = {
           user: 'Người dùng',
           helper: 'Helper',
@@ -32,13 +32,13 @@ module.exports = {
         };
         
         await interaction.editReply(
-          `**Giới hạn Token**\n\n` +
-          `Bạn đã sử dụng hết giới hạn token hàng ngày!\n\n` +
+          `**Giới hạn Lượt nhắn tin**\n\n` +
+          `Bạn đã sử dụng hết giới hạn lượt nhắn tin hàng ngày!\n\n` +
           `**Thông tin:**\n` +
-          `• Vai trò: ${roleNames[tokenCheck.role] || tokenCheck.role}\n` +
-          `• Đã sử dụng: ${tokenCheck.current.toLocaleString()} tokens\n` +
-          `• Giới hạn: ${tokenCheck.limit.toLocaleString()} tokens/ngày\n` +
-          `• Còn lại: ${tokenCheck.remaining.toLocaleString()} tokens\n\n` +
+          `• Vai trò: ${roleNames[messageCheck.role] || messageCheck.role}\n` +
+          `• Đã sử dụng: ${messageCheck.current.toLocaleString()} lượt\n` +
+          `• Giới hạn: ${messageCheck.limit.toLocaleString()} lượt/ngày\n` +
+          `• Còn lại: ${messageCheck.remaining.toLocaleString()} lượt\n\n` +
           `Giới hạn sẽ được reset vào ngày mai. Vui lòng quay lại sau!`
         );
         return;
@@ -47,9 +47,9 @@ module.exports = {
       const result = await AICore.getThinkingResponse(prompt);
       let response = result.content;
 
-      // Ghi nhận token usage nếu có
+      // Ghi nhận message usage
       if (result.usage && result.usage.total_tokens) {
-        await TokenService.recordTokenUsage(userId, result.usage.total_tokens, 'think');
+        await MessageService.recordMessageUsage(userId, 1, 'think');
       }
 
       if (response.length <= 2000) {

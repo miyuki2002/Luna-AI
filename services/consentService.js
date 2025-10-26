@@ -37,20 +37,20 @@ class ConsentService {
         `Mình là **Luna**, AI assistant thông minh và dễ thương! ✨\n\n` +
         `**Để sử dụng dịch vụ, bạn cần đồng ý với các điều khoản sau:**\n\n` +
         `📝 **Dữ liệu được thu thập:**\n` +
-        `> Tin nhắn trò chuyện (để cải thiện chất lượng phản hồi)\n` +
-        `> Thông tin cơ bản (username, ID)\n` +
-        `> Dữ liệu XP và level (để tính điểm kinh nghiệm)\n\n` +
+        `> - Tin nhắn trò chuyện (để cải thiện chất lượng phản hồi)\n` +
+        `> - Thông tin cơ bản (username, ID)\n` +
+        `> - Dữ liệu XP và level (để tính điểm kinh nghiệm)\n\n` +
         `🔒 **Cam kết bảo mật:**\n` +
-        `> Dữ liệu được mã hóa và bảo mật\n` +
-        `> Không chia sẻ với bên thứ ba\n` +
-        `> Có thể xóa dữ liệu bất cứ lúc nào\n\n` +
+        `> - Dữ liệu được mã hóa và bảo mật\n` +
+        `> - Không chia sẻ với bên thứ ba\n` +
+        `> - Có thể xóa dữ liệu bất cứ lúc nào\n\n` +
         `**Bạn có đồng ý sử dụng dịch vụ Luna AI không?** 💖`
       )
       .setColor(0x5865F2)
       .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 512 }))
       .setFooter({ 
-        text: 'Luna AI • Được tạo bởi s4ory', 
-        iconURL: 'https://cdn.discordapp.com/emojis/1234567890123456789.png' 
+        text: 'Luna AI • Developed by s4ory', 
+        iconURL: 'https://raw.githubusercontent.com/miyuki2002/Luna-AI/refs/heads/main/assets/luna-avatar.png' 
       })
       .setTimestamp();
 
@@ -59,13 +59,11 @@ class ConsentService {
         new ButtonBuilder()
           .setCustomId('consent_accept')
           .setLabel('Chấp thuận')
-          .setStyle(ButtonStyle.Success)
-          .setEmoji('💖'),
+          .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId('consent_decline')
           .setLabel('Từ chối')
           .setStyle(ButtonStyle.Danger)
-          .setEmoji('😢')
       );
 
     return { embeds: [embed], components: [row] };
@@ -86,11 +84,11 @@ class ConsentService {
         .setDescription(
           `**${interaction.user.username}** đã chấp thuận sử dụng dịch vụ của Luna AI!\n\n` +
           `## **Bây giờ bạn có thể:**\n` +
-          `> Trò chuyện với Luna bằng cách tag @Luna\n` +
-          `> Sử dụng các lệnh AI như \`/think\`, \`/image\`\n` +
-          `> Nhận XP và level up khi hoạt động\n` +
-          `> Tận hưởng trải nghiệm AI thông minh!\n\n` +
-          `**Chúc bạn có những trải nghiệm tuyệt vời với Luna!** 🌟`
+          `> - Trò chuyện với Luna bằng cách tag @Luna\n` +
+          `> - Sử dụng các lệnh AI như \`/think\`, \`/image\`\n` +
+          `> - Nhận XP và level up khi hoạt động\n` +
+          `> - Tận hưởng trải nghiệm AI thông minh!\n\n` +
+          `**Chúc bạn có những trải nghiệm tuyệt vời với Luna!**`
         )
         .setColor(0x00FF00)
         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 512 }))
@@ -127,11 +125,11 @@ class ConsentService {
         .setDescription(
           `**${interaction.user.username}** đã từ chối sử dụng dịch vụ Luna AI.\n\n` +
           `🔒 **Dữ liệu của bạn:**\n` +
-          `> Không được lưu trữ trong hệ thống\n` +
-          `> Hoàn toàn bảo mật và riêng tư\n\n` +
+          `> - Không được lưu trữ trong hệ thống\n` +
+          `> - Hoàn toàn bảo mật và riêng tư\n\n` +
           `💖 **Luna vẫn sẵn sàng giúp đỡ bạn:**\n` +
-          `> Bạn có thể thay đổi quyết định bất cứ lúc nào\n` +
-          `> Chỉ cần tag @Luna hoặc sử dụng lệnh để bắt đầu lại\n\n` +
+          `> - Bạn có thể thay đổi quyết định bất cứ lúc nào\n` +
+          `> - Chỉ cần tag @Luna hoặc sử dụng lệnh để bắt đầu lại\n\n` +
           `**Cảm ơn bạn đã dành thời gian!**`
         )
         .setColor(0xFF0000)

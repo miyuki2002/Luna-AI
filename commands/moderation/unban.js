@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
       return interaction.reply({
         content: 'Bạn không có quyền unban người dùng!',
@@ -29,7 +29,6 @@ module.exports = {
     const userId = interaction.options.getString('userid');
     const reason = interaction.options.getString('reason') || 'Không có lý do được cung cấp';
 
-    // Kiểm tra xem ID có hợp lệ không
     if (!/^\d{17,19}$/.test(userId)) {
       return interaction.reply({
         content: 'ID người dùng không hợp lệ. ID phải là một chuỗi số từ 17-19 chữ số.',
@@ -40,7 +39,6 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // Kiểm tra xem người dùng có bị ban không
       const banList = await interaction.guild.bans.fetch();
       const bannedUser = banList.find(ban => ban.user.id === userId);
 
@@ -51,15 +49,15 @@ module.exports = {
         });
       }
 
-      // Lấy thông tin người dùng
       const user = bannedUser.user;
 
-      // Sử dụng NeuralNetworks để tạo thông báo
-      const prompt = `Tạo một thông báo ngắn gọn, tích cực về việc unban người dùng ${user.username} với lý do: "${reason}". Thông báo nên có giọng điệu của một admin công bằng và khoan dung, không quá 2 câu. Có thể thêm 1 emoji phù hợp.`;
+      const prompts = require('../../config/prompts.js');
+      const prompt = prompts.moderation.unban
+        .replace('${username}', user.username)
+        .replace('${reason}', reason);
 
       const aiResponse = await ConversationService.getCompletion(prompt);
 
-      // Tạo embed thông báo
       const unbanEmbed = new EmbedBuilder()
         .setColor(0x00FFFF)
         .setTitle(`🔓 Người dùng đã được unban`)
@@ -72,10 +70,8 @@ module.exports = {
         .setFooter({ text: `Unbanned by ${interaction.user.tag}` })
         .setTimestamp();
 
-      // Unban người dùng
       await interaction.guild.members.unban(user, reason);
 
-      // Ghi nhật ký hành động
       await logModAction({
         guildId: interaction.guild.id,
         targetId: user.id,
@@ -84,10 +80,8 @@ module.exports = {
         reason: reason
       });
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [unbanEmbed] });
 
-      // Gửi log đến kênh log moderation
       const logEmbed = createModActionEmbed({
         title: `🔓 Người dùng đã được unban`,
         description: `${user.tag} đã được unban khỏi server.`,
@@ -105,7 +99,7 @@ module.exports = {
       await sendModLog(interaction.guild, logEmbed, true);
 
     } catch (error) {
-      console.error('Lỗi khi unban người dùng:', error);
+      logger.error('MODERATION', 'Lỗi khi unban người dùng:', error);
       await interaction.editReply({
         content: `Đã xảy ra lỗi khi unban người dùng: ${error.message}`,
         ephemeral: true

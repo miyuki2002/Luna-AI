@@ -8,7 +8,6 @@ module.exports = {
         .setDescription('[ADMIN] Kiểm tra và cập nhật bot từ GitHub'),
     
     async execute(interaction) {
-        // Kiểm tra quyền admin (chỉ owner hoặc admin mới được dùng)
         if (!interaction.member.permissions.has('Administrator') && interaction.user.id !== process.env.OWNER_ID) {
             const embed = new EmbedBuilder()
                 .setColor('#FF6B6B')

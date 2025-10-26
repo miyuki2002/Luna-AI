@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction, formatDuration } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,7 +17,7 @@ module.exports = {
         .setDescription('Thời gian mute (phút)')
         .setRequired(true)
         .setMinValue(1)
-        .setMaxValue(40320)) // Tối đa 28 ngày (40320 phút)
+        .setMaxValue(40320))
     .addStringOption(option =>
       option.setName('reason')
         .setDescription('Lý do mute')
@@ -24,7 +25,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({
         content: 'Bạn không có quyền mute thành viên!',
@@ -37,7 +37,6 @@ module.exports = {
     const duration = interaction.options.getInteger('duration'); // Thời gian tính bằng phút
     const reason = interaction.options.getString('reason') || 'Không có lý do được cung cấp';
 
-    // Kiểm tra xem có thể mute thành viên không
     if (!targetMember) {
       return interaction.reply({
         content: 'Không thể tìm thấy thành viên này trong server.',
@@ -52,25 +51,23 @@ module.exports = {
       });
     }
 
-    // Tạo thông báo AI về việc mute
     await interaction.deferReply();
 
     try {
-      // Chuyển đổi thời gian từ phút sang mili giây
       const durationMs = duration * 60 * 1000;
 
-      // Tính thời gian kết thúc mute
       const endTime = new Date(Date.now() + durationMs);
 
-      // Format thời gian mute để hiển thị
       const formattedDuration = formatDuration(duration);
 
-      // Sử dụng NeuralNetworks để tạo thông báo
-      const prompt = `Tạo một thông báo ngắn gọn, chuyên nghiệp nhưng hơi hài hước về việc mute (timeout) thành viên ${targetUser.username} trong ${formattedDuration} với lý do: "${reason}". Thông báo nên có giọng điệu của một mod nghiêm túc nhưng thân thiện, không quá 3 câu. Có thể thêm 1 emoji phù hợp.`;
+      const prompts = require('../../config/prompts.js');
+      const prompt = prompts.moderation.mute
+        .replace('${username}', targetUser.username)
+        .replace('${duration}', formattedDuration)
+        .replace('${reason}', reason);
 
       const aiResponse = await ConversationService.getCompletion(prompt);
 
-      // Tạo embed thông báo
       const muteEmbed = new EmbedBuilder()
         .setColor(0xFFA500)
         .setTitle(`🔇 Thành viên đã bị mute`)
@@ -85,10 +82,8 @@ module.exports = {
         .setFooter({ text: `Muted by ${interaction.user.tag}` })
         .setTimestamp();
 
-      // Mute thành viên (timeout)
       await targetMember.timeout(durationMs, reason);
 
-      // Ghi nhật ký hành động
       await logModAction({
         guildId: interaction.guild.id,
         targetId: targetUser.id,
@@ -98,10 +93,8 @@ module.exports = {
         duration: duration
       });
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [muteEmbed] });
 
-      // Gửi log đến kênh log moderation
       const logEmbed = createModActionEmbed({
         title: `🔇 Thành viên đã bị mute`,
         description: `${targetUser.tag} đã bị mute trong ${formattedDuration}.`,
@@ -119,7 +112,6 @@ module.exports = {
 
       await sendModLog(interaction.guild, logEmbed, true);
 
-      // Gửi DM cho người bị mute (nếu có thể)
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0xFFA500)
@@ -130,11 +122,11 @@ module.exports = {
 
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        console.log(`Không thể gửi DM cho ${targetUser.tag}`);
+        logger.error('MODERATION', `Không thể gửi DM cho ${targetUser.tag}`);
       }
 
     } catch (error) {
-      console.error('Lỗi khi mute thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi mute thành viên:', error);
       await interaction.editReply({
         content: `Đã xảy ra lỗi khi mute ${targetUser.tag}: ${error.message}`,
         ephemeral: true

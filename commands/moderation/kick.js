@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
       return interaction.reply({
         content: 'Bạn không có quyền kick thành viên!',
@@ -30,7 +30,6 @@ module.exports = {
     const targetMember = interaction.options.getMember('user');
     const reason = interaction.options.getString('reason') || 'Không có lý do được cung cấp';
 
-    // Kiểm tra xem có thể kick thành viên không
     if (!targetMember) {
       return interaction.reply({
         content: 'Không thể tìm thấy thành viên này trong server.',
@@ -45,16 +44,16 @@ module.exports = {
       });
     }
 
-    // Tạo thông báo AI về việc kick
     await interaction.deferReply();
 
     try {
-      // Sử dụng NeuralNetworks để tạo thông báo
-      const prompt = `Tạo một thông báo ngắn gọn, chuyên nghiệp nhưng hơi hài hước về việc kick thành viên ${targetUser.username} khỏi server với lý do: "${reason}". Thông báo nên có giọng điệu của một admin nghiêm túc nhưng thân thiện, không quá 3 câu. Không cần thêm emoji.`;
+      const prompts = require('../../config/prompts.js');
+      const prompt = prompts.moderation.kick
+        .replace('${username}', targetUser.username)
+        .replace('${reason}', reason);
 
       const aiResponse = await ConversationService.getCompletion(prompt);
 
-      // Tạo embed thông báo
       const kickEmbed = new EmbedBuilder()
         .setColor(0xFF5555)
         .setTitle(`🥾 Thành viên đã bị kick`)
@@ -67,10 +66,8 @@ module.exports = {
         .setFooter({ text: `Kicked by ${interaction.user.tag}` })
         .setTimestamp();
 
-      // Kick thành viên
       await targetMember.kick(reason);
 
-      // Ghi nhật ký hành động
       await logModAction({
         guildId: interaction.guild.id,
         targetId: targetUser.id,
@@ -79,10 +76,8 @@ module.exports = {
         reason: reason
       });
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [kickEmbed] });
 
-      // Gửi log đến kênh log moderation
       const logEmbed = createModActionEmbed({
         title: `👢 Thành viên đã bị kick`,
         description: `${targetUser.tag} đã bị kick khỏi server.`,
@@ -99,7 +94,6 @@ module.exports = {
 
       await sendModLog(interaction.guild, logEmbed, true);
 
-      // Gửi DM cho người bị kick (nếu có thể)
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0xFF5555)
@@ -110,11 +104,11 @@ module.exports = {
 
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        console.log(`Không thể gửi DM cho ${targetUser.tag}`);
+        logger.error('MODERATION', `Không thể gửi DM cho ${targetUser.tag}`);
       }
 
     } catch (error) {
-      console.error('Lỗi khi kick thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi kick thành viên:', error);
       await interaction.editReply({
         content: `Đã xảy ra lỗi khi kick ${targetUser.tag}: ${error.message}`,
         ephemeral: true

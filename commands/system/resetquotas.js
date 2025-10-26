@@ -1,15 +1,15 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const TokenService = require('../../services/TokenService.js');
+const MessageService = require('../../services/TokenService.js');
 const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('resettoken')
-    .setDescription('Reset giới hạn token cho người dùng (Owner/Admin only)')
+    .setName('resetquotas')
+    .setDescription('Reset lượt nhắn tin cho người dùng (Owner/Admin only)')
     .addUserOption(option =>
       option
         .setName('user')
-        .setDescription('Người dùng cần reset token')
+        .setDescription('Người dùng cần reset lượt nhắn tin đã sử dụng')
         .setRequired(true)
     )
     .addStringOption(option =>
@@ -31,10 +31,10 @@ module.exports = {
       await interaction.deferReply({ ephemeral: true });
 
       // Kiểm tra quyền owner/admin
-      const executorRole = await TokenService.getUserRole(interaction.user.id);
+      const executorRole = await MessageService.getUserRole(interaction.user.id);
       if (executorRole !== 'owner' && executorRole !== 'admin') {
         return await interaction.editReply({
-          content: 'Bạn không có quyền sử dụng lệnh này! Chỉ Owner và Admin mới có thể reset token.',
+          content: 'Bạn không có quyền sử dụng lệnh này! Chỉ Owner và Admin mới có thể reset lượt nhắn tin đã sử dụng.',
           ephemeral: true
         });
       }
@@ -42,11 +42,9 @@ module.exports = {
       const targetUser = interaction.options.getUser('user');
       const resetType = interaction.options.getString('type');
 
-      // Reset tokens
-      await TokenService.resetUserTokens(targetUser.id, resetType);
+      await MessageService.resetUserMessages(targetUser.id, resetType);
 
-      // Lấy thông tin token mới
-      const stats = await TokenService.getUserTokenStats(targetUser.id);
+      const stats = await MessageService.getUserMessageStats(targetUser.id);
 
       const resetTypeNames = {
         daily: 'hàng ngày',
@@ -56,26 +54,26 @@ module.exports = {
       };
 
       const embed = new EmbedBuilder()
-        .setTitle('Reset token thành công')
+        .setTitle('Reset lượt nhắn tin đã sử dụng thành công')
         .setColor('#00ff00')
         .addFields(
           { name: 'Người dùng', value: `${targetUser.tag}`, inline: true },
           { name: 'Loại reset', value: resetTypeNames[resetType], inline: true },
           { name: '\u200b', value: '\u200b', inline: true },
-          { name: 'Token hôm nay', value: `${stats.usage.daily.toLocaleString()} tokens`, inline: true },
-          { name: 'Token tuần này', value: `${stats.usage.weekly.toLocaleString()} tokens`, inline: true },
-          { name: 'Token tháng này', value: `${stats.usage.monthly.toLocaleString()} tokens`, inline: true }
+          { name: 'Lượt hôm nay', value: `${stats.usage.daily.toLocaleString()} lượt`, inline: true },
+          { name: 'Lượt tuần này', value: `${stats.usage.weekly.toLocaleString()} lượt`, inline: true },
+          { name: 'Lượt tháng này', value: `${stats.usage.monthly.toLocaleString()} lượt`, inline: true }
         )
         .setFooter({ text: `Được thực hiện bởi ${interaction.user.tag}` })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
 
-      logger.info('ADMIN', `${interaction.user.tag} reset ${resetType} tokens cho ${targetUser.tag}`);
+      logger.info('ADMIN', `${interaction.user.tag} reset ${resetType} lượt nhắn tin đã sử dụng cho ${targetUser.tag}`);
     } catch (error) {
-      logger.error('ADMIN', 'Lỗi khi reset token:', error);
+      logger.error('ADMIN', 'Lỗi khi reset lượt nhắn tin đã sử dụng:', error);
       await interaction.editReply({
-        content: `Lỗi khi reset token: ${error.message}`,
+        content: `Lỗi khi reset lượt nhắn tin đã sử dụng: ${error.message}`,
         ephemeral: true
       });
     }

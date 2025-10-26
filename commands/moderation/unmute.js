@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({
         content: 'Bạn không có quyền unmute thành viên!',
@@ -30,7 +30,6 @@ module.exports = {
     const targetMember = interaction.options.getMember('user');
     const reason = interaction.options.getString('reason') || 'Không có lý do được cung cấp';
 
-    // Kiểm tra xem có thể unmute thành viên không
     if (!targetMember) {
       return interaction.reply({
         content: 'Không thể tìm thấy thành viên này trong server.',
@@ -45,7 +44,6 @@ module.exports = {
       });
     }
 
-    // Kiểm tra xem thành viên có đang bị mute không
     if (!targetMember.communicationDisabledUntil) {
       return interaction.reply({
         content: 'Thành viên này không bị mute.',
@@ -53,16 +51,16 @@ module.exports = {
       });
     }
 
-    // Tạo thông báo AI về việc unmute
     await interaction.deferReply();
 
     try {
-      // Sử dụng NeuralNetworks để tạo thông báo
-      const prompt = `Tạo một thông báo ngắn gọn, tích cực về việc unmute (bỏ timeout) thành viên ${targetUser.username} với lý do: "${reason}". Thông báo nên có giọng điệu của một mod thân thiện, không quá 2 câu. Có thể thêm 1 emoji phù hợp.`;
+      const prompts = require('../../config/prompts.js');
+      const prompt = prompts.moderation.unmute
+        .replace('${username}', targetUser.username)
+        .replace('${reason}', reason);
 
       const aiResponse = await ConversationService.getCompletion(prompt);
 
-      // Tạo embed thông báo
       const unmuteEmbed = new EmbedBuilder()
         .setColor(0x00FF00)
         .setTitle(`🔊 Thành viên đã được unmute`)
@@ -75,10 +73,8 @@ module.exports = {
         .setFooter({ text: `Unmuted by ${interaction.user.tag}` })
         .setTimestamp();
 
-      // Unmute thành viên (xóa timeout)
       await targetMember.timeout(null, reason);
 
-      // Ghi nhật ký hành động
       await logModAction({
         guildId: interaction.guild.id,
         targetId: targetUser.id,
@@ -87,10 +83,8 @@ module.exports = {
         reason: reason
       });
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [unmuteEmbed] });
 
-      // Gửi log đến kênh log moderation
       const logEmbed = createModActionEmbed({
         title: `🔊 Thành viên đã được unmute`,
         description: `${targetUser.tag} đã được unmute trong server.`,
@@ -107,7 +101,6 @@ module.exports = {
 
       await sendModLog(interaction.guild, logEmbed, true);
 
-      // Gửi DM cho người được unmute (nếu có thể)
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0x00FF00)
@@ -117,11 +110,11 @@ module.exports = {
 
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        console.log(`Không thể gửi DM cho ${targetUser.tag}`);
+        logger.error('MODERATION', `Không thể gửi DM cho ${targetUser.tag}`);
       }
 
     } catch (error) {
-      console.error('Lỗi khi unmute thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi unmute thành viên:', error);
       await interaction.editReply({
         content: `Đã xảy ra lỗi khi unmute ${targetUser.tag}: ${error.message}`,
         ephemeral: true
