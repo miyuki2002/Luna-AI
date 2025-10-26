@@ -6,12 +6,11 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ping')
 		.setDescription('Kiểm tra độ trễ và trạng thái kết nối của bot'),
-	
+
 	async execute(interaction) {
 		const sent = await interaction.deferReply({ fetchReply: true });
-		const pingLatency = (sent.createdTimestamp - interaction.createdTimestamp) / 100;
-		
-		// Tạo placeholder embed ban đầu
+		const pingLatency = ((sent.createdTimestamp - interaction.createdTimestamp) / 100).toFixed(0);
+
 		const initialEmbed = createStatusEmbed({
 			ping: pingLatency,
 			ws: interaction.client.ws.ping,
@@ -22,26 +21,22 @@ module.exports = {
 		});
 
 
-		// Cập nhật embed với thông tin mới
 		const updatedEmbed = createStatusEmbed({
 			ping: pingLatency,
 			ws: interaction.client.ws.ping,
 		});
 
-		// Cập nhật tin nhắn gốc với embed mới và các nút tương tác
 		await interaction.editReply({
 			embeds: [updatedEmbed],
 			components: [createActionRow(true)]
 		});
 
-		// Tạo collector để xử lý các sự kiện nút nhấn
 		const collector = response.createMessageComponentCollector({
 			componentType: ComponentType.Button,
 			time: 60000
 		});
 
 		collector.on('collect', async (i) => {
-			// Chỉ người dùng ban đầu mới có thể tương tác
 			if (i.user.id !== interaction.user.id) {
 				return i.reply({
 					content: 'Chỉ người dùng lệnh mới có thể sử dụng các nút này.',
@@ -50,36 +45,25 @@ module.exports = {
 			}
 
 			if (i.customId === 'refresh_status') {
-				// Gửi phản hồi tạm thời
 				await i.update({
 					embeds: [createStatusEmbed({
 						ping: pingLatency,
-						ws: interaction.client.ws.ping,
-						mongo: "Đang làm mới...",
-						ai: "Đang làm mới..."
+						ws: interaction.client.ws.ping
 					})],
 					components: [createActionRow(false)]
 				});
 
-				// Lấy dữ liệu mới
-				const newPingLatency = Date.now() - i.createdTimestamp;
-				const [newMongoResult, newAiResult] = await Promise.all([
-					checkMongoDB(),
-					checkAIService()
-				]);
+				const newPingLatency = pingLatency;
+				const newWsLatency = interaction.client.ws.ping;
 
-				// Cập nhật tin nhắn với dữ liệu mới
 				await i.editReply({
 					embeds: [createStatusEmbed({
 						ping: newPingLatency,
-						ws: interaction.client.ws.ping,
-						mongo: newMongoResult,
-						ai: newAiResult
+						ws: newWsLatency,
 					})],
 					components: [createActionRow(true)]
 				});
 			} else if (i.customId === 'detailed_info') {
-				// Hiển thị thông tin chi tiết
 				const detailedEmbed = new EmbedBuilder()
 					.setColor(0x9B59B6)
 					.setTitle('📈 Thông tin chi tiết')
@@ -103,7 +87,6 @@ module.exports = {
 		});
 
 		collector.on('end', () => {
-			// Vô hiệu hóa các nút sau khi collector kết thúc
 			const disabledRow = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setCustomId('refresh_status')
@@ -119,54 +102,38 @@ module.exports = {
 					.setDisabled(true)
 			);
 
-			interaction.editReply({ components: [disabledRow] }).catch(() => {});
+			interaction.editReply({ components: [disabledRow] }).catch(() => { });
 		});
 	},
 };
 
-/**
- * Tạo embed hiển thị trạng thái
- */
-function createStatusEmbed({ ping, ws, mongo, ai }) {
-	// Xác định màu dựa trên ping
+function createStatusEmbed({ ping, ws }) {
 	let statusColor;
-	if (ping < 200) statusColor = 0x57F287; // Xanh lá - tốt
-	else if (ping < 400) statusColor = 0xFEE75C; // Vàng - trung bình
-	else statusColor = 0xED4245; // Đỏ - chậm
+	if (ping < 200) statusColor = 0x57F287;
+	else if (ping < 400) statusColor = 0xFEE75C;
+	else statusColor = 0xED4245;
 
-	return new EmbedBuilder()
+	const embed = new EmbedBuilder()
 		.setColor(statusColor)
-		.setAuthor({ 
-			name: 'Luna AI', 
-			iconURL: 'https://cdn.discordapp.com/avatars/1167040553745023047/44b01eced3cfea85ab32eda3ef2bc11b.webp' 
+		.setAuthor({
+			name: 'Luna AI',
+			iconURL: 'https://raw.githubusercontent.com/miyuki2002/Luna-AI/refs/heads/main/assets/luna-avatar.png'
 		})
 		.setTitle('📊 Trạng thái hệ thống')
 		.addFields(
-			{ 
+			{
 				name: '🤖 Độ trễ',
 				value: `> **Bot**: \`${ping}ms\`\n> **WebSocket**: \`${ws}ms\``,
-				inline: false 
-			},
-			{ 
-				name: '📦 Cơ sở dữ liệu', 
-				value: mongo, 
-				inline: true 
-			},
-			{ 
-				name: '🧠 Dịch vụ AI', 
-				value: ai, 
-				inline: true 
+				inline: false
 			}
-		)
-		.setFooter({ 
+		);
+	return embed
+		.setFooter({
 			text: `Luna v${packageJson.version} • ${stringUtils.formatUptime(process.uptime())}`,
 		})
 		.setTimestamp();
 }
 
-/**
- * Tạo hàng chứa các nút tương tác
- */
 function createActionRow(enabled = true) {
 	return new ActionRowBuilder().addComponents(
 		new ButtonBuilder()
