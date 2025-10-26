@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const { handlePermissionError } = require('../../utils/permissionUtils');
 const logger = require('../../utils/logger.js');
 
 module.exports = {
@@ -76,7 +77,15 @@ module.exports = {
         reason: reason
       });
 
-      await interaction.editReply({ embeds: [kickEmbed] });
+      try {
+        await interaction.editReply({ embeds: [kickEmbed] });
+      } catch (error) {
+        if (error.code === 50013 || error.message.includes('permission')) {
+          await handlePermissionError(interaction, 'embedLinks', interaction.user.username, 'editReply');
+        } else {
+          throw error;
+        }
+      }
 
       const logEmbed = createModActionEmbed({
         title: `👢 Thành viên đã bị kick`,

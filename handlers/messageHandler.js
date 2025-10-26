@@ -4,6 +4,7 @@ const ImageService = require('../services/ImageService');
 const AICore = require('../services/AICore');
 const experience = require('../utils/xp');
 const consentService = require('../services/consentService');
+const { handlePermissionError } = require('../utils/permissionUtils');
 const logger = require('../utils/logger.js');
 
 
@@ -58,8 +59,16 @@ async function handleMentionMessage(message, client) {
       const hasConsented = await consentService.hasUserConsented(message.author.id);
       
       if (!hasConsented) {
-        const consentData = consentService.createConsentEmbed(message.author);
-        await message.reply(consentData);
+        try {
+          const consentData = consentService.createConsentEmbed(message.author);
+          await message.reply(consentData);
+        } catch (error) {
+          if (error.code === 50013 || error.message.includes('permission')) {
+            await handlePermissionError(message, 'embedLinks', message.author.username, 'reply');
+          } else {
+            throw error;
+          }
+        }
         return;
       }
       
@@ -177,10 +186,18 @@ async function handleImageGeneration(message, prompt) {
       .setColor('#0099ff')
       .setTimestamp();
 
-    await message.reply({ 
-      embeds: [embed],
-      files: [attachment]
-    });
+    try {
+      await message.reply({ 
+        embeds: [embed],
+        files: [attachment]
+      });
+    } catch (error) {
+      if (error.code === 50013 || error.message.includes('permission')) {
+        await handlePermissionError(message, 'embedLinks', message.author.username, 'reply');
+      } else {
+        throw error;
+      }
+    }
   } catch (error) {
     logger.error('IMAGE', 'Lỗi khi tạo hình ảnh:', error);
     await message.reply('Xin lỗi, tôi gặp khó khăn khi tạo hình ảnh đó.');
