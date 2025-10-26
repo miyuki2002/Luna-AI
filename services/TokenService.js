@@ -11,7 +11,7 @@ class MessageService {
       owner: -1,        // Không giới hạn
       admin: 1000,      // 1000 lượt/ngày
       helper: 500,      // 500 lượt/ngày
-      user: 100         // 100 lượt/ngày (mặc định)
+      user: 50         // 50 lượt/ngày (mặc định)
     };
 
     // Owner ID từ biến môi trường
