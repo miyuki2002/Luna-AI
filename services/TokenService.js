@@ -37,7 +37,7 @@ class MessageService {
   }
 
   /**
-   * Khởi tạo dữ liệu token cho người dùng
+   * Khởi tạo dữ liệu message cho người dùng
    */
   async initializeUserMessageData(userId) {
     try {
@@ -85,8 +85,8 @@ class MessageService {
         updatedAt: Date.now()
       };
 
-      await collection.insertOne(tokenData);
-      logger.info('TOKEN_SERVICE', `Khởi tạo dữ liệu token cho user ${userId} với role ${role}`);
+      await collection.insertOne(messageData);
+      logger.info('MESSAGE_SERVICE', `Khởi tạo dữ liệu message cho user ${userId} với role ${role}`);
 
       // Cập nhật role trong profile nếu chưa có
       if (role !== 'user') {
@@ -97,15 +97,15 @@ class MessageService {
         );
       }
 
-      return tokenData;
+      return messageData;
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi khởi tạo dữ liệu token cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi khởi tạo dữ liệu message cho ${userId}:`, error);
       throw error;
     }
   }
 
   /**
-   * Lấy thông tin token của người dùng
+   * Lấy thông tin message của người dùng
    */
   async getUserMessageData(userId) {
     try {
@@ -133,10 +133,10 @@ class MessageService {
    */
   async checkAndResetLimits(userId) {
     try {
-      const collection = await this.getTokenCollection();
-      const tokenData = await collection.findOne({ userId });
+      const collection = await this.getMessageCollection();
+      const messageData = await collection.findOne({ userId });
 
-      if (!tokenData) return;
+      if (!messageData) return;
 
       const now = Date.now();
       const oneDay = 24 * 60 * 60 * 1000;
@@ -147,23 +147,23 @@ class MessageService {
       let needsUpdate = false;
 
       // Reset daily
-      if (now - tokenData.lastReset.daily > oneDay) {
-        updates['tokenUsage.daily'] = 0;
+      if (now - messageData.lastReset.daily > oneDay) {
+        updates['messageUsage.daily'] = 0;
         updates['lastReset.daily'] = now;
         needsUpdate = true;
-        logger.info('TOKEN_SERVICE', `Reset giới hạn hàng ngày cho user ${userId}`);
+        logger.info('MESSAGE_SERVICE', `Reset giới hạn hàng ngày cho user ${userId}`);
       }
 
       // Reset weekly
-      if (now - tokenData.lastReset.weekly > oneWeek) {
-        updates['tokenUsage.weekly'] = 0;
+      if (now - messageData.lastReset.weekly > oneWeek) {
+        updates['messageUsage.weekly'] = 0;
         updates['lastReset.weekly'] = now;
         needsUpdate = true;
       }
 
       // Reset monthly
-      if (now - tokenData.lastReset.monthly > oneMonth) {
-        updates['tokenUsage.monthly'] = 0;
+      if (now - messageData.lastReset.monthly > oneMonth) {
+        updates['messageUsage.monthly'] = 0;
         updates['lastReset.monthly'] = now;
         needsUpdate = true;
       }
@@ -173,7 +173,7 @@ class MessageService {
         await collection.updateOne({ userId }, { $set: updates });
       }
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi reset giới hạn cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi reset giới hạn cho ${userId}:`, error);
     }
   }
 
@@ -214,7 +214,7 @@ class MessageService {
   }
 
   /**
-   * Ghi nhận việc sử dụng token
+   * Ghi nhận việc sử dụng message
    */
   async recordMessageUsage(userId, messagesUsed = 1, operation = 'chat') {
     try {
@@ -251,11 +251,11 @@ class MessageService {
         { upsert: true }
       );
 
-      logger.debug('TOKEN_SERVICE', `Ghi nhận ${tokensUsed} tokens cho user ${userId} (${operation})`);
+      logger.debug('MESSAGE_SERVICE', `Ghi nhận ${messagesUsed} messages cho user ${userId} (${operation})`);
 
       return true;
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi ghi nhận token usage cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi ghi nhận message usage cho ${userId}:`, error);
       return false;
     }
   }
@@ -269,7 +269,7 @@ class MessageService {
         throw new Error(`Vai trò không hợp lệ: ${role}`);
       }
 
-      const collection = await this.getTokenCollection();
+      const collection = await this.getMessageCollection();
       const profileCollection = await this.getProfileCollection();
       const now = Date.now();
 
@@ -293,10 +293,10 @@ class MessageService {
         { upsert: true }
       );
 
-      logger.info('TOKEN_SERVICE', `Đặt role ${role} cho user ${userId}`);
+      logger.info('MESSAGE_SERVICE', `Đặt role ${role} cho user ${userId}`);
       return true;
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi đặt role cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi đặt role cho ${userId}:`, error);
       throw error;
     }
   }
@@ -311,51 +311,51 @@ class MessageService {
         return 'owner';
       }
 
-      const tokenData = await this.getUserTokenData(userId);
-      return tokenData.role || 'user';
+      const messageData = await this.getUserMessageData(userId);
+      return messageData.role || 'user';
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi lấy role của ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi lấy role của ${userId}:`, error);
       return 'user';
     }
   }
 
   /**
-   * Lấy thống kê token của người dùng
+   * Lấy thống kê message của người dùng
    */
-  async getUserTokenStats(userId) {
+  async getUserMessageStats(userId) {
     try {
-      const tokenData = await this.getUserTokenData(userId);
+      const messageData = await this.getUserMessageData(userId);
 
       return {
         userId,
-        role: tokenData.role,
+        role: messageData.role,
         usage: {
-          daily: tokenData.tokenUsage.daily,
-          weekly: tokenData.tokenUsage.weekly,
-          monthly: tokenData.tokenUsage.monthly,
-          total: tokenData.tokenUsage.total
+          daily: messageData.messageUsage.daily,
+          weekly: messageData.messageUsage.weekly,
+          monthly: messageData.messageUsage.monthly,
+          total: messageData.messageUsage.total
         },
         limits: {
-          daily: tokenData.limits.daily
+          daily: messageData.limits.daily
         },
         remaining: {
-          daily: tokenData.limits.daily === -1 ? -1 : tokenData.limits.daily - tokenData.tokenUsage.daily
+          daily: messageData.limits.daily === -1 ? -1 : messageData.limits.daily - messageData.messageUsage.daily
         },
-        lastReset: tokenData.lastReset,
-        recentHistory: tokenData.history.slice(-10)
+        lastReset: messageData.lastReset,
+        recentHistory: messageData.history.slice(-10)
       };
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi lấy thống kê token cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi lấy thống kê message cho ${userId}:`, error);
       throw error;
     }
   }
 
   /**
-   * Reset token usage cho người dùng (admin only)
+   * Reset message usage cho người dùng (admin only)
    */
-  async resetUserTokens(userId, resetType = 'daily') {
+  async resetUserMessages(userId, resetType = 'daily') {
     try {
-      const collection = await this.getTokenCollection();
+      const collection = await this.getMessageCollection();
       const now = Date.now();
 
       const updates = {
@@ -364,21 +364,21 @@ class MessageService {
 
       switch (resetType) {
         case 'daily':
-          updates['tokenUsage.daily'] = 0;
+          updates['messageUsage.daily'] = 0;
           updates['lastReset.daily'] = now;
           break;
         case 'weekly':
-          updates['tokenUsage.weekly'] = 0;
+          updates['messageUsage.weekly'] = 0;
           updates['lastReset.weekly'] = now;
           break;
         case 'monthly':
-          updates['tokenUsage.monthly'] = 0;
+          updates['messageUsage.monthly'] = 0;
           updates['lastReset.monthly'] = now;
           break;
         case 'all':
-          updates['tokenUsage.daily'] = 0;
-          updates['tokenUsage.weekly'] = 0;
-          updates['tokenUsage.monthly'] = 0;
+          updates['messageUsage.daily'] = 0;
+          updates['messageUsage.weekly'] = 0;
+          updates['messageUsage.monthly'] = 0;
           updates['lastReset.daily'] = now;
           updates['lastReset.weekly'] = now;
           updates['lastReset.monthly'] = now;
@@ -386,11 +386,11 @@ class MessageService {
       }
 
       await collection.updateOne({ userId }, { $set: updates });
-      logger.info('TOKEN_SERVICE', `Reset ${resetType} tokens cho user ${userId}`);
+      logger.info('MESSAGE_SERVICE', `Reset ${resetType} messages cho user ${userId}`);
 
       return true;
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi reset tokens cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi reset messages cho ${userId}:`, error);
       throw error;
     }
   }
@@ -400,7 +400,7 @@ class MessageService {
    */
   async getSystemStats() {
     try {
-      const collection = await this.getTokenCollection();
+      const collection = await this.getMessageCollection();
       
       const allUsers = await collection.find({}).toArray();
       
@@ -412,7 +412,7 @@ class MessageService {
           helper: 0,
           user: 0
         },
-        totalTokensUsed: {
+        totalMessagesUsed: {
           daily: 0,
           weekly: 0,
           monthly: 0,
@@ -423,26 +423,26 @@ class MessageService {
 
       allUsers.forEach(user => {
         stats.byRole[user.role] = (stats.byRole[user.role] || 0) + 1;
-        stats.totalTokensUsed.daily += user.tokenUsage.daily || 0;
-        stats.totalTokensUsed.weekly += user.tokenUsage.weekly || 0;
-        stats.totalTokensUsed.monthly += user.tokenUsage.monthly || 0;
-        stats.totalTokensUsed.total += user.tokenUsage.total || 0;
+        stats.totalMessagesUsed.daily += user.messageUsage.daily || 0;
+        stats.totalMessagesUsed.weekly += user.messageUsage.weekly || 0;
+        stats.totalMessagesUsed.monthly += user.messageUsage.monthly || 0;
+        stats.totalMessagesUsed.total += user.messageUsage.total || 0;
       });
 
-      // Top 10 người dùng sử dụng nhiều token nhất
+      // Top 10 người dùng sử dụng nhiều message nhất
       stats.topUsers = allUsers
-        .sort((a, b) => (b.tokenUsage.daily || 0) - (a.tokenUsage.daily || 0))
+        .sort((a, b) => (b.messageUsage.daily || 0) - (a.messageUsage.daily || 0))
         .slice(0, 10)
         .map(u => ({
           userId: u.userId,
           role: u.role,
-          daily: u.tokenUsage.daily,
-          total: u.tokenUsage.total
+          daily: u.messageUsage.daily,
+          total: u.messageUsage.total
         }));
 
       return stats;
     } catch (error) {
-      logger.error('TOKEN_SERVICE', 'Lỗi khi lấy thống kê hệ thống:', error);
+      logger.error('MESSAGE_SERVICE', 'Lỗi khi lấy thống kê hệ thống:', error);
       throw error;
     }
   }
@@ -455,20 +455,20 @@ class MessageService {
       const db = mongoClient.getDb();
 
       // Tạo collection nếu chưa có
-      const collections = await db.listCollections({ name: 'user_tokens' }).toArray();
+      const collections = await db.listCollections({ name: 'user_messages' }).toArray();
       if (collections.length === 0) {
-        await db.createCollection('user_tokens');
-        logger.info('TOKEN_SERVICE', 'Đã tạo collection user_tokens');
+        await db.createCollection('user_messages');
+        logger.info('MESSAGE_SERVICE', 'Đã tạo collection user_messages');
       }
 
       // Tạo indexes
-      await db.collection('user_tokens').createIndex({ userId: 1 }, { unique: true });
-      await db.collection('user_tokens').createIndex({ role: 1 });
-      await db.collection('user_tokens').createIndex({ 'tokenUsage.total': -1 });
+      await db.collection('user_messages').createIndex({ userId: 1 }, { unique: true });
+      await db.collection('user_messages').createIndex({ role: 1 });
+      await db.collection('user_messages').createIndex({ 'messageUsage.total': -1 });
 
-      logger.info('TOKEN_SERVICE', 'Đã khởi tạo collection và indexes cho TokenService');
+      logger.info('MESSAGE_SERVICE', 'Đã khởi tạo collection và indexes cho MessageService');
     } catch (error) {
-      logger.error('TOKEN_SERVICE', 'Lỗi khi khởi tạo collection:', error);
+      logger.error('MESSAGE_SERVICE', 'Lỗi khi khởi tạo collection:', error);
       throw error;
     }
   }
