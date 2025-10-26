@@ -148,7 +148,7 @@ async function handleMentionMessage(message, client) {
         }
       }
     } else {
-      await message.reply('Xin lỗi, tôi không thể xử lý tin nhắn có mention @everyone hoặc @role.');
+      processXp(message, false, false)
     }
   }
 }
