@@ -70,6 +70,17 @@ class ConsentService {
   }
 
   /**
+   * Gửi embed consent với fallback khi thiếu quyền
+   * @param {Object} interaction - Discord interaction object
+   * @param {Object} user - Discord user object
+   * @returns {Promise<boolean>} - true nếu gửi thành công, false nếu thiếu quyền
+   */
+  async sendConsentEmbed(interaction, user) {
+    const embedData = this.createConsentEmbed(user);
+    return await this.sendEmbedWithFallback(interaction, embedData, user.username, 'embedLinks');
+  }
+
+  /**
    * Xử lý khi user chấp thuận
    * @param {Object} interaction - Discord interaction
    * @param {string} userId - ID của user
@@ -94,20 +105,17 @@ class ConsentService {
         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 512 }))
         .setTimestamp();
 
-      await interaction.update({
-        embeds: [embed],
-        components: []
-      });
-
-
-      logger.info('CONSENT', `User ${interaction.user.tag} (${userId}) đã chấp thuận sử dụng dịch vụ`);
+      const embedData = { embeds: [embed], components: [] };
+      
+      const success = await this.sendEmbedWithFallback(interaction, embedData, interaction.user.username, 'embedLinks');
+      
+      if (success) {
+        logger.info('CONSENT', `User ${interaction.user.tag} (${userId}) đã chấp thuận sử dụng dịch vụ`);
+      }
 
     } catch (error) {
       logger.error('CONSENT', `Lỗi khi xử lý consent accept cho user ${userId}:`, error);
-      await interaction.followUp({
-        content: '❌ Có lỗi xảy ra khi xử lý yêu cầu của bạn. Vui lòng thử lại sau!',
-        ephemeral: true
-      });
+      await this.handlePermissionError(interaction, 'sendMessages', interaction.user.username);
     }
   }
 
@@ -119,7 +127,6 @@ class ConsentService {
    */
   async handleConsentDecline(interaction, userId) {
     try {
-
       const embed = new EmbedBuilder()
         .setTitle('😢 Luna hiểu và tôn trọng quyết định của bạn!')
         .setDescription(
@@ -136,19 +143,17 @@ class ConsentService {
         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 512 }))
         .setTimestamp();
 
-      await interaction.update({
-        embeds: [embed],
-        components: []
-      });
-
-      logger.info('CONSENT', `User ${interaction.user.tag} (${userId}) đã từ chối sử dụng dịch vụ`);
+      const embedData = { embeds: [embed], components: [] };
+      
+      const success = await this.sendEmbedWithFallback(interaction, embedData, interaction.user.username, 'embedLinks');
+      
+      if (success) {
+        logger.info('CONSENT', `User ${interaction.user.tag} (${userId}) đã từ chối sử dụng dịch vụ`);
+      }
 
     } catch (error) {
       logger.error('CONSENT', `Lỗi khi xử lý consent decline cho user ${userId}:`, error);
-      await interaction.followUp({
-        content: '❌ Có lỗi xảy ra khi xử lý yêu cầu của bạn. Vui lòng thử lại sau!',
-        ephemeral: true
-      });
+      await this.handlePermissionError(interaction, 'sendMessages', interaction.user.username);
     }
   }
 
@@ -174,6 +179,80 @@ class ConsentService {
       );
     } catch (error) {
       logger.error('CONSENT', `Lỗi khi cập nhật consent cho user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * @param {Object} interaction - Discord interaction object
+   * @param {string} permission - Tên quyền bị thiếu (ví dụ: 'embedLinks', 'sendMessages')
+   * @param {string} username - Tên user để hiển thị trong tin nhắn
+   * @returns {Promise<void>}
+   */
+  async handlePermissionError(interaction, permission, username) {
+    try {
+      const errorMessage = `🚫 | ${username}, bot không có quyền \`${permission}\`! Vui lòng thêm quyền này cho bot hoặc liên hệ quản trị viên máy chủ để được hỗ trợ.`;
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: errorMessage,
+          ephemeral: false
+        });
+      } else {
+        await interaction.reply({
+          content: errorMessage,
+          ephemeral: false
+        });
+      }
+
+      logger.warn('PERMISSION', `Bot thiếu quyền ${permission} trong guild ${interaction.guild?.id || 'DM'}`);
+    } catch (error) {
+      logger.error('PERMISSION', `Lỗi khi xử lý permission error:`, error);
+    }
+  }
+
+  /**
+   * Kiểm tra quyền của bot trong guild
+   * @param {Object} interaction - Discord interaction object
+   * @param {string} permission - Quyền cần kiểm tra
+   * @returns {boolean} - true nếu có quyền, false nếu không
+   */
+  hasPermission(interaction, permission) {
+    if (!interaction.guild) return true;
+    
+    const botMember = interaction.guild.members.me;
+    if (!botMember) return false;
+    
+    return botMember.permissions.has(permission);
+  }
+
+  /**
+   * Wrapper function để xử lý embed với fallback về text khi thiếu quyền
+   * @param {Object} interaction - Discord interaction object
+   * @param {Object} embedData - Dữ liệu embed cần gửi
+   * @param {string} username - Tên user
+   * @param {string} permission - Quyền cần kiểm tra (mặc định: 'embedLinks')
+   * @returns {Promise<boolean>} - true nếu gửi thành công, false nếu thiếu quyền
+   */
+  async sendEmbedWithFallback(interaction, embedData, username, permission = 'embedLinks') {
+    try {
+      if (!this.hasPermission(interaction, permission)) {
+        await this.handlePermissionError(interaction, permission, username);
+        return false;
+      }
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(embedData);
+      } else {
+        await interaction.reply(embedData);
+      }
+      
+      return true;
+    } catch (error) {
+      if (error.code === 50013 || error.message.includes('permission')) {
+        await this.handlePermissionError(interaction, permission, username);
+        return false;
+      }
+      
       throw error;
     }
   }

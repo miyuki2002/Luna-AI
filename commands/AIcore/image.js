@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
-const ImageService = require('../../services/ImageService');
+const ImageService = require('../../services/ImageService.js');
 const logger = require('../../utils/logger.js');
 
 module.exports = {
