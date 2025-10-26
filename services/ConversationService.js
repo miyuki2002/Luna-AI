@@ -327,8 +327,8 @@ class ConversationService {
 
 
       if (tokenUsage && tokenUsage.total_tokens) {
-        const TokenService = require('./TokenService.js');
-        await TokenService.recordTokenUsage(userId, tokenUsage.total_tokens, 'chat');
+        const MessageService = require('./TokenService.js');
+        await MessageService.recordMessageUsage(userId, 1, 'chat');
       }
 
       await conversationManager.addMessage(userId, "assistant", content);

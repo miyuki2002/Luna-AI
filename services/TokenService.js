@@ -2,30 +2,30 @@ const mongoClient = require('./mongoClient.js');
 const logger = require('../utils/logger.js');
 
 /**
- * Service quản lý giới hạn token và vai trò người dùng
+ * Service quản lý giới hạn lượt nhắn tin và vai trò người dùng
  */
-class TokenService {
+class MessageService {
   constructor() {
-    // Định nghĩa giới hạn token theo vai trò (tokens mỗi ngày)
+    // Định nghĩa giới hạn lượt nhắn tin theo vai trò (lượt mỗi ngày)
     this.roleLimits = {
       owner: -1,        // Không giới hạn
-      admin: 100000,    // 100k tokens/ngày
-      helper: 50000,    // 50k tokens/ngày
-      user: 10000       // 10k tokens/ngày (mặc định)
+      admin: 1000,      // 1000 lượt/ngày
+      helper: 500,      // 500 lượt/ngày
+      user: 100         // 100 lượt/ngày (mặc định)
     };
 
     // Owner ID từ biến môi trường
     this.ownerId = process.env.OWNER_ID ? process.env.OWNER_ID.trim() : null;
     
-    logger.info('TOKEN_SERVICE', `Khởi tạo TokenService với owner ID: ${this.ownerId || 'không có'}`);
+    logger.info('MESSAGE_SERVICE', `Khởi tạo MessageService với owner ID: ${this.ownerId || 'không có'}`);
   }
 
   /**
-   * Lấy collection user_tokens
+   * Lấy collection user_messages
    */
-  async getTokenCollection() {
+  async getMessageCollection() {
     const db = mongoClient.getDb();
-    return db.collection('user_tokens');
+    return db.collection('user_messages');
   }
 
   /**
@@ -39,9 +39,9 @@ class TokenService {
   /**
    * Khởi tạo dữ liệu token cho người dùng
    */
-  async initializeUserTokenData(userId) {
+  async initializeUserMessageData(userId) {
     try {
-      const collection = await this.getTokenCollection();
+      const collection = await this.getMessageCollection();
       const profileCollection = await this.getProfileCollection();
 
       // Kiểm tra xem user đã có dữ liệu chưa
@@ -62,11 +62,11 @@ class TokenService {
         }
       }
 
-      // Tạo dữ liệu token mới
-      const tokenData = {
+      // Tạo dữ liệu message mới
+      const messageData = {
         userId,
         role,
-        tokenUsage: {
+        messageUsage: {
           daily: 0,
           weekly: 0,
           monthly: 0,
@@ -107,23 +107,23 @@ class TokenService {
   /**
    * Lấy thông tin token của người dùng
    */
-  async getUserTokenData(userId) {
+  async getUserMessageData(userId) {
     try {
-      const collection = await this.getTokenCollection();
-      let tokenData = await collection.findOne({ userId });
+      const collection = await this.getMessageCollection();
+      let messageData = await collection.findOne({ userId });
 
-      if (!tokenData) {
-        tokenData = await this.initializeUserTokenData(userId);
+      if (!messageData) {
+        messageData = await this.initializeUserMessageData(userId);
       } else {
         // Kiểm tra và reset nếu cần
         await this.checkAndResetLimits(userId);
         // Lấy lại dữ liệu sau khi reset
-        tokenData = await collection.findOne({ userId });
+        messageData = await collection.findOne({ userId });
       }
 
-      return tokenData;
+      return messageData;
     } catch (error) {
-      logger.error('TOKEN_SERVICE', `Lỗi khi lấy dữ liệu token cho ${userId}:`, error);
+      logger.error('MESSAGE_SERVICE', `Lỗi khi lấy dữ liệu message cho ${userId}:`, error);
       throw error;
     }
   }
@@ -178,33 +178,33 @@ class TokenService {
   }
 
   /**
-   * Kiểm tra xem người dùng có thể sử dụng thêm token không
+   * Kiểm tra xem người dùng có thể sử dụng thêm lượt nhắn tin không
    */
-  async canUseTokens(userId, estimatedTokens = 1000) {
+  async canUseMessages(userId, estimatedMessages = 1) {
     try {
-      const tokenData = await this.getUserTokenData(userId);
+      const messageData = await this.getUserMessageData(userId);
 
       // Owner không bị giới hạn
-      if (tokenData.role === 'owner' || tokenData.limits.daily === -1) {
+      if (messageData.role === 'owner' || messageData.limits.daily === -1) {
         return {
           allowed: true,
           remaining: -1,
-          role: tokenData.role,
-          current: tokenData.tokenUsage.daily,
+          role: messageData.role,
+          current: messageData.messageUsage.daily,
           limit: -1
         };
       }
 
-      const remaining = tokenData.limits.daily - tokenData.tokenUsage.daily;
-      const allowed = remaining >= estimatedTokens;
+      const remaining = messageData.limits.daily - messageData.messageUsage.daily;
+      const allowed = remaining >= estimatedMessages;
 
       return {
         allowed,
         remaining,
-        role: tokenData.role,
-        current: tokenData.tokenUsage.daily,
-        limit: tokenData.limits.daily,
-        estimated: estimatedTokens
+        role: messageData.role,
+        current: messageData.messageUsage.daily,
+        limit: messageData.limits.daily,
+        estimated: estimatedMessages
       };
     } catch (error) {
       logger.error('TOKEN_SERVICE', `Lỗi khi kiểm tra giới hạn token cho ${userId}:`, error);
@@ -216,14 +216,14 @@ class TokenService {
   /**
    * Ghi nhận việc sử dụng token
    */
-  async recordTokenUsage(userId, tokensUsed, operation = 'chat') {
+  async recordMessageUsage(userId, messagesUsed = 1, operation = 'chat') {
     try {
-      const collection = await this.getTokenCollection();
+      const collection = await this.getMessageCollection();
       const now = Date.now();
 
       // Tạo bản ghi lịch sử
       const historyEntry = {
-        tokens: tokensUsed,
+        messages: messagesUsed,
         operation,
         timestamp: now
       };
@@ -233,10 +233,10 @@ class TokenService {
         { userId },
         {
           $inc: {
-            'tokenUsage.daily': tokensUsed,
-            'tokenUsage.weekly': tokensUsed,
-            'tokenUsage.monthly': tokensUsed,
-            'tokenUsage.total': tokensUsed
+            'messageUsage.daily': messagesUsed,
+            'messageUsage.weekly': messagesUsed,
+            'messageUsage.monthly': messagesUsed,
+            'messageUsage.total': messagesUsed
           },
           $push: {
             history: {
@@ -474,5 +474,5 @@ class TokenService {
   }
 }
 
-module.exports = new TokenService();
+module.exports = new MessageService();
 
