@@ -30,7 +30,7 @@ module.exports = {
         await interaction.editReply({
           content: `✅ **Đã tạo file JSON thành công!**\n\n` +
                    `📁 **Thông tin:**\n` +
-                   `> File: \`commands-json/commands.json\`\n` +
+                   `> File: \`assets/commands.json\`\n` +
                    `> Số lệnh: **${commandsData.length}**\n` +
                    `> Kích thước: **${fileInfo?.size || 0} bytes**\n` +
                    `> Cập nhật: **${fileInfo?.modified?.toLocaleString('vi-VN') || 'N/A'}**\n\n` +
