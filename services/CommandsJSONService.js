@@ -5,7 +5,7 @@ const logger = require('../utils/logger.js');
 
 class CommandsJSONService {
   constructor() {
-    this.outputDir = path.join(__dirname, '../commands-json');
+    this.outputDir = path.join(__dirname, '../assets');
     this.outputPath = path.join(this.outputDir, 'commands.json');
   }
 
