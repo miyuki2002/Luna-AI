@@ -8,6 +8,7 @@ const { setupGuildHandlers } = require('../handlers/guildHandler');
 const logger = require('../utils/logger.js');
 const AutoUpdateService = require('../services/AutoUpdateService');
 const APIProviderManager = require('../services/providers.js');
+const CommandsJSONService = require('../services/CommandsJSONService');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -78,6 +79,17 @@ async function startbot(client, loadCommands) {
     } catch (error) {
       logger.error('SYSTEM', 'Lỗi khi tải commands:', error);
       initSystem.markReady('commands');
+    }
+
+    try {
+      const success = await CommandsJSONService.generateCommandsJSON();
+      if (success) {
+        logger.info('SYSTEM', 'Đã tự động tạo file JSON lệnh thành công!');
+      } else {
+        logger.warn('SYSTEM', 'Không thể tạo file JSON lệnh tự động');
+      }
+    } catch (error) {
+      logger.error('SYSTEM', 'Lỗi khi tạo file JSON lệnh tự động:', error);
     }
 
     try {
