@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const mongoClient = require('../../services/mongoClient.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,7 +13,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({ 
         content: 'Bạn không có quyền xem cảnh cáo của thành viên!', 
@@ -27,13 +27,12 @@ module.exports = {
     try {
       const db = mongoClient.getDb();
       
-      // Lấy danh sách cảnh cáo từ cơ sở dữ liệu
       const warnings = await db.collection('warnings')
         .find({
           userId: targetUser.id,
           guildId: interaction.guild.id
         })
-        .sort({ timestamp: -1 }) // Sắp xếp theo thời gian giảm dần (mới nhất trước)
+        .sort({ timestamp: -1 })
         .toArray();
       
       if (warnings.length === 0) {
@@ -43,7 +42,6 @@ module.exports = {
         });
       }
       
-      // Tạo embed thông báo
       const warningsEmbed = new EmbedBuilder()
         .setColor(0xFFFF00)
         .setTitle(`⚠️ Danh sách cảnh cáo của ${targetUser.tag}`)
@@ -52,7 +50,6 @@ module.exports = {
         .setFooter({ text: `ID: ${targetUser.id}` })
         .setTimestamp();
 
-      // Thêm tối đa 10 cảnh cáo gần nhất vào embed
       const recentWarnings = warnings.slice(0, 10);
       
       recentWarnings.forEach((warning, index) => {
@@ -74,11 +71,10 @@ module.exports = {
         });
       }
 
-      // Gửi thông báo
       await interaction.editReply({ embeds: [warningsEmbed] });
       
     } catch (error) {
-      console.error('Lỗi khi xem cảnh cáo của thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi xem cảnh cáo của thành viên:', error);
       await interaction.editReply({ 
         content: `Đã xảy ra lỗi khi xem cảnh cáo của ${targetUser.tag}: ${error.message}`, 
         ephemeral: true 

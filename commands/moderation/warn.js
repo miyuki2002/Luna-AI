@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const ConversationService = require('../../services/ConversationService.js');
 const mongoClient = require('../../services/mongoClient.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,7 +18,6 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
-    // Kiểm tra quyền
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({ 
         content: 'Bạn không có quyền cảnh cáo thành viên!', 
@@ -103,7 +103,7 @@ module.exports = {
           
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        console.log(`Không thể gửi DM cho ${targetUser.tag}`);
+        logger.error('MODERATION', `Không thể gửi DM cho ${targetUser.tag}`);
       }
       
       if (warningCount >= 3 && warningCount < 5) {
@@ -119,7 +119,7 @@ module.exports = {
             
           await interaction.followUp({ embeds: [autoMuteEmbed] });
         } catch (error) {
-          console.error('Không thể tự động mute thành viên:', error);
+          logger.error('MODERATION', 'Không thể tự động mute thành viên:', error);
         }
       } else if (warningCount >= 5) {
         try {
@@ -134,12 +134,12 @@ module.exports = {
             
           await interaction.followUp({ embeds: [autoKickEmbed] });
         } catch (error) {
-          console.error('Không thể tự động kick thành viên:', error);
+          logger.error('MODERATION', 'Không thể tự động kick thành viên:', error);
         }
       }
       
     } catch (error) {
-      console.error('Lỗi khi cảnh cáo thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi cảnh cáo thành viên:', error);
       await interaction.editReply({ 
         content: `Đã xảy ra lỗi khi cảnh cáo ${targetUser.tag}: ${error.message}`, 
         ephemeral: true 

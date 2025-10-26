@@ -13,14 +13,12 @@ async function sendModLog(guild, embed, isModAction = true) {
   try {
     const db = mongoClient.getDb();
 
-    // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
     const logSettings = await db.collection("mod_settings").findOne({
       guildId: guild.id,
     });
 
     let logChannel = null;
 
-    // Nếu có cài đặt kênh log và loại log phù hợp được bật
     if (logSettings && logSettings.logChannelId) {
       const shouldLog = isModAction
         ? logSettings.modActionLogs !== false
@@ -39,7 +37,6 @@ async function sendModLog(guild, embed, isModAction = true) {
       }
     }
 
-    // Nếu không có kênh log được cài đặt, tìm kênh mặc định
     if (!logChannel) {
       logChannel = guild.channels.cache.find(
         (channel) =>
@@ -50,7 +47,6 @@ async function sendModLog(guild, embed, isModAction = true) {
       );
     }
 
-    // Gửi thông báo đến kênh log
     if (logChannel && logChannel.isTextBased()) {
       return await logChannel.send({ embeds: [embed] });
     }
@@ -63,7 +59,6 @@ async function sendModLog(guild, embed, isModAction = true) {
 }
 
 /**
- * Tạo embed log cho hành động moderation
  * @param {Object} options - Các tùy chọn
  * @param {string} options.title - Tiêu đề của embed
  * @param {string} options.description - Mô tả của embed
@@ -102,14 +97,12 @@ async function getModLogChannel(guild, isModAction = true) {
   try {
     const db = mongoClient.getDb();
 
-    // Kiểm tra cài đặt kênh log từ cơ sở dữ liệu
     const logSettings = await db.collection("mod_settings").findOne({
       guildId: guild.id,
     });
 
     let logChannel = null;
 
-    // Nếu có cài đặt kênh log và loại log phù hợp được bật
     if (logSettings && logSettings.logChannelId) {
       const shouldLog = isModAction
         ? logSettings.modActionLogs !== false
@@ -131,7 +124,6 @@ async function getModLogChannel(guild, isModAction = true) {
       }
     }
 
-    // Nếu không có kênh log được cài đặt, tìm kênh mặc định
     logChannel = guild.channels.cache.find(
       (channel) =>
         channel.name.includes("mod-logs") ||

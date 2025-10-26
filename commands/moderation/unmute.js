@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -100,7 +101,6 @@ module.exports = {
 
       await sendModLog(interaction.guild, logEmbed, true);
 
-      // Gửi DM cho người được unmute (nếu có thể)
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0x00FF00)
@@ -110,11 +110,11 @@ module.exports = {
 
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        console.log(`Không thể gửi DM cho ${targetUser.tag}`);
+        logger.error('MODERATION', `Không thể gửi DM cho ${targetUser.tag}`);
       }
 
     } catch (error) {
-      console.error('Lỗi khi unmute thành viên:', error);
+      logger.error('MODERATION', 'Lỗi khi unmute thành viên:', error);
       await interaction.editReply({
         content: `Đã xảy ra lỗi khi unmute ${targetUser.tag}: ${error.message}`,
         ephemeral: true
