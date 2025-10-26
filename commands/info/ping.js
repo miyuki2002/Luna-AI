@@ -9,7 +9,7 @@ module.exports = {
 
 	async execute(interaction) {
 		const sent = await interaction.deferReply({ fetchReply: true });
-		const pingLatency = ((sent.createdTimestamp - interaction.createdTimestamp) / 100).toFixed(2);
+		const pingLatency = ((sent.createdTimestamp - interaction.createdTimestamp) / 100).toFixed(0);
 
 		const initialEmbed = createStatusEmbed({
 			ping: pingLatency,
@@ -53,12 +53,13 @@ module.exports = {
 					components: [createActionRow(false)]
 				});
 
-				const newPingLatency = ((Date.now() - i.createdTimestamp) / 100).toFixed(2);
+				const newPingLatency = pingLatency;
+				const newWsLatency = interaction.client.ws.ping;
 
 				await i.editReply({
 					embeds: [createStatusEmbed({
 						ping: newPingLatency,
-						ws: interaction.client.ws.ping,
+						ws: newWsLatency,
 					})],
 					components: [createActionRow(true)]
 				});
