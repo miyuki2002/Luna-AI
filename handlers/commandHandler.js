@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const consentService = require('../services/consentService');
+const { handlePermissionError } = require('../utils/permissionUtils');
 const logger = require('../utils/logger.js');
 
 let commandsJsonCache = null;
@@ -91,8 +92,16 @@ const handleCommand = async (interaction, client) => {
       const hasConsented = await consentService.hasUserConsented(interaction.user.id);
       
       if (!hasConsented) {
-        const consentData = consentService.createConsentEmbed(interaction.user);
-        await interaction.reply(consentData);
+        try {
+          const consentData = consentService.createConsentEmbed(interaction.user);
+          await interaction.reply(consentData);
+        } catch (error) {
+          if (error.code === 50013 || error.message.includes('permission')) {
+            await handlePermissionError(interaction, 'embedLinks', interaction.user.username, 'reply');
+          } else {
+            throw error;
+          }
+        }
         return;
       }
     }
