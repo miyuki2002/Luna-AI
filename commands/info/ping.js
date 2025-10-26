@@ -9,7 +9,7 @@ module.exports = {
 
 	async execute(interaction) {
 		const sent = await interaction.deferReply({ fetchReply: true });
-		const pingLatency = (sent.createdTimestamp - interaction.createdTimestamp) / 1000;
+		const pingLatency = ((sent.createdTimestamp - interaction.createdTimestamp) / 100).toFixed(2);
 
 		const initialEmbed = createStatusEmbed({
 			ping: pingLatency,
@@ -53,18 +53,12 @@ module.exports = {
 					components: [createActionRow(false)]
 				});
 
-				const newPingLatency = Date.now() - i.createdTimestamp;
-				const [newMongoResult, newAiResult] = await Promise.all([
-					checkMongoDB(),
-					checkAIService()
-				]);
+				const newPingLatency = ((Date.now() - i.createdTimestamp) / 100).toFixed(2);
 
 				await i.editReply({
 					embeds: [createStatusEmbed({
 						ping: newPingLatency,
 						ws: interaction.client.ws.ping,
-						mongo: newMongoResult,
-						ai: newAiResult
 					})],
 					components: [createActionRow(true)]
 				});
@@ -112,7 +106,7 @@ module.exports = {
 	},
 };
 
-function createStatusEmbed({ ping, ws, mongo, ai }) {
+function createStatusEmbed({ ping, ws }) {
 	let statusColor;
 	if (ping < 200) statusColor = 0x57F287;
 	else if (ping < 400) statusColor = 0xFEE75C;
