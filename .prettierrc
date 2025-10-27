@@ -1,4 +1,60 @@
 {
+  "semi": true,
+  "trailingComma": "all",
+  "singleQuote": true,
+  "printWidth": 100,
   "tabWidth": 2,
-  "useTabs": true
+  "useTabs": false,
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "quoteProps": "as-needed",
+  "bracketSameLine": false,
+  "proseWrap": "always",
+  "jsxSingleQuote": true,
+  "htmlWhitespaceSensitivity": "css",
+  "insertPragma": false,
+  "requirePragma": false,
+  "rangeStart": 0,
+  "vueIndentScriptAndStyle": false,
+  "embeddedLanguageFormatting": "auto",
+  "overrides": [
+    {
+      "files": ["*.js", "*.mjs", "*.cjs"],
+      "options": {
+        "printWidth": 100,
+        "bracketSpacing": true,
+        "arrowParens": "always",
+        "trailingComma": "all",
+        "proseWrap": "always"
+      }
+    },
+    {
+      "files": ["**/prompts.js", "**/config/*.js"],
+      "options": {
+        "printWidth": 120,
+        "proseWrap": "always",
+        "singleQuote": true,
+        "trailingComma": "all",
+        "bracketSpacing": true,
+        "arrowParens": "always"
+      }
+    },
+    {
+      "files": ["*.json", "*.jsonc"],
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 2,
+        "trailingComma": "none"
+      }
+    },
+    {
+      "files": ["*.md", "*.mdx"],
+      "options": {
+        "printWidth": 80,
+        "proseWrap": "always",
+        "tabWidth": 2
+      }
+    }
+  ]
 }
