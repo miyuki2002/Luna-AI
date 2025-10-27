@@ -9,28 +9,26 @@ const logger = require('../../utils/logger.js');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ban')
-    .setDescription(translate('en', 'commands.ban.description'))
+    .setDescription('Cấm một người dùng khỏi server')
     .addUserOption(option =>
       option.setName('user')
-        .setDescription(translate('en', 'commands.ban.options.user'))
+        .setDescription('Người dùng cần cấm')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('reason')
-        .setDescription(translate('en', 'commands.ban.options.reason'))
+        .setDescription('Lý do cấm')
         .setRequired(false))
     .addIntegerOption(option =>
       option.setName('days')
-        .setDescription(translate('en', 'commands.ban.options.days'))
+        .setDescription('Số ngày tin nhắn cần xóa (0-7)')
         .setMinValue(0)
         .setMaxValue(7)
         .setRequired(false))
     .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
   async execute(interaction) {
-    // Get user's locale preference
     const userLocale = interaction.locale || interaction.guildLocale || 'en';
-    
-    // Check permissions
+
     if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
       return interaction.reply({
         content: translate(userLocale, 'commands.ban.errors.noPermission'),
@@ -66,34 +64,34 @@ module.exports = {
         .setTitle(translate(userLocale, 'commands.ban.embeds.success.title'))
         .setDescription(aiResponse)
         .addFields(
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.reason'), 
-            value: reason, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.reason'),
+            value: reason,
+            inline: true
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.deleteMessages'), 
-            value: `${deleteMessageDays} ${translate(userLocale, 'commands.ban.embeds.success.fields.days')}`, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.deleteMessages'),
+            value: `${deleteMessageDays} ${translate(userLocale, 'commands.ban.embeds.success.fields.days')}`,
+            inline: true
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.moderator'), 
-            value: interaction.user.tag, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.moderator'),
+            value: interaction.user.tag,
+            inline: true
           }
         )
-        .setFooter({ 
-          text: translate(userLocale, 'commands.ban.embeds.success.footer', { 
-            moderator: interaction.user.tag 
-          }) 
+        .setFooter({
+          text: translate(userLocale, 'commands.ban.embeds.success.footer', {
+            moderator: interaction.user.tag
+          })
         })
         .setTimestamp();
 
       // Ban the user
       await interaction.guild.members.ban(targetUser, {
         deleteMessageDays: deleteMessageDays,
-        reason: `${reason} - ${translate(userLocale, 'commands.ban.banReason', { 
-          moderator: interaction.user.tag 
+        reason: `${reason} - ${translate(userLocale, 'commands.ban.banReason', {
+          moderator: interaction.user.tag
         })}`
       });
 
@@ -119,44 +117,44 @@ module.exports = {
       // Create mod log embed using i18n
       const logEmbed = createModActionEmbed({
         title: translate(userLocale, 'commands.ban.embeds.success.title'),
-        description: translate(userLocale, 'commands.ban.embeds.success.description', { 
-          user: targetUser.tag 
+        description: translate(userLocale, 'commands.ban.embeds.success.description', {
+          user: targetUser.tag
         }),
         color: 0xFF0000,
         fields: [
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.user'), 
-            value: `${targetUser.tag}`, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.user'),
+            value: `${targetUser.tag}`,
+            inline: true
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.userId'), 
-            value: targetUser.id, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.userId'),
+            value: targetUser.id,
+            inline: true
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.moderator'), 
-            value: `${interaction.user.tag} (<@${interaction.user.id}>)`, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.moderator'),
+            value: `${interaction.user.tag} (<@${interaction.user.id}>)`,
+            inline: true
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.reason'), 
-            value: reason, 
-            inline: false 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.reason'),
+            value: reason,
+            inline: false
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.deleteMessages'), 
-            value: `${deleteMessageDays} ${translate(userLocale, 'commands.ban.embeds.success.fields.days')}`, 
-            inline: true 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.deleteMessages'),
+            value: `${deleteMessageDays} ${translate(userLocale, 'commands.ban.embeds.success.fields.days')}`,
+            inline: true
           },
-          { 
-            name: translate(userLocale, 'commands.ban.embeds.success.fields.date'), 
-            value: `<t:${Math.floor(Date.now() / 1000)}:F>`, 
-            inline: false 
+          {
+            name: translate(userLocale, 'commands.ban.embeds.success.fields.date'),
+            value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
+            inline: false
           }
         ],
-        footer: translate(userLocale, 'commands.ban.embeds.success.footerServer', { 
-          server: interaction.guild.name 
+        footer: translate(userLocale, 'commands.ban.embeds.success.footerServer', {
+          server: interaction.guild.name
         })
       });
 
@@ -166,33 +164,33 @@ module.exports = {
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor(0xFF0000)
-          .setTitle(translate(userLocale, 'commands.ban.dm.title', { 
-            server: interaction.guild.name 
+          .setTitle(translate(userLocale, 'commands.ban.dm.title', {
+            server: interaction.guild.name
           }))
-          .setDescription(translate(userLocale, 'commands.ban.dm.description', { 
-            reason: reason 
+          .setDescription(translate(userLocale, 'commands.ban.dm.description', {
+            reason: reason
           }))
-          .setFooter({ 
-            text: translate(userLocale, 'commands.ban.dm.footer') 
+          .setFooter({
+            text: translate(userLocale, 'commands.ban.dm.footer')
           })
           .setTimestamp();
 
         await targetUser.send({ embeds: [dmEmbed] });
       } catch (error) {
-        logger.error('MODERATION', translate(userLocale, 'commands.ban.dm.error', { 
-          user: targetUser.tag 
+        logger.error('MODERATION', translate(userLocale, 'commands.ban.dm.error', {
+          user: targetUser.tag
         }));
       }
 
     } catch (error) {
-      logger.error('MODERATION', translate(userLocale, 'commands.ban.errors.general', { 
+      logger.error('MODERATION', translate(userLocale, 'commands.ban.errors.general', {
         user: targetUser.tag,
-        error: error.message 
+        error: error.message
       }));
       await interaction.editReply({
-        content: translate(userLocale, 'commands.ban.errors.general', { 
+        content: translate(userLocale, 'commands.ban.errors.general', {
           user: targetUser.tag,
-          error: error.message 
+          error: error.message
         }),
         ephemeral: true
       });

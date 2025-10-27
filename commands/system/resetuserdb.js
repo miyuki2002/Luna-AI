@@ -13,7 +13,7 @@ module.exports = {
     const ownerId = process.env.OWNER_ID;
     if (interaction.user.id !== ownerId) {
       return interaction.reply({ 
-        content: 'Bạn không có quyền sử dụng lệnh này. Chỉ owner mới có thể reset user database.', 
+        content: 'Bạn không có quyền sử dụng lệnh này!', 
         ephemeral: true 
       });
     }

@@ -5,14 +5,15 @@ const logger = require('../../utils/logger');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('update')
-        .setDescription('[ADMIN] Kiểm tra và cập nhật bot từ GitHub'),
+        .setDescription('Kiểm tra và cập nhật bot từ GitHub (chỉ dành cho owner)'),
     
     async execute(interaction) {
-        if (!interaction.member.permissions.has('Administrator') && interaction.user.id !== process.env.OWNER_ID) {
+        const ownerId = process.env.OWNER_ID;
+        if (interaction.user.id !== ownerId) {
             const embed = new EmbedBuilder()
                 .setColor('#FF6B6B')
                 .setTitle('Không có quyền')
-                .setDescription('Chỉ Administrator mới có thể sử dụng lệnh này!')
+                .setDescription('Bạn không có quyền sử dụng lệnh này!')
                 .setTimestamp();
             
             return interaction.reply({ embeds: [embed], ephemeral: true });

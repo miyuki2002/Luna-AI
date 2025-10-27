@@ -6,16 +6,11 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('image')
-		.setDescription(t('en-US', 'commands.image.description'))
-		.setDescriptionLocalizations({
-			vi: t('vi', 'commands.image.description'),
-		})
+		.setDescription('Vẽ một hình ảnh từ ý tưởng của bạn')
 		.addStringOption((option) =>
 			option
 				.setName('prompt')
-				.setDescriptionLocalizations({
-					vi: t('vi', 'commands.image.options.prompt.description'),
-				})
+				.setDescription('Mô tả bức tranh bạn muốn mình tạo')
 				.setRequired(true),
 		),
 
@@ -48,4 +43,5 @@ module.exports = {
 		}
 	},
 };
+
 
