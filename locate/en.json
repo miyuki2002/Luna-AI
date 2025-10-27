@@ -1,489 +1,483 @@
 ﻿{
-    "common":  {
-                   "footer":  {
-                                  "credit":  "Luna AI - Developed by s4ory",
-                                  "versionUptime":  "Luna v{version} - {uptime}"
-                              }
-               },
-    "commands":  {
-                     "help":  {
-                                  "description":  "View the full list of commands and helpful information",
-                                  "select":  {
-                                                 "placeholder":  "Choose a command category",
-                                                 "categoryDescription":  "View commands in the {category} category",
-                                                 "all":  {
-                                                             "label":  "All",
-                                                             "description":  "Show all commands"
-                                                         }
-                                             },
-                                  "categories":  {
-                                                     "AIcore":  {
-                                                                    "label":  "AI Core",
-                                                                    "description":  "AI powered commands"
-                                                                },
-                                                     "Core":  {
-                                                                  "label":  "Core",
-                                                                  "description":  "Essential utilities"
-                                                              },
-                                                     "moderation":  {
-                                                                        "label":  "Moderation",
-                                                                        "description":  "Moderation tools for staff"
-                                                                    },
-                                                     "social":  {
-                                                                    "label":  "Social",
-                                                                    "description":  "Community and social features"
-                                                                },
-                                                     "system":  {
-                                                                    "label":  "System",
-                                                                    "description":  "System administration commands"
-                                                                },
-                                                     "setting":  {
-                                                                     "label":  "Settings",
-                                                                     "description":  "Owner only settings"
-                                                                 }
-                                                 },
-                                  "embeds":  {
-                                                 "welcomeTitle":  "Luna AI Help",
-                                                 "welcomeDescription":  "Use the dropdown menu below to explore commands.",
-                                                 "allTitle":  "All Categories",
-                                                 "categoryTitle":  "Command Help - {category}"
-                                             },
-                                  "messages":  {
-                                                   "allCategoriesDescription":  "Available command categories:",
-                                                   "emptyCategory":  "No commands available in this category.",
-                                                   "categoryDetails":  "Commands available in {category}:",
-                                                   "optionRequired":  "(required)",
-                                                   "optionOptional":  "(optional)",
-                                                   "noOptions":  "No options.",
-                                                   "menuExpired":  "The help menu has expired. Use /help to generate a new one."
-                                               },
-                                  "errors":  {
-                                                 "notInvoker":  "You cannot use this menu. Run /help to generate your own.",
-                                                 "noPermission":  "You do not have permission to view this category."
-                                             }
-                              },
-                     "ping":  {
-                                  "description":  "Check the bot latency and connection status",
-                                  "errors":  {
-                                                 "notInvoker":  "Only the user who ran the command can use these buttons."
-                                             },
-                                  "embeds":  {
-                                                 "status":  {
-                                                                "title":  "System Status",
-                                                                "latencyField":  "Latency",
-                                                                "botLabel":  "Bot",
-                                                                "wsLabel":  "WebSocket"
-                                                            },
-                                                 "detailed":  {
-                                                                  "title":  "Detailed Information",
-                                                                  "fields":  {
-                                                                                 "botVersion":  "Bot Version",
-                                                                                 "discordVersion":  "discord.js version",
-                                                                                 "nodeVersion":  "Node.js version",
-                                                                                 "uptime":  "Uptime",
-                                                                                 "memory":  "Memory Usage",
-                                                                                 "platform":  "Platform",
-                                                                                 "shards":  "Shards"
-                                                                             }
-                                                              }
-                                             },
-                                  "buttons":  {
-                                                  "refresh":  "Refresh",
-                                                  "detailed":  "Details"
-                                              }
-                              },
-                     "about":  {
-                                   "description":  "Show detailed information about the Luna bot",
-                                   "canvas":  {
-                                                  "tagline":  "Your smart AI assistant",
-                                                  "technicalTitle":  "Technical Overview",
-                                                  "technicalItems":  {
-                                                                         "model":  "AI Model",
-                                                                         "uptime":  "Uptime",
-                                                                         "node":  "Node.js",
-                                                                         "memory":  "Memory",
-                                                                         "servers":  "Servers"
-                                                                     },
-                                                  "featuresTitle":  "Capabilities",
-                                                  "featuresItems":  {
-                                                                        "chat":  {
-                                                                                     "label":  "AI Conversations",
-                                                                                     "value":  "Mention @Luna"
-                                                                                 },
-                                                                        "image":  {
-                                                                                      "label":  "Image Generation",
-                                                                                      "value":  "imagine [prompt]"
-                                                                                  },
-                                                                        "code":  {
-                                                                                     "label":  "Coding Help",
-                                                                                     "value":  "code [request]"
-                                                                                 },
-                                                                        "moderation":  {
-                                                                                           "label":  "Message Management",
-                                                                                           "value":  "clear history"
-                                                                                       }
-                                                                    },
-                                                  "footer":  "Luna Bot v{version} - Developed by s4ory - {date}"
-                                              },
-                                   "embed":  {
-                                                 "footer":  "Use the buttons below to learn more about Luna"
-                                             },
-                                   "buttons":  {
-                                                   "invite":  "Invite Luna",
-                                                   "docs":  "Documentation",
-                                                   "support":  "Support",
-                                                   "website":  "Website"
-                                               },
-                                   "fallback":  {
-                                                    "title":  "Luna AI - Your smart assistant",
-                                                    "description":  "Luna is a friendly AI assistant ready to chat, create, and support your community.",
-                                                    "fields":  {
-                                                                   "model":  "AI Model",
-                                                                   "runtime":  "Runtime",
-                                                                   "servers":  "Servers",
-                                                                   "memory":  "Memory",
-                                                                   "node":  "Node.js"
-                                                               },
-                                                    "footer":  "Luna Bot v{version} - Developed by s4ory"
-                                                }
-                               },
-                     "ban":  {
-                                 "description":  "Ban a member from the server",
-                                 "options":  {
-                                                 "user":  "Member to ban",
-                                                 "reason":  "Reason for ban",
-                                                 "days":  "Days to delete messages (0-7)"
-                                             },
-                                 "embeds":  {
-                                                "success":  {
-                                                                "title":  "Ban Successful",
-                                                                "description":  "Banned {user} from the server",
-                                                                "fields":  {
-                                                                               "reason":  "Reason",
-                                                                               "deleteMessages":  "Delete Messages",
-                                                                               "moderator":  "Moderated by"
-                                                                           }
-                                                            },
-                                                "error":  {
-                                                              "title":  "Ban Error",
-                                                              "description":  "Could not ban this member"
-                                                          }
-                                            },
-                                 "errors":  {
-                                                "noPermission":  "You don\u0027t have permission to ban members!",
-                                                "cannotBan":  "I cannot ban this member. They may have higher permissions than me or you.",
-                                                "userNotFound":  "Member not found in this server"
-                                            }
-                             },
-                     "quotas":  {
-                                    "description":  "View usage statistics for message quotas",
-                                    "subcommands":  {
-                                                        "user":  {
-                                                                     "description":  "View message usage statistics for a user",
-                                                                     "options":  {
-                                                                                     "target":  {
-                                                                                                    "description":  "User to inspect (leave empty to view your own)"
-                                                                                                }
-                                                                                 }
-                                                                 },
-                                                        "system":  {
-                                                                       "description":  "View system-wide message usage statistics (Owner/Admin only)"
-                                                                   }
-                                                    },
-                                    "errors":  {
-                                                   "general":  "Failed to retrieve statistics: {message}",
-                                                   "noPermissionOther":  "You do not have permission to view another user\u0027s statistics.",
-                                                   "noPermissionSystem":  "You do not have permission to view system statistics."
-                                               },
-                                    "roles":  {
-                                                  "owner":  "Owner",
-                                                  "admin":  "Admin",
-                                                  "helper":  "Helper",
-                                                  "user":  "User"
-                                              },
-                                    "labels":  {
-                                                   "noLimit":  "No limit",
-                                                   "limitPerDay":  "{count} uses/day",
-                                                   "usageCount":  "{count} uses"
-                                               },
-                                    "embeds":  {
-                                                   "user":  {
-                                                                "title":  "Message usage statistics - {username}",
-                                                                "fields":  {
-                                                                               "role":  "Role",
-                                                                               "dailyLimit":  "Daily limit",
-                                                                               "today":  "Today",
-                                                                               "week":  "This week",
-                                                                               "month":  "This month",
-                                                                               "total":  "Total",
-                                                                               "remainingToday":  "Remaining today"
-                                                                           },
-                                                                "historyTitle":  "Recent activity",
-                                                                "historyEmpty":  "No history available.",
-                                                                "historyEntry":  "- {count} uses - {operation}",
-                                                                "footer":  "User ID: {id}"
-                                                            },
-                                                   "system":  {
-                                                                  "title":  "System quota statistics",
-                                                                  "fields":  {
-                                                                                 "totalUsers":  "Total users",
-                                                                                 "dailyUsage":  "Usage today",
-                                                                                 "weeklyUsage":  "Usage this week",
-                                                                                 "monthlyUsage":  "Usage this month",
-                                                                                 "totalUsage":  "Total usage"
-                                                                             },
-                                                                  "topTitle":  "Top 10 users today",
-                                                                  "topEntry":  "{position}. \u003c@{userId}\u003e: {count} uses ({role})",
-                                                                  "footer":  "Requested by {tag}"
-                                                              }
-                                               }
-                                },
-                    "kick":  {
-                                  "description":  "Kick a member from the server",
-                                  "defaultReason":  "No reason provided",
-                                  "options":  {
-                                                  "user":  "Member to kick",
-                                                  "reason":  "Reason for kick"
-                                              },
-                                  "embeds":  {
-                                                 "success":  {
-                                                                 "title":  "Kick Successful",
-                                                                 "description":  "Kicked {user} from the server",
-                                                                 "fields":  {
-                                                                                "user":  "Member",
-                                                                                "userId":  "Member ID",
-                                                                                "reason":  "Reason",
-                                                                                "moderator":  "Moderated by",
-                                                                                "date":  "Date"
-                                                                            },
-                                                                 "footer":  "Kicked by {moderator}",
-                                                                 "footerServer":  "Server: {server}"
-                                                             }
-                                             },
-                                  "errors":  {
-                                                 "noPermission":  "You don\u0027t have permission to kick members!",
-                                                 "cannotKick":  "I cannot kick this member. They may have higher permissions than me or you.",
-                                                 "userNotFound":  "Member not found in this server",
-                                                 "general":  "An error occurred while kicking {user}: {error}"
-                                             }
-                              },
-                     "mute":  {
-                                  "description":  "Mute a member for a specified duration",
-                                  "options":  {
-                                                  "user":  "Member to mute",
-                                                  "duration":  "Mute duration (minutes)",
-                                                  "reason":  "Reason for mute"
-                                              },
-                                  "embeds":  {
-                                                 "success":  {
-                                                                 "title":  "Mute Successful",
-                                                                 "description":  "Muted {user} for {duration} minutes",
-                                                                 "fields":  {
-                                                                                "reason":  "Reason",
-                                                                                "moderator":  "Moderated by"
-                                                                            }
-                                                             }
-                                             },
-                                  "errors":  {
-                                                 "noPermission":  "You don\u0027t have permission to mute members!",
-                                                 "cannotMute":  "I cannot mute this member. They may have higher permissions than me or you.",
-                                                 "userNotFound":  "Member not found in this server"
-                                             }
-                              },
-                     "unmute":  {
-                                    "description":  "Unmute a member",
-                                    "options":  {
-                                                    "user":  "Member to unmute",
-                                                    "reason":  "Reason for unmute"
-                                                },
-                                    "embeds":  {
-                                                   "success":  {
-                                                                   "title":  "Unmute Successful",
-                                                                   "description":  "Unmuted {user}",
-                                                                   "fields":  {
-                                                                                  "reason":  "Reason",
-                                                                                  "moderator":  "Moderated by"
-                                                                              }
-                                                               }
-                                               },
-                                    "errors":  {
-                                                   "noPermission":  "You don\u0027t have permission to unmute members!",
-                                                   "userNotFound":  "Member not found in this server"
-                                               }
-                                },
-                     "warn":  {
-                                  "description":  "Warn a member",
-                                  "options":  {
-                                                  "user":  "Member to warn",
-                                                  "reason":  "Reason for warning"
-                                              },
-                                  "embeds":  {
-                                                 "success":  {
-                                                                 "title":  "Warning Successful",
-                                                                 "description":  "Warned {user}",
-                                                                 "fields":  {
-                                                                                "reason":  "Reason",
-                                                                                "moderator":  "Moderated by"
-                                                                            }
-                                                             }
-                                             },
-                                  "errors":  {
-                                                 "noPermission":  "You don\u0027t have permission to warn members!",
-                                                 "userNotFound":  "Member not found in this server"
-                                             }
-                              },
-                     "warnings":  {
-                                      "description":  "View warning list of a member",
-                                      "options":  {
-                                                      "user":  "Member to view warnings"
-                                                  },
-                                      "embeds":  {
-                                                     "title":  "Warning List",
-                                                     "noWarnings":  "This member has no warnings",
-                                                     "fields":  {
-                                                                    "warning":  "Warning #{number}",
-                                                                    "reason":  "Reason",
-                                                                    "moderator":  "Moderator",
-                                                                    "date":  "Date"
-                                                                }
-                                                 },
-                                      "errors":  {
-                                                     "userNotFound":  "Member not found in this server"
-                                                 }
-                                  },
-                     "clearwarnings":  {
-                                           "description":  "Clear all warnings of a member",
-                                           "options":  {
-                                                           "user":  "Member to clear warnings"
-                                                       },
-                                           "embeds":  {
-                                                          "success":  {
-                                                                          "title":  "Clear Warnings Successful",
-                                                                          "description":  "Cleared {count} warnings for {user}"
-                                                                      }
-                                                      },
-                                           "errors":  {
-                                                          "noPermission":  "You don\u0027t have permission to clear warnings!",
-                                                          "userNotFound":  "Member not found in this server"
-                                                      }
-                                       },
-                     "unban":  {
-                                   "description":  "Unban a member",
-                                   "options":  {
-                                                   "user":  "Member to unban",
-                                                   "reason":  "Reason for unban"
-                                               },
-                                   "embeds":  {
-                                                  "success":  {
-                                                                  "title":  "Unban Successful",
-                                                                  "description":  "Unbanned {user}",
-                                                                  "fields":  {
-                                                                                 "reason":  "Reason",
-                                                                                 "moderator":  "Moderated by"
-                                                                             }
-                                                              }
-                                              },
-                                   "errors":  {
-                                                  "noPermission":  "You don\u0027t have permission to unban members!",
-                                                  "userNotFound":  "Member not found in ban list"
-                                              }
-                               },
-                     "modlog":  {
-                                    "description":  "View moderation history",
-                                    "options":  {
-                                                    "user":  "Member to view history",
-                                                    "limit":  "Maximum number of records"
-                                                },
-                                    "embeds":  {
-                                                   "title":  "Moderation History",
-                                                   "noLogs":  "No records found",
-                                                   "fields":  {
-                                                                  "action":  "Action",
-                                                                  "reason":  "Reason",
-                                                                  "moderator":  "Moderator",
-                                                                  "date":  "Date"
-                                                              }
-                                               }
-                                },
-                     "logchannel":  {
-                                        "description":  "Set moderation log channel",
-                                        "options":  {
-                                                        "channel":  "Channel to set as log"
-                                                    },
-                                        "embeds":  {
-                                                       "success":  {
-                                                                       "title":  "Log Channel Set Successfully",
-                                                                       "description":  "Set {channel} as moderation log channel"
-                                                                   }
-                                                   },
-                                        "errors":  {
-                                                       "noPermission":  "You don\u0027t have permission to set log channel!",
-                                                       "invalidChannel":  "This channel is invalid"
-                                                   }
-                                    },
-                     "setlogchannel":  {
-                                           "description":  "Set moderation log channel (alias of logchannel)",
-                                           "options":  {
-                                                           "channel":  "Channel to set as log"
-                                                       }
-                                       },
-                     "profile":  {
-                                     "description":  "View your personal information",
-                                     "embeds":  {
-                                                    "title":  "Personal Information",
-                                                    "fields":  {
-                                                                   "level":  "Level",
-                                                                   "xp":  "Experience Points",
-                                                                   "warnings":  "Warnings",
-                                                                   "joinDate":  "Join Date"
-                                                               }
-                                                }
-                                 },
-                     "image":  {
-                                   "description":  "Create an image from your imagination",
-                                   "options":  {
-                                                   "prompt":  {
-                                                                  "description":  "Describe the picture you would like me to create"
-                                                              }
-                                               },
-                                   "progress":  {
-                                                    "initializing":  "Starting image generation..."
-                                                },
-                                   "errors":  {
-                                                  "noResult":  "I could not retrieve the generated image.",
-                                                  "general":  "Image generation failed. Please try again later."
-                                              }
-                               },
-                     "reset":  {
-                                   "description":  "Reset AI conversation",
-                                   "embeds":  {
-                                                  "success":  {
-                                                                  "title":  "Reset Successful",
-                                                                  "description":  "Reset your AI conversation"
-                                                              }
-                                              }
-                               },
-                     "think":  {
-                                   "description":  "Use AI to think and analyze",
-                                   "options":  {
-                                                   "prompt":  "Question or topic to analyze"
-                                               },
-                                   "embeds":  {
-                                                  "title":  "Analysis Result",
-                                                  "thinking":  "Thinking..."
-                                              },
-                                   "errors":  {
-                                                  "noPrompt":  "Please provide a question or topic to analyze."
-                                              }
-                               }
-                 },
-    "handlers":  {
-
-                 },
-    "services":  {
-
-                 },
-    "errors":  {
-
-               }
+    "common": {
+        "footer": {
+            "credit": "Luna AI - Developed by s4ory",
+            "versionUptime": "Luna v{version} - {uptime}"
+        }
+    },
+    "commands": {
+        "help": {
+            "description": "View the full list of commands and helpful information",
+            "select": {
+                "placeholder": "Choose a command category",
+                "categoryDescription": "View commands in the {category} category",
+                "all": {
+                    "label": "All",
+                    "description": "Show all commands"
+                }
+            },
+            "categories": {
+                "AIcore": {
+                    "label": "AI Core",
+                    "description": "AI powered commands"
+                },
+                "Core": {
+                    "label": "Core",
+                    "description": "Essential utilities"
+                },
+                "moderation": {
+                    "label": "Moderation",
+                    "description": "Moderation tools for staff"
+                },
+                "social": {
+                    "label": "Social",
+                    "description": "Community and social features"
+                },
+                "system": {
+                    "label": "System",
+                    "description": "System administration commands"
+                },
+                "setting": {
+                    "label": "Settings",
+                    "description": "Owner only settings"
+                }
+            },
+            "embeds": {
+                "welcomeTitle": "Luna AI Help",
+                "welcomeDescription": "Use the dropdown menu below to explore commands.",
+                "allTitle": "All Categories",
+                "categoryTitle": "Command Help - {category}"
+            },
+            "messages": {
+                "allCategoriesDescription": "Available command categories:",
+                "emptyCategory": "No commands available in this category.",
+                "categoryDetails": "Commands available in {category}:",
+                "optionRequired": "(required)",
+                "optionOptional": "(optional)",
+                "noOptions": "No options.",
+                "menuExpired": "The help menu has expired. Use /help to generate a new one."
+            },
+            "errors": {
+                "notInvoker": "You cannot use this menu. Run /help to generate your own.",
+                "noPermission": "You do not have permission to view this category."
+            }
+        },
+        "ping": {
+            "description": "Check the bot latency and connection status",
+            "errors": {
+                "notInvoker": "Only the user who ran the command can use these buttons."
+            },
+            "embeds": {
+                "status": {
+                    "title": "System Status",
+                    "latencyField": "Latency",
+                    "botLabel": "Bot",
+                    "wsLabel": "WebSocket"
+                },
+                "detailed": {
+                    "title": "Detailed Information",
+                    "fields": {
+                        "botVersion": "Bot Version",
+                        "discordVersion": "discord.js version",
+                        "nodeVersion": "Node.js version",
+                        "uptime": "Uptime",
+                        "memory": "Memory Usage",
+                        "platform": "Platform",
+                        "shards": "Shards"
+                    }
+                }
+            },
+            "buttons": {
+                "refresh": "Refresh",
+                "detailed": "Details"
+            }
+        },
+        "about": {
+            "description": "Show detailed information about the Luna bot",
+            "canvas": {
+                "tagline": "Your smart AI assistant",
+                "technicalTitle": "Technical Overview",
+                "technicalItems": {
+                    "model": "AI Model",
+                    "uptime": "Uptime",
+                    "node": "Node.js",
+                    "memory": "Memory",
+                    "servers": "Servers"
+                },
+                "featuresTitle": "Capabilities",
+                "featuresItems": {
+                    "chat": {
+                        "label": "AI Conversations",
+                        "value": "Mention @Luna"
+                    },
+                    "image": {
+                        "label": "Image Generation",
+                        "value": "imagine [prompt]"
+                    },
+                    "code": {
+                        "label": "Coding Help",
+                        "value": "code [request]"
+                    },
+                    "moderation": {
+                        "label": "Message Management",
+                        "value": "clear history"
+                    }
+                },
+                "footer": "Luna Bot v{version} - Developed by s4ory - {date}"
+            },
+            "embed": {
+                "footer": "Use the buttons below to learn more about Luna"
+            },
+            "buttons": {
+                "invite": "Invite Luna",
+                "docs": "Documentation",
+                "support": "Support",
+                "website": "Website"
+            },
+            "fallback": {
+                "title": "Luna AI - Your smart assistant",
+                "description": "Luna is a friendly AI assistant ready to chat, create, and support your community.",
+                "fields": {
+                    "model": "AI Model",
+                    "runtime": "Runtime",
+                    "servers": "Servers",
+                    "memory": "Memory",
+                    "node": "Node.js"
+                },
+                "footer": "Luna Bot v{version} - Developed by s4ory"
+            }
+        },
+        "ban": {
+            "description": "Ban a member from the server",
+            "options": {
+                "user": "Member to ban",
+                "reason": "Reason for ban",
+                "days": "Days to delete messages (0-7)"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Ban Successful",
+                    "description": "Banned {user} from the server",
+                    "fields": {
+                        "reason": "Reason",
+                        "deleteMessages": "Delete Messages",
+                        "moderator": "Moderated by"
+                    }
+                },
+                "error": {
+                    "title": "Ban Error",
+                    "description": "Could not ban this member"
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to ban members!",
+                "cannotBan": "I cannot ban this member. They may have higher permissions than me or you.",
+                "userNotFound": "Member not found in this server"
+            }
+        },
+        "quotas": {
+            "description": "View usage statistics for message quotas",
+            "subcommands": {
+                "user": {
+                    "description": "View message usage statistics for a user",
+                    "options": {
+                        "target": {
+                            "description": "User to inspect (leave empty to view your own)"
+                        }
+                    }
+                },
+                "system": {
+                    "description": "View system-wide message usage statistics (Owner/Admin only)"
+                }
+            },
+            "errors": {
+                "general": "Failed to retrieve statistics: {message}",
+                "noPermissionOther": "You do not have permission to view another user\u0027s statistics.",
+                "noPermissionSystem": "You do not have permission to view system statistics."
+            },
+            "roles": {
+                "owner": "Owner",
+                "admin": "Admin",
+                "helper": "Helper",
+                "user": "User"
+            },
+            "labels": {
+                "noLimit": "No limit",
+                "limitPerDay": "{count} uses/day",
+                "usageCount": "{count} uses"
+            },
+            "embeds": {
+                "user": {
+                    "title": "Message usage statistics - {username}",
+                    "fields": {
+                        "role": "Role",
+                        "dailyLimit": "Daily limit",
+                        "today": "Today",
+                        "week": "This week",
+                        "month": "This month",
+                        "total": "Total",
+                        "remainingToday": "Remaining today"
+                    },
+                    "historyTitle": "Recent activity",
+                    "historyEmpty": "No history available.",
+                    "historyEntry": "- {count} uses - {operation}",
+                    "footer": "User ID: {id}"
+                },
+                "system": {
+                    "title": "System quota statistics",
+                    "fields": {
+                        "totalUsers": "Total users",
+                        "dailyUsage": "Usage today",
+                        "weeklyUsage": "Usage this week",
+                        "monthlyUsage": "Usage this month",
+                        "totalUsage": "Total usage"
+                    },
+                    "topTitle": "Top 10 users today",
+                    "topEntry": "{position}. \u003c@{userId}\u003e: {count} uses ({role})",
+                    "footer": "Requested by {tag}"
+                }
+            }
+        },
+        "kick": {
+            "description": "Kick a member from the server",
+            "defaultReason": "No reason provided",
+            "options": {
+                "user": "Member to kick",
+                "reason": "Reason for kick"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Kick Successful",
+                    "description": "Kicked {user} from the server",
+                    "fields": {
+                        "user": "Member",
+                        "userId": "Member ID",
+                        "reason": "Reason",
+                        "moderator": "Moderated by",
+                        "date": "Date"
+                    },
+                    "footer": "Kicked by {moderator}",
+                    "footerServer": "Server: {server}"
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to kick members!",
+                "cannotKick": "I cannot kick this member. They may have higher permissions than me or you.",
+                "userNotFound": "Member not found in this server",
+                "general": "An error occurred while kicking {user}: {error}"
+            }
+        },
+        "mute": {
+            "description": "Mute a member for a specified duration",
+            "options": {
+                "user": "Member to mute",
+                "duration": "Mute duration (minutes)",
+                "reason": "Reason for mute"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Mute Successful",
+                    "description": "Muted {user} for {duration} minutes",
+                    "fields": {
+                        "reason": "Reason",
+                        "moderator": "Moderated by"
+                    }
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to mute members!",
+                "cannotMute": "I cannot mute this member. They may have higher permissions than me or you.",
+                "userNotFound": "Member not found in this server"
+            }
+        },
+        "unmute": {
+            "description": "Unmute a member",
+            "options": {
+                "user": "Member to unmute",
+                "reason": "Reason for unmute"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Unmute Successful",
+                    "description": "Unmuted {user}",
+                    "fields": {
+                        "reason": "Reason",
+                        "moderator": "Moderated by"
+                    }
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to unmute members!",
+                "userNotFound": "Member not found in this server"
+            }
+        },
+        "warn": {
+            "description": "Warn a member",
+            "options": {
+                "user": "Member to warn",
+                "reason": "Reason for warning"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Warning Successful",
+                    "description": "Warned {user}",
+                    "fields": {
+                        "reason": "Reason",
+                        "moderator": "Moderated by"
+                    }
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to warn members!",
+                "userNotFound": "Member not found in this server"
+            }
+        },
+        "warnings": {
+            "description": "View warning list of a member",
+            "options": {
+                "user": "Member to view warnings"
+            },
+            "embeds": {
+                "title": "Warning List",
+                "noWarnings": "This member has no warnings",
+                "fields": {
+                    "warning": "Warning #{number}",
+                    "reason": "Reason",
+                    "moderator": "Moderator",
+                    "date": "Date"
+                }
+            },
+            "errors": {
+                "userNotFound": "Member not found in this server"
+            }
+        },
+        "clearwarnings": {
+            "description": "Clear all warnings of a member",
+            "options": {
+                "user": "Member to clear warnings"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Clear Warnings Successful",
+                    "description": "Cleared {count} warnings for {user}"
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to clear warnings!",
+                "userNotFound": "Member not found in this server"
+            }
+        },
+        "unban": {
+            "description": "Unban a member",
+            "options": {
+                "user": "Member to unban",
+                "reason": "Reason for unban"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Unban Successful",
+                    "description": "Unbanned {user}",
+                    "fields": {
+                        "reason": "Reason",
+                        "moderator": "Moderated by"
+                    }
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to unban members!",
+                "userNotFound": "Member not found in ban list"
+            }
+        },
+        "modlog": {
+            "description": "View moderation history",
+            "options": {
+                "user": "Member to view history",
+                "limit": "Maximum number of records"
+            },
+            "embeds": {
+                "title": "Moderation History",
+                "noLogs": "No records found",
+                "fields": {
+                    "action": "Action",
+                    "reason": "Reason",
+                    "moderator": "Moderator",
+                    "date": "Date"
+                }
+            }
+        },
+        "logchannel": {
+            "description": "Set moderation log channel",
+            "options": {
+                "channel": "Channel to set as log"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Log Channel Set Successfully",
+                    "description": "Set {channel} as moderation log channel"
+                }
+            },
+            "errors": {
+                "noPermission": "You don\u0027t have permission to set log channel!",
+                "invalidChannel": "This channel is invalid"
+            }
+        },
+        "setlogchannel": {
+            "description": "Set moderation log channel (alias of logchannel)",
+            "options": {
+                "channel": "Channel to set as log"
+            }
+        },
+        "profile": {
+            "description": "View your personal information",
+            "embeds": {
+                "title": "Personal Information",
+                "fields": {
+                    "level": "Level",
+                    "xp": "Experience Points",
+                    "warnings": "Warnings",
+                    "joinDate": "Join Date"
+                }
+            }
+        },
+        "image": {
+            "description": "Create an image from your imagination",
+            "options": {
+                "prompt": {
+                    "description": "Describe the picture you would like me to create"
+                }
+            },
+            "progress": {
+                "initializing": "Starting image generation..."
+            },
+            "errors": {
+                "noResult": "I could not retrieve the generated image.",
+                "general": "Image generation failed. Please try again later."
+            }
+        },
+        "reset": {
+            "description": "Reset AI conversation",
+            "embeds": {
+                "success": {
+                    "title": "Reset Successful",
+                    "description": "Reset your AI conversation"
+                }
+            }
+        },
+        "think": {
+            "description": "Use AI to think and analyze",
+            "options": {
+                "prompt": "Question or topic to analyze"
+            },
+            "embeds": {
+                "title": "Analysis Result",
+                "thinking": "Thinking..."
+            },
+            "errors": {
+                "noPrompt": "Please provide a question or topic to analyze."
+            }
+        }
+    },
+    "handlers": {},
+    "services": {},
+    "errors": {}
 }
