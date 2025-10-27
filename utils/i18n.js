@@ -2,8 +2,11 @@
 const path = require('path');
 
 const LOCALE_DIR = path.join(__dirname, '..', 'locate');
-const SUPPORTED_LOCALES = ['en-US', 'vi'];
-const DEFAULT_LOCALE = normalizeLocale(process.env.APP_DEFAULT_LOCALE) || 'en-US';
+const SUPPORTED_LOCALES = ['vi', 'en-US']; // ưu tiên tiếng Việt trước
+const DEFAULT_LOCALE = normalizeLocale(process.env.DEFAULT_LOCALE) || 'vi';
+const FALLBACK_LOCALE = normalizeLocale(process.env.FALLBACK_LOCALE) || 'en-US';
+const AI_RESPONSE_LOCALE = normalizeLocale(process.env.AI_RESPONSE_LOCALE) || 'vi';
+const AUTO_DETECT_LOCALE = process.env.APP_AUTO_DETECT_LOCALE === 'true';
 
 const translations = loadTranslations();
 
@@ -42,34 +45,44 @@ function normalizeLocale(locale) {
 function getLocalesFromContext(context) {
 	const locales = [];
 
-	if (typeof context === 'string') {
-		const normalized = normalizeLocale(context);
-		if (normalized) {
-			locales.push(normalized);
-		}
-	} else if (context) {
-		const candidates = [
-			context.locale,
-			context.guildLocale,
-			context.preferredLocale,
-			context?.user?.locale,
-			context?.userLocale,
-			context?.guild?.preferredLocale,
-			context?.author?.locale,
-		];
-
-		for (const candidate of candidates) {
-			const normalized = normalizeLocale(candidate);
-			if (normalized) {
-				locales.push(normalized);
-			}
-		}
-	}
-
+	// Luôn ưu tiên locale mặc định (tiếng Việt) trước
 	if (!locales.includes(DEFAULT_LOCALE)) {
 		locales.push(DEFAULT_LOCALE);
 	}
 
+	// Auto-detect locale từ Discord nếu được bật
+	if (AUTO_DETECT_LOCALE) {
+		if (typeof context === 'string') {
+			const normalized = normalizeLocale(context);
+			if (normalized && !locales.includes(normalized)) {
+				locales.push(normalized);
+			}
+		} else if (context) {
+			const candidates = [
+				context.locale,
+				context.guildLocale,
+				context.preferredLocale,
+				context?.user?.locale,
+				context?.userLocale,
+				context?.guild?.preferredLocale,
+				context?.author?.locale,
+			];
+
+			for (const candidate of candidates) {
+				const normalized = normalizeLocale(candidate);
+				if (normalized && !locales.includes(normalized)) {
+					locales.push(normalized);
+				}
+			}
+		}
+	}
+
+	// Thêm fallback locale nếu chưa có
+	if (!locales.includes(FALLBACK_LOCALE)) {
+		locales.push(FALLBACK_LOCALE);
+	}
+
+	// Thêm các locale khác nếu chưa có
 	for (const locale of SUPPORTED_LOCALES) {
 		if (!locales.includes(locale)) {
 			locales.push(locale);
@@ -130,10 +143,11 @@ function multiTranslate(key, variables) {
 
 module.exports = {
 	DEFAULT_LOCALE,
+	FALLBACK_LOCALE,
+	AI_RESPONSE_LOCALE,
 	SUPPORTED_LOCALES,
+	AUTO_DETECT_LOCALE,
 	translate,
 	multiTranslate,
 	normalizeLocale,
 };
-
-

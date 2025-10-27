@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { translate: t } = require('../../utils/i18n.js');
 const mongoClient = require('../../services/mongoClient.js');
 const ConversationService = require('../../services/ConversationService.js');
 const logger = require('../../utils/logger.js');
@@ -28,14 +29,14 @@ module.exports = {
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return interaction.reply({ 
-        content: 'Bạn không có quyền xóa cảnh cáo của thành viên!', 
+        content: t(interaction, 'commands.clearwarnings.errors.noPermission'), 
         ephemeral: true 
       });
     }
 
     const targetUser = interaction.options.getUser('user');
     const type = interaction.options.getString('type');
-    const reason = interaction.options.getString('reason') || 'Không có lý do được cung cấp';
+    const reason = interaction.options.getString('reason') || t(interaction, 'commands.clearwarnings.defaultReason');
 
     await interaction.deferReply();
     
@@ -49,7 +50,7 @@ module.exports = {
       
       if (warningCount === 0) {
         return interaction.editReply({
-          content: `${targetUser.tag} không có cảnh cáo nào trong server này.`,
+          content: t(interaction, 'commands.clearwarnings.errors.noWarnings', { user: targetUser.tag }),
           ephemeral: false
         });
       }
