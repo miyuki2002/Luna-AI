@@ -128,6 +128,8 @@ class ConsentService {
    */
   async handleConsentDecline(interaction, userId) {
     try {
+      await this.updateUserConsent(userId, false);
+
       const embed = new EmbedBuilder()
         .setTitle('😢 Luna hiểu và tôn trọng quyết định của bạn!')
         .setDescription(

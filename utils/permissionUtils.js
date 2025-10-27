@@ -37,6 +37,18 @@ async function handlePermissionError(interaction, permission, username, action =
         }
         break;
         
+      case 'update':
+        if (interaction.update) {
+          await interaction.update({ content: errorMessage });
+        } else if (interaction.editReply) {
+          await interaction.editReply(errorMessage);
+        } else if (interaction.reply) {
+          await interaction.reply(errorMessage);
+        } else if (interaction.channel) {
+          await interaction.channel.send(errorMessage);
+        }
+        break;
+        
       default:
         if (interaction.reply) {
           await interaction.reply(errorMessage);
@@ -83,6 +95,18 @@ async function sendEmbedWithFallback(interaction, embedData, username, permissio
       case 'followUp':
         if (interaction.followUp) {
           await interaction.followUp(embedData);
+        } else if (interaction.channel) {
+          await interaction.channel.send(embedData);
+        }
+        break;
+        
+      case 'update':
+        if (interaction.update) {
+          await interaction.update(embedData);
+        } else if (interaction.editReply) {
+          await interaction.editReply(embedData);
+        } else if (interaction.reply) {
+          await interaction.reply(embedData);
         } else if (interaction.channel) {
           await interaction.channel.send(embedData);
         }
