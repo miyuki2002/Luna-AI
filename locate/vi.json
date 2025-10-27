@@ -1,1 +1,308 @@
-﻿{"common":{"footer":{"credit":"Luna AI - Phát triển bởi s4ory","versionUptime":"Luna v{version} - {uptime}"}},"commands":{"help":{"description":"Hiển thị danh sách lệnh và thông tin trợ giúp","select":{"placeholder":"Chọn danh mục lệnh","categoryDescription":"Xem các lệnh trong danh mục {category}","all":{"label":"Tất cả","description":"Hiển thị toàn bộ lệnh"}},"categories":{"AIcore":{"label":"AI Core","description":"Các lệnh sử dụng trí tuệ nhân tạo"},"Core":{"label":"Cốt lõi","description":"Những tính năng quan trọng của bot"},"moderation":{"label":"Kiểm duyệt","description":"Công cụ hỗ trợ moderator"},"social":{"label":"Xã hội","description":"Tính năng tương tác cộng đồng"},"system":{"label":"Hệ thống","description":"Lệnh quản trị hệ thống"},"setting":{"label":"Cài đặt","description":"Tùy chọn chỉ dành cho owner"}},"embeds":{"welcomeTitle":"Trợ giúp Luna AI","welcomeDescription":"Sử dụng menu ở bên dưới để duyệt các lệnh.","allTitle":"Tất cả danh mục","categoryTitle":"Trợ giúp lệnh - {category}"},"messages":{"allCategoriesDescription":"Các danh mục lệnh khả dụng:","emptyCategory":"Chưa có lệnh nào trong danh mục này.","categoryDetails":"Các lệnh trong {category}:","optionRequired":"(bắt buộc)","optionOptional":"(tùy chọn)","noOptions":"Không có tùy chọn.","menuExpired":"Menu trợ giúp đã hết hạn. Dùng /help để tạo menu mới."},"errors":{"notInvoker":"Bạn không thể sử dụng menu này. Hãy chạy /help để tạo menu riêng.","noPermission":"Bạn không có quyền xem danh mục này."}},"ping":{"description":"Kiểm tra độ trễ và tình trạng kết nối của bot","errors":{"notInvoker":"Chỉ người đã gọi lệnh mới được sử dụng các nút này."},"embeds":{"status":{"title":"Trạng thái hệ thống","latencyField":"Độ trễ","botLabel":"Bot","wsLabel":"WebSocket"},"detailed":{"title":"Thông tin chi tiết","fields":{"botVersion":"Phiên bản Bot","discordVersion":"Phiên bản discord.js","nodeVersion":"Phiên bản Node.js","uptime":"Thời gian hoạt động","memory":"Bộ nhớ sử dụng","platform":"Nền tảng","shards":"Số lượng shard"}}},"buttons":{"refresh":"Làm mới","detailed":"Chi tiết"}},"ban":{"description":"Cấm một thành viên khỏi server","defaultReason":"Không có lý do được cung cấp","options":{"user":"Thành viên cần cấm","reason":"Lý do cấm","days":"Số ngày xóa tin nhắn (0-7)"},"embeds":{"success":{"title":"Cấm thành công","description":"Đã cấm {user} khỏi server","fields":{"reason":"Lý do","deleteMessages":"Xóa tin nhắn","moderator":"Thực hiện bởi","user":"Thành viên","userId":"ID thành viên","days":"ngày","date":"ngày"},"footer":"Cấm bởi {moderator}","footerServer":"Server: {server}"},"error":{"title":"Lỗi khi cấm","description":"Không thể cấm thành viên này"}},"dm":{"title":"Bạn đã bị cấm khỏi {server}","description":"**Lý do:** {reason}","footer":"Nếu bạn cho rằng đây là sự nhầm lẫn, hãy liên hệ với ban quản trị server.","error":"Không thể gửi DM cho {user}"},"banReason":"Cấm bởi {moderator}","errors":{"noPermission":"Bạn không có quyền cấm thành viên!","cannotBan":"Tôi không thể cấm thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.","userNotFound":"Không tìm thấy thành viên này trong server","general":"Đã xảy ra lỗi khi cấm {user}: {error}"}},"kick":{"description":"Đuổi một thành viên khỏi server","defaultReason":"Không có lý do được cung cấp","options":{"user":"Thành viên cần đuổi","reason":"Lý do đuổi"},"embeds":{"success":{"title":"Đuổi thành công","description":"Đã đuổi {user} khỏi server","fields":{"reason":"Lý do","moderator":"Thực hiện bởi","user":"Thành viên","userId":"ID thành viên","date":"ngày"},"footer":"Đuổi bởi {moderator}","footerServer":"Server: {server}"},"error":{"title":"Lỗi khi đuổi","description":"Không thể đuổi thành viên này"}},"errors":{"noPermission":"Bạn không có quyền đuổi thành viên!","cannotKick":"Tôi không thể đuổi thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.","userNotFound":"Không tìm thấy thành viên này trong server","general":"Đã xảy ra lỗi khi đuổi {user}: {error}"}},"about":{"description":"Hiển thị thông tin chi tiết về Luna bot","canvas":{"tagline":"Trợ lý AI thông minh của bạn","technicalTitle":"Tổng quan kỹ thuật","technicalItems":{"model":"Mô hình AI","uptime":"Thời gian hoạt động","node":"Node.js","memory":"Bộ nhớ","servers":"Số máy chủ"},"featuresTitle":"Tính năng","featuresItems":{"chat":{"label":"Trò chuyện AI","value":"Mention @Luna"},"image":{"label":"Tạo hình ảnh","value":"imagine [đề bài]"},"code":{"label":"Hỗ trợ lập trình","value":"code [yêu cầu]"},"moderation":{"label":"Quản lý tin nhắn","value":"clear history"}},"footer":"Luna Bot v{version} - Phát triển bởi s4ory - {date}"},"embed":{"footer":"Sử dụng các nút bên dưới để tìm hiểu về Luna"},"buttons":{"invite":"Mời Luna","docs":"Tài liệu","support":"Hỗ trợ","website":"Website"},"fallback":{"title":"Luna AI - Trợ lý thông minh của bạn","description":"Luna là trợ lý AI thân thiện, luôn sẵn sàng trò chuyện và hỗ trợ cộng đồng của bạn.","fields":{"model":"Mô hình AI","runtime":"Thời gian chạy","servers":"Số máy chủ","memory":"Bộ nhớ","node":"Node.js"},"footer":"Luna Bot v{version} - Phát triển bởi s4ory"}},"quotas":{"description":"Xem thống kê hạn ngạch tin nhắn","subcommands":{"user":{"description":"Xem thống kê hạn ngạch tin nhắn của người dùng","options":{"target":{"description":"Người dùng cần xem (để trống để xem của bạn)"}}},"system":{"description":"Xem thống kê hạn ngạch toàn hệ thống (Owner/Admin)"}},"errors":{"general":"Không thể lấy thống kê: {message}","noPermissionOther":"Bạn không có quyền xem thống kê của người khác.","noPermissionSystem":"Bạn không có quyền xem thống kê hệ thống."},"roles":{"owner":"Owner","admin":"Admin","helper":"Helper","user":"Người dùng"},"labels":{"noLimit":"Không giới hạn","limitPerDay":"{count} lần/ngày","usageCount":"{count} lần"},"embeds":{"user":{"title":"Thống kê hạn ngạch tin nhắn - {username}","fields":{"role":"Vai trò","dailyLimit":"Hạn mức mỗi ngày","today":"Hôm nay","week":"Tuần này","month":"Tháng này","total":"Tổng cộng","remainingToday":"Còn lại hôm nay"},"historyTitle":"Hoạt động gần đây","historyEmpty":"Chưa có dữ liệu.","historyEntry":"- {count} lần - {operation}","footer":"User ID: {id}"},"system":{"title":"Thống kê hạn ngạch hệ thống","fields":{"totalUsers":"Tổng người dùng","dailyUsage":"Sử dụng hôm nay","weeklyUsage":"Sử dụng tuần này","monthlyUsage":"Sử dụng tháng này","totalUsage":"Tổng số lần sử dụng"},"topTitle":"Top 10 người dùng hôm nay","topEntry":"{position}. \u003c@{userId}\u003e: {count} lần ({role})","footer":"Yêu cầu bởi {tag}"}}},"image":{"description":"Vẽ một hình ảnh từ ý tưởng của bạn","options":{"prompt":{"description":"Mô tả bức tranh bạn muốn mình tạo"}},"progress":{"initializing":"Đang khởi tạo việc tạo ảnh..."},"errors":{"noResult":"Không thể nhận được hình ảnh đã tạo.","general":"Không thể tạo ảnh. Vui lòng thử lại sau."}}},"handlers":{},"services":{},"errors":{}}
+﻿{
+    "common": {
+        "footer": {
+            "credit": "Luna AI - Phát triển bởi s4ory",
+            "versionUptime": "Luna v{version} - {uptime}"
+        }
+    },
+    "commands": {
+        "help": {
+            "description": "Hiển thị danh sách lệnh và thông tin trợ giúp",
+            "select": {
+                "placeholder": "Chọn danh mục lệnh",
+                "categoryDescription": "Xem các lệnh trong danh mục {category}",
+                "all": {
+                    "label": "Tất cả",
+                    "description": "Hiển thị toàn bộ lệnh"
+                }
+            },
+            "categories": {
+                "AIcore": {
+                    "label": "AI Core",
+                    "description": "Các lệnh sử dụng trí tuệ nhân tạo"
+                },
+                "Core": {
+                    "label": "Cốt lõi",
+                    "description": "Những tính năng quan trọng của bot"
+                },
+                "moderation": {
+                    "label": "Kiểm duyệt",
+                    "description": "Công cụ hỗ trợ moderator"
+                },
+                "social": {
+                    "label": "Xã hội",
+                    "description": "Tính năng tương tác cộng đồng"
+                },
+                "system": {
+                    "label": "Hệ thống",
+                    "description": "Lệnh quản trị hệ thống"
+                },
+                "setting": {
+                    "label": "Cài đặt",
+                    "description": "Tùy chọn chỉ dành cho owner"
+                }
+            },
+            "embeds": {
+                "welcomeTitle": "Trợ giúp Luna AI",
+                "welcomeDescription": "Sử dụng menu ở bên dưới để duyệt các lệnh.",
+                "allTitle": "Tất cả danh mục",
+                "categoryTitle": "Trợ giúp lệnh - {category}"
+            },
+            "messages": {
+                "allCategoriesDescription": "Các danh mục lệnh khả dụng:",
+                "emptyCategory": "Chưa có lệnh nào trong danh mục này.",
+                "categoryDetails": "Các lệnh trong {category}:",
+                "optionRequired": "(bắt buộc)",
+                "optionOptional": "(tùy chọn)",
+                "noOptions": "Không có tùy chọn.",
+                "menuExpired": "Menu trợ giúp đã hết hạn. Dùng /help để tạo menu mới."
+            },
+            "errors": {
+                "notInvoker": "Bạn không thể sử dụng menu này. Hãy chạy /help để tạo menu riêng.",
+                "noPermission": "Bạn không có quyền xem danh mục này."
+            }
+        },
+        "ping": {
+            "description": "Kiểm tra độ trễ và tình trạng kết nối của bot",
+            "errors": {
+                "notInvoker": "Chỉ người đã gọi lệnh mới được sử dụng các nút này."
+            },
+            "embeds": {
+                "status": {
+                    "title": "Trạng thái hệ thống",
+                    "latencyField": "Độ trễ",
+                    "botLabel": "Bot",
+                    "wsLabel": "WebSocket"
+                },
+                "detailed": {
+                    "title": "Thông tin chi tiết",
+                    "fields": {
+                        "botVersion": "Phiên bản Bot",
+                        "discordVersion": "Phiên bản discord.js",
+                        "nodeVersion": "Phiên bản Node.js",
+                        "uptime": "Thời gian hoạt động",
+                        "memory": "Bộ nhớ sử dụng",
+                        "platform": "Nền tảng",
+                        "shards": "Số lượng shard"
+                    }
+                }
+            },
+            "buttons": {
+                "refresh": "Làm mới",
+                "detailed": "Chi tiết"
+            }
+        },
+        "ban": {
+            "description": "Cấm một thành viên khỏi server",
+            "defaultReason": "Không có lý do được cung cấp",
+            "options": {
+                "user": "Thành viên cần cấm",
+                "reason": "Lý do cấm",
+                "days": "Số ngày xóa tin nhắn (0-7)"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Cấm thành công",
+                    "description": "Đã cấm {user} khỏi server",
+                    "fields": {
+                        "reason": "Lý do",
+                        "deleteMessages": "Xóa tin nhắn",
+                        "moderator": "Thực hiện bởi",
+                        "user": "Thành viên",
+                        "userId": "ID thành viên",
+                        "days": "ngày",
+                        "date": "ngày"
+                    },
+                    "footer": "Cấm bởi {moderator}",
+                    "footerServer": "Server: {server}"
+                },
+                "error": {
+                    "title": "Lỗi khi cấm",
+                    "description": "Không thể cấm thành viên này"
+                }
+            },
+            "dm": {
+                "title": "Bạn đã bị cấm khỏi {server}",
+                "description": "**Lý do:** {reason}",
+                "footer": "Nếu bạn cho rằng đây là sự nhầm lẫn, hãy liên hệ với ban quản trị server.",
+                "error": "Không thể gửi DM cho {user}"
+            },
+            "banReason": "Cấm bởi {moderator}",
+            "errors": {
+                "noPermission": "Bạn không có quyền cấm thành viên!",
+                "cannotBan": "Tôi không thể cấm thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.",
+                "userNotFound": "Không tìm thấy thành viên này trong server",
+                "general": "Đã xảy ra lỗi khi cấm {user}: {error}"
+            }
+        },
+        "kick": {
+            "description": "Đuổi một thành viên khỏi server",
+            "defaultReason": "Không có lý do được cung cấp",
+            "options": {
+                "user": "Thành viên cần đuổi",
+                "reason": "Lý do đuổi"
+            },
+            "embeds": {
+                "success": {
+                    "title": "Đuổi thành công",
+                    "description": "Đã đuổi {user} khỏi server",
+                    "fields": {
+                        "reason": "Lý do",
+                        "moderator": "Thực hiện bởi",
+                        "user": "Thành viên",
+                        "userId": "ID thành viên",
+                        "date": "ngày"
+                    },
+                    "footer": "Đuổi bởi {moderator}",
+                    "footerServer": "Server: {server}"
+                },
+                "error": {
+                    "title": "Lỗi khi đuổi",
+                    "description": "Không thể đuổi thành viên này"
+                }
+            },
+            "errors": {
+                "noPermission": "Bạn không có quyền đuổi thành viên!",
+                "cannotKick": "Tôi không thể đuổi thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.",
+                "userNotFound": "Không tìm thấy thành viên này trong server",
+                "general": "Đã xảy ra lỗi khi đuổi {user}: {error}"
+            }
+        },
+        "about": {
+            "description": "Hiển thị thông tin chi tiết về Luna bot",
+            "canvas": {
+                "tagline": "Trợ lý AI thông minh của bạn",
+                "technicalTitle": "Tổng quan kỹ thuật",
+                "technicalItems": {
+                    "model": "Mô hình AI",
+                    "uptime": "Thời gian hoạt động",
+                    "node": "Node.js",
+                    "memory": "Bộ nhớ",
+                    "servers": "Số máy chủ"
+                },
+                "featuresTitle": "Tính năng",
+                "featuresItems": {
+                    "chat": {
+                        "label": "Trò chuyện AI",
+                        "value": "Mention @Luna"
+                    },
+                    "image": {
+                        "label": "Tạo hình ảnh",
+                        "value": "imagine [đề bài]"
+                    },
+                    "code": {
+                        "label": "Hỗ trợ lập trình",
+                        "value": "code [yêu cầu]"
+                    },
+                    "moderation": {
+                        "label": "Quản lý tin nhắn",
+                        "value": "clear history"
+                    }
+                },
+                "footer": "Luna Bot v{version} - Phát triển bởi s4ory - {date}"
+            },
+            "embed": {
+                "footer": "Sử dụng các nút bên dưới để tìm hiểu về Luna"
+            },
+            "buttons": {
+                "invite": "Mời Luna",
+                "docs": "Tài liệu",
+                "support": "Hỗ trợ",
+                "website": "Website"
+            },
+            "fallback": {
+                "title": "Luna AI - Trợ lý thông minh của bạn",
+                "description": "Luna là trợ lý AI thân thiện, luôn sẵn sàng trò chuyện và hỗ trợ cộng đồng của bạn.",
+                "fields": {
+                    "model": "Mô hình AI",
+                    "runtime": "Thời gian chạy",
+                    "servers": "Số máy chủ",
+                    "memory": "Bộ nhớ",
+                    "node": "Node.js"
+                },
+                "footer": "Luna Bot v{version} - Phát triển bởi s4ory"
+            }
+        },
+        "quotas": {
+            "description": "Xem thống kê hạn ngạch tin nhắn",
+            "subcommands": {
+                "user": {
+                    "description": "Xem thống kê hạn ngạch tin nhắn của người dùng",
+                    "options": {
+                        "target": {
+                            "description": "Người dùng cần xem (để trống để xem của bạn)"
+                        }
+                    }
+                },
+                "system": {
+                    "description": "Xem thống kê hạn ngạch toàn hệ thống (Owner/Admin)"
+                }
+            },
+            "errors": {
+                "general": "Không thể lấy thống kê: {message}",
+                "noPermissionOther": "Bạn không có quyền xem thống kê của người khác.",
+                "noPermissionSystem": "Bạn không có quyền xem thống kê hệ thống."
+            },
+            "roles": {
+                "owner": "Owner",
+                "admin": "Admin",
+                "helper": "Helper",
+                "user": "Người dùng"
+            },
+            "labels": {
+                "noLimit": "Không giới hạn",
+                "limitPerDay": "{count} lần/ngày",
+                "usageCount": "{count} lần"
+            },
+            "embeds": {
+                "user": {
+                    "title": "Thống kê hạn ngạch tin nhắn - {username}",
+                    "fields": {
+                        "role": "Vai trò",
+                        "dailyLimit": "Hạn mức mỗi ngày",
+                        "today": "Hôm nay",
+                        "week": "Tuần này",
+                        "month": "Tháng này",
+                        "total": "Tổng cộng",
+                        "remainingToday": "Còn lại hôm nay"
+                    },
+                    "historyTitle": "Hoạt động gần đây",
+                    "historyEmpty": "Chưa có dữ liệu.",
+                    "historyEntry": "- {count} lần - {operation}",
+                    "footer": "User ID: {id}"
+                },
+                "system": {
+                    "title": "Thống kê hạn ngạch hệ thống",
+                    "fields": {
+                        "totalUsers": "Tổng người dùng",
+                        "dailyUsage": "Sử dụng hôm nay",
+                        "weeklyUsage": "Sử dụng tuần này",
+                        "monthlyUsage": "Sử dụng tháng này",
+                        "totalUsage": "Tổng số lần sử dụng"
+                    },
+                    "topTitle": "Top 10 người dùng hôm nay",
+                    "topEntry": "{position}. \u003c@{userId}\u003e: {count} lần ({role})",
+                    "footer": "Yêu cầu bởi {tag}"
+                }
+            }
+        },
+        "image": {
+            "description": "Vẽ một hình ảnh từ ý tưởng của bạn",
+            "options": {
+                "prompt": {
+                    "description": "Mô tả bức tranh bạn muốn mình tạo"
+                }
+            },
+            "progress": {
+                "initializing": "Đang khởi tạo việc tạo ảnh..."
+            },
+            "errors": {
+                "noResult": "Không thể nhận được hình ảnh đã tạo.",
+                "general": "Không thể tạo ảnh. Vui lòng thử lại sau."
+            }
+        }
+    },
+    "handlers": {},
+    "services": {},
+    "errors": {}
+}
