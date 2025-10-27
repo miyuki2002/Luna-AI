@@ -267,12 +267,12 @@ class EnhancedMentionHandler {
       clues.hasTimeReference = true;
     }
 
-    // Reason detection
+    // Phát hiện lý do
     if (/vì|lý do|reason|because|do|tại/i.test(content)) {
       clues.hasReason = true;
     }
 
-    // Question detection
+    // Phát hiện câu hỏi
     if (/\?/.test(content)) {
       clues.hasQuestion = true;
     }
@@ -287,8 +287,8 @@ class EnhancedMentionHandler {
 
   /**
    * Xác định response mode dựa trên context
-   * @param {Object} context - Mention context
-   * @returns {string} - Response mode
+   * @param {Object} context - Context mention
+   * @returns {string} - Chế độ phản hồi
    */
   determineResponseMode(context) {
     // Direct command mode
