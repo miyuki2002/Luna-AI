@@ -238,8 +238,9 @@
                                                               }
                                                }
                                 },
-                     "kick":  {
+                    "kick":  {
                                   "description":  "Kick a member from the server",
+                                  "defaultReason":  "No reason provided",
                                   "options":  {
                                                   "user":  "Member to kick",
                                                   "reason":  "Reason for kick"
@@ -249,15 +250,21 @@
                                                                  "title":  "Kick Successful",
                                                                  "description":  "Kicked {user} from the server",
                                                                  "fields":  {
+                                                                                "user":  "Member",
+                                                                                "userId":  "Member ID",
                                                                                 "reason":  "Reason",
-                                                                                "moderator":  "Moderated by"
-                                                                            }
+                                                                                "moderator":  "Moderated by",
+                                                                                "date":  "Date"
+                                                                            },
+                                                                 "footer":  "Kicked by {moderator}",
+                                                                 "footerServer":  "Server: {server}"
                                                              }
                                              },
                                   "errors":  {
                                                  "noPermission":  "You don\u0027t have permission to kick members!",
                                                  "cannotKick":  "I cannot kick this member. They may have higher permissions than me or you.",
-                                                 "userNotFound":  "Member not found in this server"
+                                                 "userNotFound":  "Member not found in this server",
+                                                 "general":  "An error occurred while kicking {user}: {error}"
                                              }
                               },
                      "mute":  {

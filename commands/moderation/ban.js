@@ -3,12 +3,12 @@ const { translate } = require('../../utils/i18n.js');
 const ConversationService = require('../../services/ConversationService.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
-const { handlePermissionError } = require('../../utils/permissionUtils');
+const { handlePermissionError } = require('../../utils/permissionUtils.js');
 const logger = require('../../utils/logger.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('ban_i18n')
+    .setName('ban')
     .setDescription(translate('en', 'commands.ban.description'))
     .addUserOption(option =>
       option.setName('user')
