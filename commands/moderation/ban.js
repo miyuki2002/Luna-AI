@@ -1,7 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const ConversationService = require('../../services/ConversationService.js');
-const { logModAction } = require('../../utils/modUtils.js');
-const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
+const slashCommandIntegration = require('../../services/SlashCommandIntegrationService');
 const { handlePermissionError } = require('../../utils/permissionUtils');
 const logger = require('../../utils/logger.js');
 
