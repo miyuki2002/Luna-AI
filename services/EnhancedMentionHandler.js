@@ -19,9 +19,9 @@ class EnhancedMentionHandler {
   }
 
   /**
-   * Detect multiple mentions trong tin nhắn
-   * @param {Object} message - Discord message object
-   * @returns {Object} - Mention analysis result
+   * Phát hiện multiple mentions trong tin nhắn
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @returns {Object} - Kết quả phân tích mention
    */
   detectMentions(message) {
     const content = message.content;
@@ -35,7 +35,7 @@ class EnhancedMentionHandler {
       totalMentions: 0
     };
 
-    // User mentions
+    // Mentions người dùng
     const userMatches = content.matchAll(this.mentionPatterns.user);
     for (const match of userMatches) {
       const userId = match[1];
@@ -58,7 +58,7 @@ class EnhancedMentionHandler {
       }
     }
 
-    // Role mentions
+    // Mentions role
     const roleMatches = content.matchAll(this.mentionPatterns.role);
     for (const match of roleMatches) {
       const roleId = match[1];
@@ -73,7 +73,7 @@ class EnhancedMentionHandler {
       }
     }
 
-    // Channel mentions
+    // Mentions channel
     const channelMatches = content.matchAll(this.mentionPatterns.channel);
     for (const match of channelMatches) {
       const channelId = match[1];
@@ -89,7 +89,7 @@ class EnhancedMentionHandler {
       }
     }
 
-    // Special mentions
+    // Mentions đặc biệt
     mentions.everyone = this.mentionPatterns.everyone.test(content);
     mentions.here = this.mentionPatterns.here.test(content);
     mentions.totalMentions = mentions.users.length + mentions.roles.length + mentions.channels.length;
@@ -98,9 +98,9 @@ class EnhancedMentionHandler {
   }
 
   /**
-   * Parse mention patterns và context
-   * @param {Object} message - Discord message object
-   * @returns {Object} - Parsed mention context
+   * Phân tích mention patterns và context
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @returns {Object} - Context mention đã phân tích
    */
   parseMentionContext(message) {
     const mentions = this.detectMentions(message);
@@ -125,9 +125,9 @@ class EnhancedMentionHandler {
 
   /**
    * Kiểm tra xem có phải direct command không
-   * @param {string} content - Message content
-   * @param {Object} mentions - Mention data
-   * @returns {boolean} - Is direct command
+   * @param {string} content - Nội dung tin nhắn
+   * @param {Object} mentions - Dữ liệu mention
+   * @returns {boolean} - Có phải direct command không
    */
   isDirectCommand(content, mentions) {
     const commandIndicators = [
@@ -149,9 +149,9 @@ class EnhancedMentionHandler {
 
   /**
    * Kiểm tra xem có phải casual mention không
-   * @param {string} content - Message content
-   * @param {Object} mentions - Mention data
-   * @returns {boolean} - Is casual mention
+   * @param {string} content - Nội dung tin nhắn
+   * @param {Object} mentions - Dữ liệu mention
+   * @returns {boolean} - Có phải casual mention không
    */
   isCasualMention(content, mentions) {
     const casualIndicators = [
@@ -174,9 +174,9 @@ class EnhancedMentionHandler {
 
   /**
    * Phân tích mối quan hệ giữa users
-   * @param {Array} users - Array of mentioned users
-   * @param {Object} message - Original message
-   * @returns {Object} - User relationships
+   * @param {Array} users - Mảng users được mention
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Object} - Mối quan hệ users
    */
   analyzeUserRelationships(users, message) {
     const relationships = {
@@ -191,7 +191,7 @@ class EnhancedMentionHandler {
       if (user.member) {
         const member = user.member;
         
-        // Check if user is moderator
+        // Kiểm tra xem user có phải moderator không
         if (member.permissions.has('ModerateMembers') || 
             member.permissions.has('BanMembers') || 
             member.permissions.has('KickMembers')) {
@@ -201,7 +201,7 @@ class EnhancedMentionHandler {
           relationships.hasRegularUsers = true;
         }
 
-        // Check hierarchy
+        // Kiểm tra thứ bậc
         relationships.hierarchyLevels.push({
           user: user,
           position: member.roles.highest.position,
@@ -219,7 +219,7 @@ class EnhancedMentionHandler {
 
   /**
    * Trích xuất context clues từ tin nhắn
-   * @param {string} content - Message content
+   * @param {string} content - Nội dung tin nhắn
    * @returns {Object} - Context clues
    */
   extractContextClues(content) {
@@ -234,14 +234,14 @@ class EnhancedMentionHandler {
       hasExclamation: false
     };
 
-    // Urgency detection
+    // Phát hiện mức độ khẩn cấp
     if (/khẩn cấp|urgent|gấp|ngay|immediately/i.test(content)) {
       clues.urgency = 'high';
     } else if (/vui lòng|please|giúp|help/i.test(content)) {
       clues.urgency = 'medium';
     }
 
-    // Emotion detection
+    // Phát hiện cảm xúc
     if (/tức giận|angry|frustrated|bực/i.test(content)) {
       clues.emotion = 'angry';
     } else if (/vui|happy|excited|hào hứng/i.test(content)) {
@@ -250,19 +250,19 @@ class EnhancedMentionHandler {
       clues.emotion = 'sad';
     }
 
-    // Formality detection
+    // Phát hiện mức độ trang trọng
     if (/vui lòng|please|có thể|would you/i.test(content)) {
       clues.formality = 'formal';
     } else if (/đi|thôi|nào|come on/i.test(content)) {
       clues.formality = 'casual';
     }
 
-    // Language detection
+    // Phát hiện ngôn ngữ
     if (/the|and|or|but|is|are|was|were/i.test(content)) {
       clues.language = 'english';
     }
 
-    // Time reference
+    // Tham chiếu thời gian
     if (/\d+\s*(phút|giờ|ngày|minute|hour|day)/i.test(content)) {
       clues.hasTimeReference = true;
     }

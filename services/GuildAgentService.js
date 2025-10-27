@@ -993,7 +993,7 @@ Phân tích:`;
       }
     }
     
-    // Clean up expired recent actions
+    // Dọn dẹp các hành động gần đây hết hạn
     for (const [userId, actions] of this.recentActions.entries()) {
       const validActions = actions.filter(action => 
         now - action.timestamp <= this.undoWindow
@@ -1006,17 +1006,17 @@ Phân tích:`;
       }
     }
 
-    // Clean up old conversation memory (older than 1 hour)
+    // Dọn dẹp bộ nhớ cuộc trò chuyện cũ (cũ hơn 1 giờ)
     for (const [userId, context] of this.conversationMemory.entries()) {
       if (now - context.lastInteraction > 60 * 60 * 1000) {
         this.conversationMemory.delete(userId);
       }
     }
 
-    // Clean up batch operations
+    // Dọn dẹp batch operations
     batchOperationService.cleanupOldOperations();
     
-    // Clean up permission safety cache
+    // Dọn dẹp cache an toàn quyền
     permissionSafetyService.cleanupCache();
   }
 }

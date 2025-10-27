@@ -9,7 +9,7 @@ class NaturalLanguageProcessor {
   }
 
   /**
-   * Initialize AI prompt templates
+   * Khởi tạo template prompt AI
    */
   initializePromptTemplates() {
     return {
@@ -126,7 +126,7 @@ Trả về JSON:
   }
 
   /**
-   * Initialize command patterns for fallback
+   * Khởi tạo pattern lệnh để dự phòng
    */
   initializeCommandPatterns() {
     return {
@@ -178,26 +178,26 @@ Trả về JSON:
   }
 
   /**
-   * Analyze natural language command
-   * @param {string} content - Message content
-   * @param {Object} message - Discord message object
-   * @param {Object} context - Conversation context
-   * @returns {Promise<Object>} - Analysis result
+   * Phân tích lệnh ngôn ngữ tự nhiên
+   * @param {string} content - Nội dung tin nhắn
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @param {Object} context - Context cuộc trò chuyện
+   * @returns {Promise<Object>} - Kết quả phân tích
    */
   async analyzeCommand(content, message, context = {}) {
     try {
-      // Primary AI analysis
+      // Phân tích AI chính
       const aiResult = await this.performAIAnalysis(content, message, context);
       
-      // Validate confidence threshold
+      // Kiểm tra ngưỡng tin cậy
       if (aiResult.confidence >= this.confidenceThreshold) {
         return aiResult;
       }
 
-      // Fallback to pattern matching
+      // Dự phòng bằng pattern matching
       const patternResult = this.performPatternAnalysis(content, message);
       
-      // Combine results if AI confidence is reasonable
+      // Kết hợp kết quả nếu độ tin cậy AI hợp lý
       if (aiResult.confidence > 0.3) {
         return this.combineResults(aiResult, patternResult);
       }
@@ -205,17 +205,17 @@ Trả về JSON:
       return patternResult;
 
     } catch (error) {
-      logger.error('NLP', 'Error analyzing command:', error);
+      logger.error('NLP', 'Lỗi khi phân tích lệnh:', error);
       return this.getDefaultResult();
     }
   }
 
   /**
-   * Perform AI analysis
-   * @param {string} content - Message content
-   * @param {Object} message - Discord message object
-   * @param {Object} context - Conversation context
-   * @returns {Promise<Object>} - AI analysis result
+   * Thực hiện phân tích AI
+   * @param {string} content - Nội dung tin nhắn
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @param {Object} context - Context cuộc trò chuyện
+   * @returns {Promise<Object>} - Kết quả phân tích AI
    */
   async performAIAnalysis(content, message, context) {
     try {
@@ -232,16 +232,16 @@ Phân tích:`;
       return this.parseAIResponse(aiResponse);
 
     } catch (error) {
-      logger.error('NLP', 'Error in AI analysis:', error);
+      logger.error('NLP', 'Lỗi trong phân tích AI:', error);
       return this.getDefaultResult();
     }
   }
 
   /**
-   * Perform pattern-based analysis
-   * @param {string} content - Message content
-   * @param {Object} message - Discord message object
-   * @returns {Object} - Pattern analysis result
+   * Thực hiện phân tích dựa trên pattern
+   * @param {string} content - Nội dung tin nhắn
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @returns {Object} - Kết quả phân tích pattern
    */
   performPatternAnalysis(content, message) {
     const mentions = this.extractMentionsFromContent(content);
@@ -268,13 +268,13 @@ Phân tích:`;
   }
 
   /**
-   * Combine AI and pattern results
-   * @param {Object} aiResult - AI analysis result
-   * @param {Object} patternResult - Pattern analysis result
-   * @returns {Object} - Combined result
+   * Kết hợp kết quả AI và pattern
+   * @param {Object} aiResult - Kết quả phân tích AI
+   * @param {Object} patternResult - Kết quả phân tích pattern
+   * @returns {Object} - Kết quả kết hợp
    */
   combineResults(aiResult, patternResult) {
-    // If both agree on action, use AI result with higher confidence
+    // Nếu cả hai đồng ý về hành động, sử dụng kết quả AI với độ tin cậy cao hơn
     if (aiResult.action === patternResult.action && aiResult.action !== null) {
       return {
         ...aiResult,
@@ -282,12 +282,12 @@ Phân tích:`;
       };
     }
 
-    // If AI has higher confidence, use AI result
+    // Nếu AI có độ tin cậy cao hơn, sử dụng kết quả AI
     if (aiResult.confidence > patternResult.confidence) {
       return aiResult;
     }
 
-    // Otherwise use pattern result
+    // Ngược lại sử dụng kết quả pattern
     return patternResult;
   }
 
@@ -335,18 +335,18 @@ Phân tích:`;
   }
 
   /**
-   * Extract reason from content
-   * @param {string} content - Message content
-   * @returns {string} - Extracted reason
+   * Trích xuất lý do từ nội dung
+   * @param {string} content - Nội dung tin nhắn
+   * @returns {string} - Lý do đã trích xuất
    */
   extractReasonFromContent(content) {
-    // Remove mentions and common command words
+    // Loại bỏ mentions và từ lệnh thông thường
     let cleanContent = content
       .replace(/<@!?\d+>/g, '')
       .replace(/\b(ban|kick|mute|warn|unban|unmute|cấm|đuổi|câm|cảnh\s+cáo|bỏ\s+cấm|bỏ\s+câm)\b/gi, '')
       .trim();
 
-    // Remove common prefixes
+    // Loại bỏ tiền tố thông thường
     cleanContent = cleanContent
       .replace(/^(vì|lý\s+do|do|tại|vì\s+sao|tại\s+sao)\s*/i, '')
       .trim();
@@ -355,9 +355,9 @@ Phân tích:`;
   }
 
   /**
-   * Extract duration from content
-   * @param {string} content - Message content
-   * @returns {string|null} - Extracted duration
+   * Trích xuất thời gian từ nội dung
+   * @param {string} content - Nội dung tin nhắn
+   * @returns {string|null} - Thời gian đã trích xuất
    */
   extractDurationFromContent(content) {
     const durationPatterns = [
@@ -382,10 +382,10 @@ Phân tích:`;
   }
 
   /**
-   * Check if action requires confirmation
-   * @param {string} action - Action type
-   * @param {number} targetCount - Number of targets
-   * @returns {boolean} - Whether confirmation is required
+   * Kiểm tra xem hành động có cần xác nhận không
+   * @param {string} action - Loại hành động
+   * @param {number} targetCount - Số lượng mục tiêu
+   * @returns {boolean} - Có cần xác nhận không
    */
   requiresConfirmation(action, targetCount) {
     const highRiskActions = ['ban', 'unban'];
@@ -395,8 +395,8 @@ Phân tích:`;
   }
 
   /**
-   * Get default result
-   * @returns {Object} - Default result
+   * Lấy kết quả mặc định
+   * @returns {Object} - Kết quả mặc định
    */
   getDefaultResult() {
     return {
