@@ -1,9 +1,9 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 
 const LOCALE_DIR = path.join(__dirname, '..', 'locate');
-const SUPPORTED_LOCALES = ['en', 'vi'];
-const DEFAULT_LOCALE = normalizeLocale(process.env.APP_DEFAULT_LOCALE) || 'en';
+const SUPPORTED_LOCALES = ['en-US', 'vi'];
+const DEFAULT_LOCALE = normalizeLocale(process.env.APP_DEFAULT_LOCALE) || 'en-US';
 
 const translations = loadTranslations();
 
@@ -135,4 +135,5 @@ module.exports = {
 	multiTranslate,
 	normalizeLocale,
 };
+
 

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+﻿const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { translate: t } = require('../../utils/i18n.js');
 const { logModAction } = require('../../utils/modUtils.js');
 const { sendModLog, createModActionEmbed } = require('../../utils/modLogUtils.js');
@@ -8,17 +8,15 @@ const logger = require('../../utils/logger.js');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('kick')
-		.setDescription(t('en', 'commands.kick.description'))
+		.setDescription(t('en-US', 'commands.kick.description'))
 		.setDescriptionLocalizations({
-			en: t('en', 'commands.kick.description'),
 			vi: t('vi', 'commands.kick.description'),
 		})
 		.addUserOption((option) =>
 			option
 				.setName('user')
-				.setDescription(t('en', 'commands.kick.options.user'))
+				.setDescription(t('en-US', 'commands.kick.options.user'))
 				.setDescriptionLocalizations({
-					en: t('en', 'commands.kick.options.user'),
 					vi: t('vi', 'commands.kick.options.user'),
 				})
 				.setRequired(true),
@@ -26,9 +24,8 @@ module.exports = {
 		.addStringOption((option) =>
 			option
 				.setName('reason')
-				.setDescription(t('en', 'commands.kick.options.reason'))
+				.setDescription(t('en-US', 'commands.kick.options.reason'))
 				.setDescriptionLocalizations({
-					en: t('en', 'commands.kick.options.reason'),
 					vi: t('vi', 'commands.kick.options.reason'),
 				})
 				.setRequired(false),
@@ -179,3 +176,5 @@ module.exports = {
 		}
 	},
 };
+
+

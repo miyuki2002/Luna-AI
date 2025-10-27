@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+﻿const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const ImageService = require('../../services/ImageService.js');
 const logger = require('../../utils/logger.js');
 const { translate: t } = require('../../utils/i18n');
@@ -6,17 +6,14 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('image')
-		.setDescription(t('en', 'commands.image.description'))
+		.setDescription(t('en-US', 'commands.image.description'))
 		.setDescriptionLocalizations({
-			en: t('en', 'commands.image.description'),
 			vi: t('vi', 'commands.image.description'),
 		})
 		.addStringOption((option) =>
 			option
 				.setName('prompt')
-				.setDescription(t('en', 'commands.image.options.prompt.description'))
 				.setDescriptionLocalizations({
-					en: t('en', 'commands.image.options.prompt.description'),
 					vi: t('vi', 'commands.image.options.prompt.description'),
 				})
 				.setRequired(true),
@@ -51,3 +48,4 @@ module.exports = {
 		}
 	},
 };
+

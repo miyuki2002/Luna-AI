@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+﻿const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const MessageService = require('../../services/TokenService.js');
 const logger = require('../../utils/logger.js');
 const { translate: t } = require('../../utils/i18n');
@@ -6,25 +6,20 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('quotas')
-		.setDescription(t('en', 'commands.quotas.description'))
+		.setDescription(t('en-US', 'commands.quotas.description'))
 		.setDescriptionLocalizations({
-			en: t('en', 'commands.quotas.description'),
 			vi: t('vi', 'commands.quotas.description'),
 		})
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('user')
-				.setDescription(t('en', 'commands.quotas.subcommands.user.description'))
 				.setDescriptionLocalizations({
-					en: t('en', 'commands.quotas.subcommands.user.description'),
 					vi: t('vi', 'commands.quotas.subcommands.user.description'),
 				})
 				.addUserOption((option) =>
 					option
 						.setName('target')
-						.setDescription(t('en', 'commands.quotas.subcommands.user.options.target.description'))
 						.setDescriptionLocalizations({
-							en: t('en', 'commands.quotas.subcommands.user.options.target.description'),
 							vi: t('vi', 'commands.quotas.subcommands.user.options.target.description'),
 						})
 						.setRequired(false),
@@ -33,9 +28,7 @@ module.exports = {
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('system')
-				.setDescription(t('en', 'commands.quotas.subcommands.system.description'))
 				.setDescriptionLocalizations({
-					en: t('en', 'commands.quotas.subcommands.system.description'),
 					vi: t('vi', 'commands.quotas.subcommands.system.description'),
 				}),
 		),
@@ -249,3 +242,4 @@ function formatLimit(context, value) {
 function formatUses(context, value) {
 	return t(context, 'commands.quotas.labels.usageCount', { count: value.toLocaleString() });
 }
+
