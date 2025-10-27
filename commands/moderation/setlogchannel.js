@@ -67,15 +67,45 @@ module.exports = {
 			const settingsEmbed = new EmbedBuilder()
 				.setColor(0x00ff00)
 				.setTitle(t(interaction, 'commands.setlogchannel.embeds.success.title'))
-				.setDescription(t(interaction, 'commands.setlogchannel.embeds.success.description', { channel: logChannel }))
-				.addFields(
-					{ name: t(interaction, 'commands.setlogchannel.embeds.success.fields.logChannel'), value: `<#${logChannel.id}>`, inline: true },
-					{ name: t(interaction, 'commands.setlogchannel.embeds.success.fields.monitorLogs'), value: monitorLogs ? t(interaction, 'common.enabled') : t(interaction, 'common.disabled'), inline: true },
-					{ name: t(interaction, 'commands.setlogchannel.embeds.success.fields.modActionLogs'), value: modActionLogs ? t(interaction, 'common.enabled') : t(interaction, 'common.disabled'), inline: true },
-					{ name: t(interaction, 'commands.setlogchannel.embeds.success.fields.setBy'), value: `<@${interaction.user.id}>`, inline: true },
-					{ name: t(interaction, 'commands.setlogchannel.embeds.success.fields.time'), value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
+				.setDescription(
+					t(interaction, 'commands.setlogchannel.embeds.success.description', {
+						channel: logChannel,
+					}),
 				)
-				.setFooter({ text: t(interaction, 'common.footer.server', { server: interaction.guild.name }) })
+				.addFields(
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.success.fields.logChannel'),
+						value: `<#${logChannel.id}>`,
+						inline: true,
+					},
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.success.fields.monitorLogs'),
+						value: monitorLogs
+							? t(interaction, 'common.enabled')
+							: t(interaction, 'common.disabled'),
+						inline: true,
+					},
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.success.fields.modActionLogs'),
+						value: modActionLogs
+							? t(interaction, 'common.enabled')
+							: t(interaction, 'common.disabled'),
+						inline: true,
+					},
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.success.fields.setBy'),
+						value: `<@${interaction.user.id}>`,
+						inline: true,
+					},
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.success.fields.time'),
+						value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
+						inline: true,
+					},
+				)
+				.setFooter({
+					text: t(interaction, 'common.footer.server', { server: interaction.guild.name }),
+				})
 				.setTimestamp();
 
 			await interaction.editReply({ embeds: [settingsEmbed] });
@@ -85,10 +115,20 @@ module.exports = {
 				.setTitle(t(interaction, 'commands.setlogchannel.embeds.test.title'))
 				.setDescription(t(interaction, 'commands.setlogchannel.embeds.test.description'))
 				.addFields(
-					{ name: t(interaction, 'commands.setlogchannel.embeds.test.fields.status'), value: t(interaction, 'common.active'), inline: true },
-					{ name: t(interaction, 'commands.setlogchannel.embeds.test.fields.setBy'), value: `<@${interaction.user.id}>`, inline: true },
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.test.fields.status'),
+						value: t(interaction, 'common.active'),
+						inline: true,
+					},
+					{
+						name: t(interaction, 'commands.setlogchannel.embeds.test.fields.setBy'),
+						value: `<@${interaction.user.id}>`,
+						inline: true,
+					},
 				)
-				.setFooter({ text: t(interaction, 'common.footer.server', { server: interaction.guild.name }) })
+				.setFooter({
+					text: t(interaction, 'common.footer.server', { server: interaction.guild.name }),
+				})
 				.setTimestamp();
 
 			await logChannel.send({ embeds: [testEmbed] });

@@ -24,7 +24,6 @@ module.exports = {
 		.setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
 	async execute(interaction) {
-
 		if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
 			return interaction.reply({
 				content: t(interaction, 'commands.kick.errors.noPermission'),
@@ -56,14 +55,17 @@ module.exports = {
 		await interaction.deferReply();
 
 		try {
+			const prompts = require('../../config/prompts.js');
+			const prompt = prompts.moderation.kick
+				.replace('${username}', targetUser.username)
+				.replace('${reason}', reason);
+
+			const aiResponse = await ConversationService.getCompletion(prompt);
+
 			const kickEmbed = new EmbedBuilder()
 				.setColor(0xffa500)
 				.setTitle(t(interaction, 'commands.kick.embeds.success.title'))
-				.setDescription(
-					t(interaction, 'commands.kick.embeds.success.description', {
-						user: targetUser.tag,
-					}),
-				)
+				.setDescription(aiResponse)
 				.addFields(
 					{
 						name: t(interaction, 'commands.kick.embeds.success.fields.user'),

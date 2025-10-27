@@ -56,7 +56,9 @@ module.exports = {
 							inline: false,
 						},
 					)
-					.setFooter({ text: t(interaction, 'common.footer.server', { server: interaction.guild.name }) })
+					.setFooter({
+						text: t(interaction, 'common.footer.server', { server: interaction.guild.name }),
+					})
 					.setTimestamp();
 
 				return interaction.editReply({ embeds: [defaultLogEmbed] });
@@ -78,27 +80,41 @@ module.exports = {
 				.setTitle(t(interaction, 'commands.logchannel.embeds.current.title'))
 				.setDescription(
 					logChannel
-						? t(interaction, 'commands.logchannel.embeds.current.description.current', { channel: `<#${logChannel.id}>` })
+						? t(interaction, 'commands.logchannel.embeds.current.description.current', {
+								channel: `<#${logChannel.id}>`,
+							})
 						: t(interaction, 'commands.logchannel.embeds.current.description.notFound'),
 				)
 				.addFields(
 					{
 						name: t(interaction, 'commands.logchannel.embeds.current.fields.modActionLogs'),
-						value: logSettings.modActionLogs !== false ? t(interaction, 'common.enabled') : t(interaction, 'common.disabled'),
+						value:
+							logSettings.modActionLogs !== false
+								? t(interaction, 'common.enabled')
+								: t(interaction, 'common.disabled'),
 						inline: true,
 					},
 					{
 						name: t(interaction, 'commands.logchannel.embeds.current.fields.monitorLogs'),
-						value: logSettings.monitorLogs !== false ? t(interaction, 'common.enabled') : t(interaction, 'common.disabled'),
+						value:
+							logSettings.monitorLogs !== false
+								? t(interaction, 'common.enabled')
+								: t(interaction, 'common.disabled'),
 						inline: true,
 					},
 				)
-				.setFooter({ text: t(interaction, 'common.footer.server', { server: interaction.guild.name }) })
+				.setFooter({
+					text: t(interaction, 'common.footer.server', { server: interaction.guild.name }),
+				})
 				.setTimestamp();
 
 			if (logSettings.updatedBy) {
 				logEmbed.addFields(
-					{ name: t(interaction, 'commands.logchannel.embeds.current.fields.setBy'), value: `<@${logSettings.updatedBy}>`, inline: true },
+					{
+						name: t(interaction, 'commands.logchannel.embeds.current.fields.setBy'),
+						value: `<@${logSettings.updatedBy}>`,
+						inline: true,
+					},
 					{
 						name: t(interaction, 'commands.logchannel.embeds.current.fields.setTime'),
 						value: logSettings.updatedAt
