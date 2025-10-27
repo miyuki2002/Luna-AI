@@ -6,10 +6,7 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ping')
-		.setDescription(t('en-US', 'commands.ping.description'))
-		.setDescriptionLocalizations({
-			vi: t('vi', 'commands.ping.description'),
-		}),
+		.setDescription('Kiểm tra độ trễ và trạng thái kết nối của bot'),
 
 	async execute(interaction) {
 		const sent = await interaction.deferReply({ fetchReply: true });
@@ -152,4 +149,7 @@ function createActionRow(context, enabled = true) {
 			.setDisabled(!enabled),
 	);
 }
+
+
+
 

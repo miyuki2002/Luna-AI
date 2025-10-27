@@ -13,10 +13,7 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('help')
-		.setDescription(t('en-US', 'commands.help.description'))
-		.setDescriptionLocalizations({
-			vi: t('vi', 'commands.help.description'),
-		}),
+		.setDescription('Hiển thị danh sách lệnh và thông tin trợ giúp'),
 
 	async execute(interaction) {
 		const isOwner = interaction.user.id === process.env.OWNER_ID;
@@ -229,4 +226,5 @@ function getCategoryMetadata(context, category) {
 function capitalizeFirstLetter(value) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
 

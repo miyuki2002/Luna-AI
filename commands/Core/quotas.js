@@ -6,31 +6,22 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('quotas')
-		.setDescription(t('en-US', 'commands.quotas.description'))
-		.setDescriptionLocalizations({
-			vi: t('vi', 'commands.quotas.description'),
-		})
+		.setDescription('Xem thống kê hạn ngạch tin nhắn')
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('user')
-				.setDescriptionLocalizations({
-					vi: t('vi', 'commands.quotas.subcommands.user.description'),
-				})
+				.setDescription('Xem thống kê hạn ngạch tin nhắn của người dùng')
 				.addUserOption((option) =>
 					option
 						.setName('target')
-						.setDescriptionLocalizations({
-							vi: t('vi', 'commands.quotas.subcommands.user.options.target.description'),
-						})
+						.setDescription('Người dùng cần xem (để trống để xem của bạn)')
 						.setRequired(false),
-				),
+			),
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('system')
-				.setDescriptionLocalizations({
-					vi: t('vi', 'commands.quotas.subcommands.system.description'),
-				}),
+				.setDescription('Xem thống kê hạn ngạch toàn hệ thống (Owner/Admin)'),
 		),
 
 	async execute(interaction) {
@@ -242,4 +233,8 @@ function formatLimit(context, value) {
 function formatUses(context, value) {
 	return t(context, 'commands.quotas.labels.usageCount', { count: value.toLocaleString() });
 }
+
+
+
+
 

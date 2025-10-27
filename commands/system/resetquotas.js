@@ -1,11 +1,12 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const MessageService = require('../../services/TokenService.js');
 const logger = require('../../utils/logger.js');
+require('dotenv').config();
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('resetquotas')
-    .setDescription('Reset lượt nhắn tin cho người dùng (Owner/Admin only)')
+    .setDescription('Reset lượt nhắn tin cho người dùng (chỉ dành cho owner)')
     .addUserOption(option =>
       option
         .setName('user')
@@ -27,17 +28,16 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const ownerId = process.env.OWNER_ID;
+    if (interaction.user.id !== ownerId) {
+      return interaction.reply({ 
+        content: 'Bạn không có quyền sử dụng lệnh này!', 
+        ephemeral: true 
+      });
+    }
+
     try {
       await interaction.deferReply({ ephemeral: true });
-
-      // Kiểm tra quyền owner/admin
-      const executorRole = await MessageService.getUserRole(interaction.user.id);
-      if (executorRole !== 'owner' && executorRole !== 'admin') {
-        return await interaction.editReply({
-          content: 'Bạn không có quyền sử dụng lệnh này! Chỉ Owner và Admin mới có thể reset lượt nhắn tin đã sử dụng.',
-          ephemeral: true
-        });
-      }
 
       const targetUser = interaction.options.getUser('user');
       const resetType = interaction.options.getString('type');

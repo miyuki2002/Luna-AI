@@ -15,10 +15,7 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('about')
-		.setDescription(t('en-US', 'commands.about.description'))
-		.setDescriptionLocalizations({
-			vi: t('vi', 'commands.about.description'),
-		}),
+		.setDescription('Hiển thị thông tin chi tiết về Luna bot'),
 
 	async execute(interaction) {
 		await interaction.deferReply();
@@ -212,4 +209,5 @@ function drawSimpleInfoBox(ctx, x, y, width, height, title, items) {
 		yOffset += 30;
 	});
 }
+
 

@@ -8,26 +8,17 @@ const logger = require('../../utils/logger.js');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('kick')
-		.setDescription(t('en-US', 'commands.kick.description'))
-		.setDescriptionLocalizations({
-			vi: t('vi', 'commands.kick.description'),
-		})
+		.setDescription('Đuổi một thành viên khỏi server')
 		.addUserOption((option) =>
 			option
 				.setName('user')
-				.setDescription(t('en-US', 'commands.kick.options.user'))
-				.setDescriptionLocalizations({
-					vi: t('vi', 'commands.kick.options.user'),
-				})
+				.setDescription('Thành viên cần đuổi')
 				.setRequired(true),
 		)
 		.addStringOption((option) =>
 			option
 				.setName('reason')
-				.setDescription(t('en-US', 'commands.kick.options.reason'))
-				.setDescriptionLocalizations({
-					vi: t('vi', 'commands.kick.options.reason'),
-				})
+				.setDescription('Lý do đuổi')
 				.setRequired(false),
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
@@ -176,5 +167,6 @@ module.exports = {
 		}
 	},
 };
+
 
 
