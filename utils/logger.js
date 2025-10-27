@@ -1,10 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-// Sử dụng cấu hình từ file cấu hình
 const loggerConfig = require("../config/loggerConfig.js");
 
-// Mức độ log và màu sắc tương ứng
 const LOG_LEVELS = {
   debug: { priority: 0, color: "\x1b[36m" }, // Cyan
   info: { priority: 1, color: "\x1b[32m" }, // Green
@@ -12,15 +10,11 @@ const LOG_LEVELS = {
   error: { priority: 3, color: "\x1b[31m" }, // Red
 };
 
-// Reset màu
 const RESET_COLOR = "\x1b[0m";
 
-// Biến lưu trữ writeStream cho file log
 let logStream = null;
 
-/**
- * Khởi tạo hệ thống ghi log vào file
- */
+
 async function initializeFileLogging() {
   try {
     const config = loggerConfig.getConfig();
@@ -34,7 +28,6 @@ async function initializeFileLogging() {
 
     const currentLogFile = path.join(logDir, config.fileLogging.filename);
 
-    // Nếu file log cũ tồn tại và cấu hình cho phép rotate
     if (fs.existsSync(currentLogFile) && config.fileLogging.rotateOnStartup) {
       const stats = fs.statSync(currentLogFile);
       const oldTimestamp = stats.mtime.toISOString().replace(/[:.]/g, "-");
@@ -43,16 +36,13 @@ async function initializeFileLogging() {
       info("SYSTEM", `Đã đổi tên file log cũ thành: ${oldLogFile}`);
     }
 
-    // Tạo writeStream để ghi log
     logStream = fs.createWriteStream(currentLogFile, { flags: "a" });
 
-    // Ghi thông tin khởi động
     const startupMessage = `\nLUNA AI STARTUP LOG\nStartup Time: ${new Date().toISOString()}\nEnvironment: ${
       process.env.NODE_ENV || "development"
     }\n=========================\n\n`;
     logStream.write(startupMessage);
 
-    // Xử lý khi process kết thúc
     process.on("exit", () => {
       if (logStream) {
         logStream.end("\nLUNA AI SHUTDOWN\n");
@@ -94,35 +84,27 @@ function writeToFile(level, message) {
  * @param {...any} args - Các tham số bổ sung
  */
 function log(category, level, message, ...args) {
-  // Lấy cấu hình hiện tại
   const config = loggerConfig.getConfig();
 
-  // Kiểm tra xem log có được bật không
   if (!config.enabled) return;
 
-  // Kiểm tra danh mục có được bật không
   if (category && !config.categories[category]) return;
 
-  // Kiểm tra mức độ log
   const currentLevelPriority = LOG_LEVELS[config.level]?.priority || 1;
   const messageLevelPriority = LOG_LEVELS[level]?.priority || 1;
 
   if (messageLevelPriority < currentLevelPriority) return;
 
-  // Tạo timestamp nếu cần
   const timestamp = config.showTimestamp
     ? `[${new Date().toISOString()}] `
     : "";
 
-  // Tạo prefix với màu sắc
   const levelColor = LOG_LEVELS[level]?.color || "";
   const categoryStr = category ? `[${category}] ` : "";
   const prefix = `${timestamp}${levelColor}${level.toUpperCase()}${RESET_COLOR} ${categoryStr}`;
 
-  // Chuẩn bị nội dung log
   const logContent = `${prefix}${message}`;
 
-  // Ghi log với console tương ứng
   switch (level) {
     case "error":
       console.error(logContent, ...args);
@@ -139,7 +121,6 @@ function log(category, level, message, ...args) {
       break;
   }
 
-  // Ghi vào file nếu được bật
   if (config.fileLogging?.enabled && logStream) {
     const fileContent = `${categoryStr}${message}`;
     writeToFile(level, fileContent);
@@ -233,9 +214,6 @@ function getConfig() {
   return loggerConfig.getConfig();
 }
 
-/**
- * Khôi phục cấu hình mặc định
- */
 function resetConfig() {
   loggerConfig.resetToDefault();
   info("SYSTEM", "Logger configuration reset to default");
