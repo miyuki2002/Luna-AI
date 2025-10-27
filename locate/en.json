@@ -91,6 +91,331 @@
         "refresh": "Refresh",
         "detailed": "Details"
       }
+    },
+    "about": {
+      "description": "Display information about Luna AI bot",
+      "embeds": {
+        "title": "About Luna AI",
+        "description": "Luna AI is an intelligent AI Assistant developed by s4ory",
+        "fields": {
+          "version": "Version",
+          "developer": "Developer",
+          "features": "Features",
+          "support": "Support"
+        }
+      }
+    },
+    "ban": {
+      "description": "Ban a member from the server",
+      "defaultReason": "No reason provided",
+      "options": {
+        "user": "Member to ban",
+        "reason": "Reason for ban",
+        "days": "Days to delete messages (0-7)"
+      },
+      "embeds": {
+        "success": {
+          "title": "Ban Successful",
+          "description": "Banned {user} from the server",
+          "fields": {
+            "reason": "Reason",
+            "deleteMessages": "Delete Messages",
+            "moderator": "Moderated by",
+            "user": "Member",
+            "userId": "Member ID",
+            "days": "days",
+            "date": "Date"
+          },
+          "footer": "Banned by {moderator}",
+          "footerServer": "Server: {server}"
+        },
+        "error": {
+          "title": "Ban Error",
+          "description": "Could not ban this member"
+        }
+      },
+      "dm": {
+        "title": "You have been banned from {server}",
+        "description": "**Reason:** {reason}",
+        "footer": "If you believe this is a mistake, please contact the server administrators.",
+        "error": "Could not send DM to {user}"
+      },
+      "banReason": "Banned by {moderator}",
+      "errors": {
+        "noPermission": "You don't have permission to ban members!",
+        "cannotBan": "I cannot ban this member. They may have higher permissions than me or you.",
+        "userNotFound": "Member not found in this server",
+        "general": "An error occurred while banning {user}: {error}"
+      }
+    },
+    "quotas": {
+      "description": "View your usage quotas information",
+      "embeds": {
+        "title": "Usage Quotas",
+        "fields": {
+          "messages": "Messages",
+          "images": "Images",
+          "tokens": "Tokens"
+        }
+      }
+    },
+    "ban": {
+      "description": "Ban a member from the server",
+      "options": {
+        "user": "Member to ban",
+        "reason": "Reason for ban",
+        "days": "Days to delete messages (0-7)"
+      },
+      "embeds": {
+        "success": {
+          "title": "Ban Successful",
+          "description": "Banned {user} from the server",
+          "fields": {
+            "reason": "Reason",
+            "deleteMessages": "Delete Messages",
+            "moderator": "Moderated by"
+          }
+        },
+        "error": {
+          "title": "Ban Error",
+          "description": "Could not ban this member"
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to ban members!",
+        "cannotBan": "I cannot ban this member. They may have higher permissions than me or you.",
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "kick": {
+      "description": "Kick a member from the server",
+      "options": {
+        "user": "Member to kick",
+        "reason": "Reason for kick"
+      },
+      "embeds": {
+        "success": {
+          "title": "Kick Successful",
+          "description": "Kicked {user} from the server",
+          "fields": {
+            "reason": "Reason",
+            "moderator": "Moderated by"
+          }
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to kick members!",
+        "cannotKick": "I cannot kick this member. They may have higher permissions than me or you.",
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "mute": {
+      "description": "Mute a member for a specified duration",
+      "options": {
+        "user": "Member to mute",
+        "duration": "Mute duration (minutes)",
+        "reason": "Reason for mute"
+      },
+      "embeds": {
+        "success": {
+          "title": "Mute Successful",
+          "description": "Muted {user} for {duration} minutes",
+          "fields": {
+            "reason": "Reason",
+            "moderator": "Moderated by"
+          }
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to mute members!",
+        "cannotMute": "I cannot mute this member. They may have higher permissions than me or you.",
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "unmute": {
+      "description": "Unmute a member",
+      "options": {
+        "user": "Member to unmute",
+        "reason": "Reason for unmute"
+      },
+      "embeds": {
+        "success": {
+          "title": "Unmute Successful",
+          "description": "Unmuted {user}",
+          "fields": {
+            "reason": "Reason",
+            "moderator": "Moderated by"
+          }
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to unmute members!",
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "warn": {
+      "description": "Warn a member",
+      "options": {
+        "user": "Member to warn",
+        "reason": "Reason for warning"
+      },
+      "embeds": {
+        "success": {
+          "title": "Warning Successful",
+          "description": "Warned {user}",
+          "fields": {
+            "reason": "Reason",
+            "moderator": "Moderated by"
+          }
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to warn members!",
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "warnings": {
+      "description": "View warning list of a member",
+      "options": {
+        "user": "Member to view warnings"
+      },
+      "embeds": {
+        "title": "Warning List",
+        "noWarnings": "This member has no warnings",
+        "fields": {
+          "warning": "Warning #{number}",
+          "reason": "Reason",
+          "moderator": "Moderator",
+          "date": "Date"
+        }
+      },
+      "errors": {
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "clearwarnings": {
+      "description": "Clear all warnings of a member",
+      "options": {
+        "user": "Member to clear warnings"
+      },
+      "embeds": {
+        "success": {
+          "title": "Clear Warnings Successful",
+          "description": "Cleared {count} warnings for {user}"
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to clear warnings!",
+        "userNotFound": "Member not found in this server"
+      }
+    },
+    "unban": {
+      "description": "Unban a member",
+      "options": {
+        "user": "Member to unban",
+        "reason": "Reason for unban"
+      },
+      "embeds": {
+        "success": {
+          "title": "Unban Successful",
+          "description": "Unbanned {user}",
+          "fields": {
+            "reason": "Reason",
+            "moderator": "Moderated by"
+          }
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to unban members!",
+        "userNotFound": "Member not found in ban list"
+      }
+    },
+    "modlog": {
+      "description": "View moderation history",
+      "options": {
+        "user": "Member to view history",
+        "limit": "Maximum number of records"
+      },
+      "embeds": {
+        "title": "Moderation History",
+        "noLogs": "No records found",
+        "fields": {
+          "action": "Action",
+          "reason": "Reason",
+          "moderator": "Moderator",
+          "date": "Date"
+        }
+      }
+    },
+    "logchannel": {
+      "description": "Set moderation log channel",
+      "options": {
+        "channel": "Channel to set as log"
+      },
+      "embeds": {
+        "success": {
+          "title": "Log Channel Set Successfully",
+          "description": "Set {channel} as moderation log channel"
+        }
+      },
+      "errors": {
+        "noPermission": "You don't have permission to set log channel!",
+        "invalidChannel": "This channel is invalid"
+      }
+    },
+    "setlogchannel": {
+      "description": "Set moderation log channel (alias of logchannel)",
+      "options": {
+        "channel": "Channel to set as log"
+      }
+    },
+    "profile": {
+      "description": "View your personal information",
+      "embeds": {
+        "title": "Personal Information",
+        "fields": {
+          "level": "Level",
+          "xp": "Experience Points",
+          "warnings": "Warnings",
+          "joinDate": "Join Date"
+        }
+      }
+    },
+    "image": {
+      "description": "Generate images using AI",
+      "options": {
+        "prompt": "Description of the image you want to generate"
+      },
+      "embeds": {
+        "title": "Generated Image",
+        "description": "Description: {prompt}"
+      },
+      "errors": {
+        "noPrompt": "Please provide a description for the image you want me to generate.",
+        "generationFailed": "Could not generate image. Please try again later."
+      }
+    },
+    "reset": {
+      "description": "Reset AI conversation",
+      "embeds": {
+        "success": {
+          "title": "Reset Successful",
+          "description": "Reset your AI conversation"
+        }
+      }
+    },
+    "think": {
+      "description": "Use AI to think and analyze",
+      "options": {
+        "prompt": "Question or topic to analyze"
+      },
+      "embeds": {
+        "title": "Analysis Result",
+        "thinking": "Thinking..."
+      },
+      "errors": {
+        "noPrompt": "Please provide a question or topic to analyze."
+      }
     }
   },
   "handlers": {},

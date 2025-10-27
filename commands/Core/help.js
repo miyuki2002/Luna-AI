@@ -195,7 +195,7 @@ function formatCommandDetails(context, commandModule) {
 				? t(context, 'commands.help.messages.optionRequired')
 				: t(context, 'commands.help.messages.optionOptional');
 
-			return `• \`${option.name}\`: ${optionDescription} ${requiredLabel}`;
+			return `- \`${option.name}\`: ${optionDescription} ${requiredLabel}`;
 		}).join('\n');
 	}
 

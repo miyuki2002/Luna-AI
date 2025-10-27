@@ -91,6 +91,82 @@
         "refresh": "Lam moi",
         "detailed": "Chi tiet"
       }
+    },
+    "ban": {
+      "description": "Cam mot thanh vien khoi server",
+      "defaultReason": "Khong co ly do duoc cung cap",
+      "options": {
+        "user": "Thanh vien can cam",
+        "reason": "Ly do cam",
+        "days": "So ngay xoa tin nhan (0-7)"
+      },
+      "embeds": {
+        "success": {
+          "title": "Cam thanh cong",
+          "description": "Da cam {user} khoi server",
+          "fields": {
+            "reason": "Ly do",
+            "deleteMessages": "Xoa tin nhan",
+            "moderator": "Thuc hien boi",
+            "user": "Thanh vien",
+            "userId": "ID thanh vien",
+            "days": "ngay",
+            "date": "Ngay"
+          },
+          "footer": "Cam boi {moderator}",
+          "footerServer": "Server: {server}"
+        },
+        "error": {
+          "title": "Loi khi cam",
+          "description": "Khong the cam thanh vien nay"
+        }
+      },
+      "dm": {
+        "title": "Ban da bi cam khoi {server}",
+        "description": "**Ly do:** {reason}",
+        "footer": "Neu ban cho rang day la su nham lan, hay lien he voi ban quan tri server.",
+        "error": "Khong the gui DM cho {user}"
+      },
+      "banReason": "Cam boi {moderator}",
+      "errors": {
+        "noPermission": "Ban khong co quyen cam thanh vien!",
+        "cannotBan": "Toi khong the cam thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
+        "userNotFound": "Khong tim thay thanh vien nay trong server",
+        "general": "Da xay ra loi khi cam {user}: {error}"
+      }
+    },
+    "kick": {
+      "description": "Duoi mot thanh vien khoi server",
+      "defaultReason": "Khong co ly do duoc cung cap",
+      "options": {
+        "user": "Thanh vien can duoi",
+        "reason": "Ly do duoi"
+      },
+      "embeds": {
+        "success": {
+          "title": "Duoi thanh cong",
+          "description": "Da duoi {user} khoi server",
+          "fields": {
+            "reason": "Ly do",
+            "moderator": "Thuc hien boi",
+            "user": "Thanh vien",
+            "userId": "ID thanh vien",
+            "date": "Ngay"
+          },
+          "footer": "Duoi boi {moderator}",
+          "footerServer": "Server: {server}"
+        },
+        "error": {
+          "title": "Loi khi duoi",
+          "description": "Khong the duoi thanh vien nay"
+        }
+      },
+      "errors": {
+        "noPermission": "Ban khong co quyen duoi thanh vien!",
+        "cannotKick": "Toi khong the duoi thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
+        "userNotFound": "Khong tim thay thanh vien nay trong server",
+        "general": "Da xay ra loi khi duoi {user}: {error}"
+      }
     }
   },
   "handlers": {},
