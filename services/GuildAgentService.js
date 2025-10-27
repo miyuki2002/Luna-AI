@@ -424,19 +424,19 @@ Phân tích:`;
   }
 
   /**
-   * Warn user
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Warn result
+   * Cảnh báo user
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả cảnh báo
    */
   async warnUser(target, params, message) {
     const member = message.guild.members.cache.get(target.id);
     if (!member) {
-      throw new Error(`User ${target.displayName} not found in guild`);
+      throw new Error(`Không tìm thấy user ${target.displayName} trong guild`);
     }
 
-    // Send DM warning
+    // Gửi cảnh báo qua DM
     try {
       const warnEmbed = new EmbedBuilder()
         .setTitle('⚠️ Cảnh báo từ Moderation')
@@ -462,11 +462,11 @@ Phân tích:`;
   }
 
   /**
-   * Delete messages
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Delete result
+   * Xóa tin nhắn
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả xóa
    */
   async deleteMessages(target, params, message) {
     const count = params.count || 10;
@@ -482,7 +482,7 @@ Phân tích:`;
           deletedCount++;
           if (deletedCount >= count) break;
         } catch (error) {
-          logger.warn('GUILD_AGENT', `Could not delete message ${msg.id}:`, error.message);
+          logger.warn('GUILD_AGENT', `Không thể xóa tin nhắn ${msg.id}:`, error.message);
         }
       }
     }
@@ -495,11 +495,11 @@ Phân tích:`;
   }
 
   /**
-   * Unban user
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Unban result
+   * Bỏ cấm user
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả bỏ cấm
    */
   async unbanUser(target, params, message) {
     const reason = `${params.reason} - Unbanned by ${message.author.tag}`;
@@ -513,16 +513,16 @@ Phân tích:`;
   }
 
   /**
-   * Unmute user
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Unmute result
+   * Bỏ mute user
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả bỏ mute
    */
   async unmuteUser(target, params, message) {
     const member = message.guild.members.cache.get(target.id);
     if (!member) {
-      throw new Error(`User ${target.displayName} not found in guild`);
+      throw new Error(`Không tìm thấy user ${target.displayName} trong guild`);
     }
 
     const reason = `${params.reason} - Unmuted by ${message.author.tag}`;
@@ -536,9 +536,9 @@ Phân tích:`;
   }
 
   /**
-   * Parse duration string to minutes
-   * @param {string} duration - Duration string
-   * @returns {number|string} - Duration in minutes or 'permanent'
+   * Chuyển đổi chuỗi thời gian thành phút
+   * @param {string} duration - Chuỗi thời gian
+   * @returns {number|string} - Thời gian tính bằng phút hoặc 'permanent'
    */
   parseDuration(duration) {
     const parsed = moderationUtils.parseDuration(duration);
@@ -546,31 +546,31 @@ Phân tích:`;
   }
 
   /**
-   * Log action for audit trail
-   * @param {Object} logData - Log data
+   * Ghi log hành động để kiểm tra
+   * @param {Object} logData - Dữ liệu log
    */
   async logAction(logData) {
     try {
-      logger.info('GUILD_AGENT_AUDIT', 'Action executed', logData);
+      logger.info('GUILD_AGENT_AUDIT', 'Hành động đã thực thi', logData);
       
-      // TODO: Store in database for persistent audit trail
+      // TODO: Lưu vào database để kiểm tra lâu dài
       // await this.auditService.logAction(logData);
       
     } catch (error) {
-      logger.error('GUILD_AGENT', 'Error logging action:', error);
+      logger.error('GUILD_AGENT', 'Lỗi khi ghi log hành động:', error);
     }
   }
 
   /**
-   * Store recent action for undo functionality
-   * @param {string} userId - User ID
-   * @param {Object} actionData - Action data
+   * Lưu trữ hành động gần đây để hoàn tác
+   * @param {string} userId - ID người dùng
+   * @param {Object} actionData - Dữ liệu hành động
    */
   storeRecentAction(userId, actionData) {
     const userActions = this.recentActions.get(userId) || [];
     userActions.push(actionData);
     
-    // Keep only last 10 actions per user
+    // Chỉ giữ lại 10 hành động gần nhất cho mỗi user
     if (userActions.length > 10) {
       userActions.shift();
     }
@@ -579,24 +579,24 @@ Phân tích:`;
   }
 
   /**
-   * Get recent actions for undo
-   * @param {string} userId - User ID
-   * @returns {Array} - Recent actions
+   * Lấy các hành động gần đây để hoàn tác
+   * @param {string} userId - ID người dùng
+   * @returns {Array} - Các hành động gần đây
    */
   getRecentActions(userId) {
     const userActions = this.recentActions.get(userId) || [];
     const now = Date.now();
     
-    // Filter actions within undo window
+    // Lọc các hành động trong cửa sổ hoàn tác
     return userActions.filter(action => 
       now - action.timestamp <= this.undoWindow
     );
   }
 
   /**
-   * Get conversation context for user
-   * @param {string} userId - User ID
-   * @returns {Object} - Conversation context
+   * Lấy context cuộc trò chuyện cho user
+   * @param {string} userId - ID người dùng
+   * @returns {Object} - Context cuộc trò chuyện
    */
   getConversationContext(userId) {
     return this.conversationMemory.get(userId) || {
@@ -607,20 +607,20 @@ Phân tích:`;
   }
 
   /**
-   * Update conversation context
-   * @param {string} userId - User ID
-   * @param {Object} command - Parsed command
+   * Cập nhật context cuộc trò chuyện
+   * @param {string} userId - ID người dùng
+   * @param {Object} command - Lệnh đã phân tích
    */
   updateConversationContext(userId, command) {
     const context = this.getConversationContext(userId);
     
-    // Add to recent commands
+    // Thêm vào các lệnh gần đây
     context.recentCommands.push({
       command: command,
       timestamp: Date.now()
     });
     
-    // Keep only last 10 commands
+    // Chỉ giữ lại 10 lệnh gần nhất
     if (context.recentCommands.length > 10) {
       context.recentCommands.shift();
     }
@@ -630,16 +630,16 @@ Phân tích:`;
   }
 
   /**
-   * Process message and determine response mode
-   * @param {Object} message - Discord message object
-   * @returns {Promise<Object>} - Processing result
+   * Xử lý tin nhắn và xác định chế độ phản hồi
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @returns {Promise<Object>} - Kết quả xử lý
    */
   async processMessage(message) {
     try {
-      // Parse natural command
+      // Phân tích lệnh tự nhiên
       const parsedCommand = await this.parseNaturalCommand(message);
       
-      // Handle different modes
+      // Xử lý các chế độ khác nhau
       switch (parsedCommand.mode) {
         case 'COMMAND_MODE':
           return await this.handleCommandMode(message, parsedCommand);
@@ -652,12 +652,12 @@ Phân tích:`;
           return {
             mode: 'CHAT_MODE',
             shouldRespond: true,
-            response: null // Let chat handler handle this
+            response: null // Để chat handler xử lý
           };
       }
 
     } catch (error) {
-      logger.error('GUILD_AGENT', 'Error processing message:', error);
+      logger.error('GUILD_AGENT', 'Lỗi khi xử lý tin nhắn:', error);
       return {
         mode: 'CHAT_MODE',
         shouldRespond: true,
@@ -667,14 +667,14 @@ Phân tích:`;
   }
 
   /**
-   * Handle command mode
-   * @param {Object} message - Discord message object
-   * @param {Object} command - Parsed command
-   * @returns {Promise<Object>} - Command result
+   * Xử lý chế độ lệnh
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @param {Object} command - Lệnh đã phân tích
+   * @returns {Promise<Object>} - Kết quả lệnh
    */
   async handleCommandMode(message, command) {
     try {
-      // Extract targets from mentions
+      // Trích xuất mục tiêu từ mentions
       const targets = this.extractMentions(message).filter(mention => 
         command.targets.includes(`@${mention.username}`)
       );
@@ -687,7 +687,7 @@ Phân tích:`;
         };
       }
 
-      // Validate permissions
+      // Kiểm tra quyền
       const permissionCheck = this.validatePermissions(message.author, command.action, message);
       if (!permissionCheck.allowed) {
         return {
@@ -697,13 +697,13 @@ Phân tích:`;
         };
       }
 
-      // Check if confirmation is required
+      // Kiểm tra xem có cần xác nhận không
       const needsConfirmation = permissionSafetyService.requiresConfirmation(command.action, targets.length);
       if (needsConfirmation || command.requiresConfirmation) {
         return await this.requestConfirmation(message, command, targets);
       }
 
-      // Check if this is a batch operation
+      // Kiểm tra xem có phải batch operation không
       if (command.batchOperation && targets.length > 1) {
         const batchResult = await this.handleBatchOperation(message, {
           ...command,
@@ -719,7 +719,7 @@ Phân tích:`;
         };
       }
 
-      // Execute single action
+      // Thực thi hành động đơn lẻ
       const result = await this.executeAction(command.action, targets, {
         reason: command.reason,
         duration: command.duration
@@ -732,7 +732,7 @@ Phân tích:`;
       };
 
     } catch (error) {
-      logger.error('GUILD_AGENT', 'Error in command mode:', error);
+      logger.error('GUILD_AGENT', 'Lỗi trong chế độ lệnh:', error);
       return {
         mode: 'CHAT_MODE',
         shouldRespond: true,
@@ -742,28 +742,28 @@ Phân tích:`;
   }
 
   /**
-   * Handle confirmation mode
-   * @param {Object} message - Discord message object
-   * @param {Object} command - Parsed command
-   * @returns {Promise<Object>} - Confirmation result
+   * Xử lý chế độ xác nhận
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @param {Object} command - Lệnh đã phân tích
+   * @returns {Promise<Object>} - Kết quả xác nhận
    */
   async handleConfirmationMode(message, command) {
-    // This would implement confirmation logic
-    // For now, just execute the command
+    // Đây sẽ implement logic xác nhận
+    // Hiện tại chỉ thực thi lệnh
     return await this.handleCommandMode(message, command);
   }
 
   /**
-   * Request confirmation for action
-   * @param {Object} message - Discord message object
-   * @param {Object} command - Parsed command
-   * @param {Array} targets - Target users
-   * @returns {Promise<Object>} - Confirmation request
+   * Yêu cầu xác nhận cho hành động
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @param {Object} command - Lệnh đã phân tích
+   * @param {Array} targets - Các user mục tiêu
+   * @returns {Promise<Object>} - Yêu cầu xác nhận
    */
   async requestConfirmation(message, command, targets) {
     const confirmationId = `${message.author.id}_${Date.now()}`;
     
-    // Store pending confirmation
+    // Lưu trữ xác nhận đang chờ
     this.pendingConfirmations.set(confirmationId, {
       command: command,
       targets: targets,
@@ -791,10 +791,10 @@ Phân tích:`;
   }
 
   /**
-   * Format execution result
-   * @param {Object} result - Execution result
-   * @param {Object} command - Original command
-   * @returns {Object} - Formatted response
+   * Định dạng kết quả thực thi
+   * @param {Object} result - Kết quả thực thi
+   * @param {Object} command - Lệnh gốc
+   * @returns {Object} - Phản hồi đã định dạng
    */
   formatExecutionResult(result, command) {
     const embed = new EmbedBuilder()
@@ -824,14 +824,14 @@ Phân tích:`;
   }
 
   /**
-   * Handle batch operations
-   * @param {Object} message - Discord message object
-   * @param {Object} command - Parsed command
-   * @returns {Promise<Object>} - Batch operation result
+   * Xử lý batch operations
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @param {Object} command - Lệnh đã phân tích
+   * @returns {Promise<Object>} - Kết quả batch operation
    */
   async handleBatchOperation(message, command) {
     try {
-      // Check if this is a batch operation
+      // Kiểm tra xem có phải batch operation không
       if (command.targets.length <= 1) {
         return await this.executeAction(command.action, command.targets, {
           reason: command.reason,
@@ -839,7 +839,7 @@ Phân tích:`;
         }, message);
       }
 
-      // Validate batch operation
+      // Kiểm tra batch operation
       if (command.targets.length > this.maxBatchSize) {
         return {
           success: false,
@@ -847,7 +847,7 @@ Phân tích:`;
         };
       }
 
-      // Create batch operation
+      // Tạo batch operation
       const operationId = `${message.author.id}_${Date.now()}`;
       const operation = {
         action: command.action,
@@ -860,11 +860,11 @@ Phân tích:`;
         moderator: message.author
       };
 
-      // Queue the operation
+      // Thêm vào hàng đợi
       const queueResult = await batchOperationService.queueOperation(operationId, operation);
       
       if (queueResult.success) {
-        // Start processing immediately
+        // Bắt đầu xử lý ngay lập tức
         batchOperationService.executeOperation(operationId, this);
         
         return {
@@ -881,7 +881,7 @@ Phân tích:`;
       }
 
     } catch (error) {
-      logger.error('GUILD_AGENT', 'Error handling batch operation:', error);
+      logger.error('GUILD_AGENT', 'Lỗi khi xử lý batch operation:', error);
       return {
         success: false,
         error: error.message
@@ -890,103 +890,103 @@ Phân tích:`;
   }
 
   /**
-   * Start batch operation processor
+   * Khởi động bộ xử lý batch operation
    */
   startBatchProcessor() {
     batchOperationService.startQueueProcessor(this);
   }
 
   /**
-   * Get batch operation status
-   * @param {string} operationId - Operation ID
-   * @returns {Object} - Operation status
+   * Lấy trạng thái batch operation
+   * @param {string} operationId - ID operation
+   * @returns {Object} - Trạng thái operation
    */
   getBatchOperationStatus(operationId) {
     return batchOperationService.getOperationStatus(operationId);
   }
 
   /**
-   * Cancel batch operation
-   * @param {string} operationId - Operation ID
-   * @returns {boolean} - Success status
+   * Hủy batch operation
+   * @param {string} operationId - ID operation
+   * @returns {boolean} - Trạng thái thành công
    */
   cancelBatchOperation(operationId) {
     return batchOperationService.cancelOperation(operationId);
   }
 
   /**
-   * Get batch operation statistics
-   * @returns {Object} - Statistics
+   * Lấy thống kê batch operation
+   * @returns {Object} - Thống kê
    */
   getBatchOperationStats() {
     return batchOperationService.getQueueStats();
   }
 
   /**
-   * Get permission safety statistics
-   * @returns {Object} - Safety statistics
+   * Lấy thống kê an toàn quyền
+   * @returns {Object} - Thống kê an toàn
    */
   getPermissionSafetyStats() {
     return permissionSafetyService.getSafetyStats();
   }
 
   /**
-   * Add protected user
-   * @param {string} userId - User ID
+   * Thêm user được bảo vệ
+   * @param {string} userId - ID người dùng
    */
   addProtectedUser(userId) {
     permissionSafetyService.addProtectedUser(userId);
   }
 
   /**
-   * Remove protected user
-   * @param {string} userId - User ID
+   * Xóa user được bảo vệ
+   * @param {string} userId - ID người dùng
    */
   removeProtectedUser(userId) {
     permissionSafetyService.removeProtectedUser(userId);
   }
 
   /**
-   * Add blacklisted user
-   * @param {string} userId - User ID
+   * Thêm user vào blacklist
+   * @param {string} userId - ID người dùng
    */
   addBlacklistedUser(userId) {
     permissionSafetyService.addBlacklistedUser(userId);
   }
 
   /**
-   * Remove blacklisted user
-   * @param {string} userId - User ID
+   * Xóa user khỏi blacklist
+   * @param {string} userId - ID người dùng
    */
   removeBlacklistedUser(userId) {
     permissionSafetyService.removeBlacklistedUser(userId);
   }
 
   /**
-   * Get user permission summary
-   * @param {string} userId - User ID
-   * @param {Object} message - Message object
-   * @returns {Promise<Object>} - Permission summary
+   * Lấy tóm tắt quyền user
+   * @param {string} userId - ID người dùng
+   * @param {Object} message - Đối tượng tin nhắn
+   * @returns {Promise<Object>} - Tóm tắt quyền
    */
   async getUserPermissionSummary(userId, message) {
     return await permissionSafetyService.getUserPermissionSummary(userId, message);
   }
 
   /**
-   * Reset user rate limits
-   * @param {string} userId - User ID
+   * Reset giới hạn tốc độ user
+   * @param {string} userId - ID người dùng
    */
   resetUserRateLimits(userId) {
     permissionSafetyService.resetUserRateLimits(userId);
   }
 
   /**
-   * Clean up expired data
+   * Dọn dẹp dữ liệu hết hạn
    */
   cleanup() {
     const now = Date.now();
     
-    // Clean up expired confirmations
+    // Dọn dẹp các xác nhận hết hạn
     for (const [key, confirmation] of this.pendingConfirmations.entries()) {
       if (now - confirmation.timestamp > this.confirmationTimeout) {
         this.pendingConfirmations.delete(key);
