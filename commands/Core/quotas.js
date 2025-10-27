@@ -1,142 +1,251 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const MessageService = require('../../services/TokenService.js');
 const logger = require('../../utils/logger.js');
+const { translate: t } = require('../../utils/i18n');
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('quotas')
-    .setDescription('Xem thống kê lượt nhắn tin đã sử dụng')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('user')
-        .setDescription('Xem thống kê lượt nhắn tin đã sử dụng của một người dùng')
-        .addUserOption(option =>
-          option
-            .setName('target')
-            .setDescription('Người dùng cần xem thống kê (để trống để xem của bản thân)')
-            .setRequired(false)
-        )
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('system')
-        .setDescription('Xem thống kê lượt nhắn tin đã sử dụng của toàn hệ thống (Owner/Admin only)')
-    ),
+	data: new SlashCommandBuilder()
+		.setName('quotas')
+		.setDescription(t('en', 'commands.quotas.description'))
+		.setDescriptionLocalizations({
+			en: t('en', 'commands.quotas.description'),
+			vi: t('vi', 'commands.quotas.description'),
+		})
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('user')
+				.setDescription(t('en', 'commands.quotas.subcommands.user.description'))
+				.setDescriptionLocalizations({
+					en: t('en', 'commands.quotas.subcommands.user.description'),
+					vi: t('vi', 'commands.quotas.subcommands.user.description'),
+				})
+				.addUserOption((option) =>
+					option
+						.setName('target')
+						.setDescription(t('en', 'commands.quotas.subcommands.user.options.target.description'))
+						.setDescriptionLocalizations({
+							en: t('en', 'commands.quotas.subcommands.user.options.target.description'),
+							vi: t('vi', 'commands.quotas.subcommands.user.options.target.description'),
+						})
+						.setRequired(false),
+				),
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('system')
+				.setDescription(t('en', 'commands.quotas.subcommands.system.description'))
+				.setDescriptionLocalizations({
+					en: t('en', 'commands.quotas.subcommands.system.description'),
+					vi: t('vi', 'commands.quotas.subcommands.system.description'),
+				}),
+		),
 
-  async execute(interaction) {
-    try {
-      await interaction.deferReply({ ephemeral: true });
+	async execute(interaction) {
+		try {
+			await interaction.deferReply({ ephemeral: true });
 
-      const subcommand = interaction.options.getSubcommand();
+			const subcommand = interaction.options.getSubcommand();
 
-      if (subcommand === 'user') {
-        await handleUserStats(interaction);
-      } else if (subcommand === 'system') {
-        await handleSystemStats(interaction);
-      }
-    } catch (error) {
-      logger.error('ADMIN', 'Lỗi khi xem thống kê lượt nhắn tin đã sử dụng:', error);
-      await interaction.editReply({
-        content: `Lỗi khi lấy thống kê: ${error.message}`,
-        ephemeral: true
-      });
-    }
-  },
+			if (subcommand === 'user') {
+				await handleUserStats(interaction);
+			} else {
+				await handleSystemStats(interaction);
+			}
+		} catch (error) {
+			logger.error('ADMIN', 'Error while retrieving quota statistics:', error);
+			await interaction.editReply({
+				content: t(interaction, 'commands.quotas.errors.general', { message: error.message }),
+				ephemeral: true,
+			});
+		}
+	},
 };
 
 async function handleUserStats(interaction) {
-  const targetUser = interaction.options.getUser('target') || interaction.user;
-  const requesterId = interaction.user.id;
-  
-  // Kiểm tra quyền nếu xem thống kê người khác
-  if (targetUser.id !== requesterId) {
-    const requesterRole = await MessageService.getUserRole(requesterId);
-    if (requesterRole !== 'owner' && requesterRole !== 'admin') {
-      return await interaction.editReply({
-        content: 'Bạn không có quyền xem thống kê của người khác!',
-        ephemeral: true
-      });
-    }
-  }
+	const targetUser = interaction.options.getUser('target') || interaction.user;
+	const requesterId = interaction.user.id;
 
-  const stats = await MessageService.getUserMessageStats(targetUser.id);
+	if (targetUser.id !== requesterId) {
+		const requesterRole = await MessageService.getUserRole(requesterId);
+		if (!['owner', 'admin'].includes(requesterRole)) {
+			await interaction.editReply({
+				content: t(interaction, 'commands.quotas.errors.noPermissionOther'),
+				ephemeral: true,
+			});
+			return;
+		}
+	}
 
-  const roleNames = {
-    owner: 'Owner',
-    admin: 'Admin',
-    helper: 'Helper',
-    user: 'Người dùng'
-  };
+	const stats = await MessageService.getUserMessageStats(targetUser.id);
+	const roleNames = t(interaction, 'commands.quotas.roles') || {};
 
-  const embed = new EmbedBuilder()
-    .setTitle(`Thống kê Lượt nhắn tin đã sử dụng - ${targetUser.username}`)
-    .setColor('#0099ff')
-    .setThumbnail(targetUser.displayAvatarURL())
-    .addFields(
-      { name: 'Vai trò', value: roleNames[stats.role] || stats.role, inline: true },
-      { name: 'Lượt hạn mức', value: stats.limits.daily === -1 ? 'Không giới hạn' : `${stats.limits.daily.toLocaleString()} lượt/ngày`, inline: true },
-      { name: '\u200b', value: '\u200b', inline: true },
-      { name: 'Hôm nay', value: `${stats.usage.daily.toLocaleString()} lượt`, inline: true },
-      { name: 'Tuần này', value: `${stats.usage.weekly.toLocaleString()} lượt`, inline: true },
-      { name: 'Tháng này', value: `${stats.usage.monthly.toLocaleString()} lượt`, inline: true },
-      { name: 'Tổng cộng', value: `${stats.usage.total.toLocaleString()} lượt`, inline: true },
-      { name: 'Còn lại hôm nay', value: stats.remaining.daily === -1 ? 'Không giới hạn' : `${stats.remaining.daily.toLocaleString()} lượt`, inline: true },
-      { name: '\u200b', value: '\u200b', inline: true }
-    )
-    .setFooter({ text: `User ID: ${targetUser.id}` })
-    .setTimestamp();
+	const embed = new EmbedBuilder()
+		.setTitle(t(interaction, 'commands.quotas.embeds.user.title', { username: targetUser.username }))
+		.setColor('#0099ff')
+		.setThumbnail(targetUser.displayAvatarURL())
+		.addFields(
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.role'),
+				value: roleNames[stats.role] || stats.role,
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.dailyLimit'),
+				value: formatLimit(interaction, stats.limits.daily),
+				inline: true,
+			},
+			{ name: '\u200b', value: '\u200b', inline: true },
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.today'),
+				value: formatUses(interaction, stats.usage.daily),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.week'),
+				value: formatUses(interaction, stats.usage.weekly),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.month'),
+				value: formatUses(interaction, stats.usage.monthly),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.total'),
+				value: formatUses(interaction, stats.usage.total),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.user.fields.remainingToday'),
+				value: formatLimit(interaction, stats.remaining.daily),
+				inline: true,
+			},
+			{ name: '\u200b', value: '\u200b', inline: true },
+		)
+		.setFooter({ text: t(interaction, 'commands.quotas.embeds.user.footer', { id: targetUser.id }) })
+		.setTimestamp();
 
-  // Hiển thị lịch sử gần đây nếu có
-  if (stats.recentHistory && stats.recentHistory.length > 0) {
-    const historyText = stats.recentHistory
-      .slice(-5)
-      .reverse()
-      .map(h => `• ${h.messages.toLocaleString()} lượt - ${h.operation}`)
-      .join('\n');
-    embed.addFields({ name: 'Hoạt động gần đây', value: historyText || 'Không có', inline: false });
-  }
+	if (stats.recentHistory && stats.recentHistory.length > 0) {
+		const historyLines = stats.recentHistory
+			.slice(-5)
+			.reverse()
+			.map((entry) =>
+				t(interaction, 'commands.quotas.embeds.user.historyEntry', {
+					count: entry.messages.toLocaleString(),
+					operation: entry.operation,
+				}),
+			)
+			.join('\n');
 
-  await interaction.editReply({ embeds: [embed] });
+		embed.addFields({
+			name: t(interaction, 'commands.quotas.embeds.user.historyTitle'),
+			value: historyLines || t(interaction, 'commands.quotas.embeds.user.historyEmpty'),
+			inline: false,
+		});
+	}
+
+	await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleSystemStats(interaction) {
-  // Kiểm tra quyền owner/admin
-  const requesterRole = await MessageService.getUserRole(interaction.user.id);
-  if (requesterRole !== 'owner' && requesterRole !== 'admin') {
-    return await interaction.editReply({
-      content: 'Bạn không có quyền xem thống kê hệ thống!',
-      ephemeral: true
-    });
-  }
+	const requesterRole = await MessageService.getUserRole(interaction.user.id);
+	if (!['owner', 'admin'].includes(requesterRole)) {
+		await interaction.editReply({
+			content: t(interaction, 'commands.quotas.errors.noPermissionSystem'),
+			ephemeral: true,
+		});
+		return;
+	}
 
-  const stats = await MessageService.getSystemStats();
+	const stats = await MessageService.getSystemStats();
+	const roleNames = t(interaction, 'commands.quotas.roles') || {};
 
-  const embed = new EmbedBuilder()
-    .setTitle('Thống kê Hạn ngạch Hệ thống')
-    .setColor('#ff9900')
-    .addFields(
-      { name: 'Tổng người dùng', value: stats.totalUsers.toLocaleString(), inline: true },
-      { name: 'Owner', value: stats.byRole.owner.toString(), inline: true },
-      { name: 'Admin', value: stats.byRole.admin.toString(), inline: true },
-      { name: 'Helper', value: stats.byRole.helper.toString(), inline: true },
-      { name: 'User', value: stats.byRole.user.toString(), inline: true },
-      { name: '\u200b', value: '\u200b', inline: true },
-      { name: 'Hạn ngạch hôm nay', value: `${stats.totalMessagesUsed.daily.toLocaleString()} lượt`, inline: true },
-      { name: 'Hạn ngạch tuần này', value: `${stats.totalMessagesUsed.weekly.toLocaleString()} lượt`, inline: true },
-      { name: 'Hạn ngạch tháng này', value: `${stats.totalMessagesUsed.monthly.toLocaleString()} lượt`, inline: true },
-      { name: 'Tổng hạn ngạch', value: `${stats.totalMessagesUsed.total.toLocaleString()} lượt`, inline: false }
-    )
-    .setFooter({ text: `Được yêu cầu bởi ${interaction.user.tag}` })
-    .setTimestamp();
+	const embed = new EmbedBuilder()
+		.setTitle(t(interaction, 'commands.quotas.embeds.system.title'))
+		.setColor('#ff9900')
+		.addFields(
+			{
+				name: t(interaction, 'commands.quotas.embeds.system.fields.totalUsers'),
+				value: stats.totalUsers.toLocaleString(),
+				inline: true,
+			},
+			{
+				name: roleNames.owner || 'Owner',
+				value: stats.byRole.owner.toString(),
+				inline: true,
+			},
+			{
+				name: roleNames.admin || 'Admin',
+				value: stats.byRole.admin.toString(),
+				inline: true,
+			},
+			{
+				name: roleNames.helper || 'Helper',
+				value: stats.byRole.helper.toString(),
+				inline: true,
+			},
+			{
+				name: roleNames.user || 'User',
+				value: stats.byRole.user.toString(),
+				inline: true,
+			},
+			{ name: '\u200b', value: '\u200b', inline: true },
+			{
+				name: t(interaction, 'commands.quotas.embeds.system.fields.dailyUsage'),
+				value: formatUses(interaction, stats.totalMessagesUsed.daily),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.system.fields.weeklyUsage'),
+				value: formatUses(interaction, stats.totalMessagesUsed.weekly),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.system.fields.monthlyUsage'),
+				value: formatUses(interaction, stats.totalMessagesUsed.monthly),
+				inline: true,
+			},
+			{
+				name: t(interaction, 'commands.quotas.embeds.system.fields.totalUsage'),
+				value: formatUses(interaction, stats.totalMessagesUsed.total),
+				inline: false,
+			},
+		)
+		.setFooter({
+			text: t(interaction, 'commands.quotas.embeds.system.footer', { tag: interaction.user.tag }),
+		})
+		.setTimestamp();
 
-  // Hiển thị top users
-  if (stats.topUsers && stats.topUsers.length > 0) {
-    const topUsersText = stats.topUsers
-      .map((u, i) => `${i + 1}. <@${u.userId}>: ${u.daily.toLocaleString()} lượt (${u.role})`)
-      .join('\n');
-    embed.addFields({ name: 'Top 10 người dùng hôm nay', value: topUsersText, inline: false });
-  }
+	if (stats.topUsers && stats.topUsers.length > 0) {
+		const topUsersText = stats.topUsers
+			.slice(0, 10)
+			.map((user, index) =>
+				t(interaction, 'commands.quotas.embeds.system.topEntry', {
+					position: index + 1,
+					userId: user.userId,
+					count: user.daily.toLocaleString(),
+					role: roleNames[user.role] || user.role,
+				}),
+			)
+			.join('\n');
 
-  await interaction.editReply({ embeds: [embed] });
+		embed.addFields({
+			name: t(interaction, 'commands.quotas.embeds.system.topTitle'),
+			value: topUsersText,
+			inline: false,
+		});
+	}
+
+	await interaction.editReply({ embeds: [embed] });
 }
 
+function formatLimit(context, value) {
+	if (value === -1) {
+		return t(context, 'commands.quotas.labels.noLimit');
+	}
+	return t(context, 'commands.quotas.labels.limitPerDay', { count: value.toLocaleString() });
+}
+
+function formatUses(context, value) {
+	return t(context, 'commands.quotas.labels.usageCount', { count: value.toLocaleString() });
+}

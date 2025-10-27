@@ -1,175 +1,314 @@
 ﻿{
-  "common": {
-    "footer": {
-      "credit": "Luna AI - Phat trien boi s4ory",
-      "versionUptime": "Luna v{version} - {uptime}"
-    }
-  },
-  "commands": {
-    "help": {
-      "description": "Hien thi danh sach lenh va thong tin tro giup",
-      "select": {
-        "placeholder": "Chon danh muc lenh",
-        "categoryDescription": "Xem cac lenh trong danh muc {category}",
-        "all": {
-          "label": "Tat ca",
-          "description": "Hien thi toan bo lenh"
-        }
-      },
-      "categories": {
-        "AIcore": {
-          "label": "AI Core",
-          "description": "Cac lenh su dung tri tue nhan tao"
-        },
-        "Core": {
-          "label": "Cot loi",
-          "description": "Nhung tinh nang quan trong cua bot"
-        },
-        "moderation": {
-          "label": "Kiem duyet",
-          "description": "Cong cu ho tro moderator"
-        },
-        "social": {
-          "label": "Xa hoi",
-          "description": "Tinh nang tuong tac cong dong"
-        },
-        "system": {
-          "label": "He thong",
-          "description": "Lenh quan tri he thong"
-        },
-        "setting": {
-          "label": "Cai dat",
-          "description": "Tuy chon chi danh cho owner"
-        }
-      },
-      "embeds": {
-        "welcomeTitle": "Tro giup Luna AI",
-        "welcomeDescription": "Su dung menu o ben duoi de duyet cac lenh.",
-        "allTitle": "Tat ca danh muc",
-        "categoryTitle": "Tro giup lenh - {category}"
-      },
-      "messages": {
-        "allCategoriesDescription": "Cac danh muc lenh kha dung:",
-        "emptyCategory": "Chua co lenh nao trong danh muc nay.",
-        "categoryDetails": "Cac lenh trong {category}:",
-        "optionRequired": "(bat buoc)",
-        "optionOptional": "(tuy chon)",
-        "noOptions": "Khong co tuy chon.",
-        "menuExpired": "Menu tro giup da het han. Dung /help de tao menu moi."
-      },
-      "errors": {
-        "notInvoker": "Ban khong the su dung menu nay. Hay chay /help de tao menu rieng.",
-        "noPermission": "Ban khong co quyen xem danh muc nay."
-      }
-    },
-    "ping": {
-      "description": "Kiem tra do tre va tinh trang ket noi cua bot",
-      "errors": {
-        "notInvoker": "Chi nguoi da goi lenh moi duoc su dung cac nut nay."
-      },
-      "embeds": {
-        "status": {
-          "title": "Trang thai he thong",
-          "latencyField": "Do tre",
-          "botLabel": "Bot",
-          "wsLabel": "WebSocket"
-        },
-        "detailed": {
-          "title": "Thong tin chi tiet",
-          "fields": {
-            "botVersion": "Phien ban Bot",
-            "discordVersion": "Phien ban discord.js",
-            "nodeVersion": "Phien ban Node.js",
-            "uptime": "Thoi gian hoat dong",
-            "memory": "Bo nho su dung",
-            "platform": "Nen tang",
-            "shards": "So luong shard"
-          }
-        }
-      },
-      "buttons": {
-        "refresh": "Lam moi",
-        "detailed": "Chi tiet"
-      }
-    },
-    "ban": {
-      "description": "Cam mot thanh vien khoi server",
-      "defaultReason": "Khong co ly do duoc cung cap",
-      "options": {
-        "user": "Thanh vien can cam",
-        "reason": "Ly do cam",
-        "days": "So ngay xoa tin nhan (0-7)"
-      },
-      "embeds": {
-        "success": {
-          "title": "Cam thanh cong",
-          "description": "Da cam {user} khoi server",
-          "fields": {
-            "reason": "Ly do",
-            "deleteMessages": "Xoa tin nhan",
-            "moderator": "Thuc hien boi",
-            "user": "Thanh vien",
-            "userId": "ID thanh vien",
-            "days": "ngay",
-            "date": "Ngay"
-          },
-          "footer": "Cam boi {moderator}",
-          "footerServer": "Server: {server}"
-        },
-        "error": {
-          "title": "Loi khi cam",
-          "description": "Khong the cam thanh vien nay"
-        }
-      },
-      "dm": {
-        "title": "Ban da bi cam khoi {server}",
-        "description": "**Ly do:** {reason}",
-        "footer": "Neu ban cho rang day la su nham lan, hay lien he voi ban quan tri server.",
-        "error": "Khong the gui DM cho {user}"
-      },
-      "banReason": "Cam boi {moderator}",
-      "errors": {
-        "noPermission": "Ban khong co quyen cam thanh vien!",
-        "cannotBan": "Toi khong the cam thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
-        "userNotFound": "Khong tim thay thanh vien nay trong server",
-        "general": "Da xay ra loi khi cam {user}: {error}"
-      }
-    },
-    "kick": {
-      "description": "Duoi mot thanh vien khoi server",
-      "defaultReason": "Khong co ly do duoc cung cap",
-      "options": {
-        "user": "Thanh vien can duoi",
-        "reason": "Ly do duoi"
-      },
-      "embeds": {
-        "success": {
-          "title": "Duoi thanh cong",
-          "description": "Da duoi {user} khoi server",
-          "fields": {
-            "reason": "Ly do",
-            "moderator": "Thuc hien boi",
-            "user": "Thanh vien",
-            "userId": "ID thanh vien",
-            "date": "Ngay"
-          },
-          "footer": "Duoi boi {moderator}",
-          "footerServer": "Server: {server}"
-        },
-        "error": {
-          "title": "Loi khi duoi",
-          "description": "Khong the duoi thanh vien nay"
-        }
-      },
-      "errors": {
-        "noPermission": "Ban khong co quyen duoi thanh vien!",
-        "cannotKick": "Toi khong the duoi thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
-        "userNotFound": "Khong tim thay thanh vien nay trong server",
-        "general": "Da xay ra loi khi duoi {user}: {error}"
-      }
-    }
-  },
-  "handlers": {},
-  "services": {},
-  "errors": {}
+    "common":  {
+                   "footer":  {
+                                  "credit":  "Luna AI - Phat trien boi s4ory",
+                                  "versionUptime":  "Luna v{version} - {uptime}"
+                              }
+               },
+    "commands":  {
+                     "help":  {
+                                  "description":  "Hien thi danh sach lenh va thong tin tro giup",
+                                  "select":  {
+                                                 "placeholder":  "Chon danh muc lenh",
+                                                 "categoryDescription":  "Xem cac lenh trong danh muc {category}",
+                                                 "all":  {
+                                                             "label":  "Tat ca",
+                                                             "description":  "Hien thi toan bo lenh"
+                                                         }
+                                             },
+                                  "categories":  {
+                                                     "AIcore":  {
+                                                                    "label":  "AI Core",
+                                                                    "description":  "Cac lenh su dung tri tue nhan tao"
+                                                                },
+                                                     "Core":  {
+                                                                  "label":  "Cot loi",
+                                                                  "description":  "Nhung tinh nang quan trong cua bot"
+                                                              },
+                                                     "moderation":  {
+                                                                        "label":  "Kiem duyet",
+                                                                        "description":  "Cong cu ho tro moderator"
+                                                                    },
+                                                     "social":  {
+                                                                    "label":  "Xa hoi",
+                                                                    "description":  "Tinh nang tuong tac cong dong"
+                                                                },
+                                                     "system":  {
+                                                                    "label":  "He thong",
+                                                                    "description":  "Lenh quan tri he thong"
+                                                                },
+                                                     "setting":  {
+                                                                     "label":  "Cai dat",
+                                                                     "description":  "Tuy chon chi danh cho owner"
+                                                                 }
+                                                 },
+                                  "embeds":  {
+                                                 "welcomeTitle":  "Tro giup Luna AI",
+                                                 "welcomeDescription":  "Su dung menu o ben duoi de duyet cac lenh.",
+                                                 "allTitle":  "Tat ca danh muc",
+                                                 "categoryTitle":  "Tro giup lenh - {category}"
+                                             },
+                                  "messages":  {
+                                                   "allCategoriesDescription":  "Cac danh muc lenh kha dung:",
+                                                   "emptyCategory":  "Chua co lenh nao trong danh muc nay.",
+                                                   "categoryDetails":  "Cac lenh trong {category}:",
+                                                   "optionRequired":  "(bat buoc)",
+                                                   "optionOptional":  "(tuy chon)",
+                                                   "noOptions":  "Khong co tuy chon.",
+                                                   "menuExpired":  "Menu tro giup da het han. Dung /help de tao menu moi."
+                                               },
+                                  "errors":  {
+                                                 "notInvoker":  "Ban khong the su dung menu nay. Hay chay /help de tao menu rieng.",
+                                                 "noPermission":  "Ban khong co quyen xem danh muc nay."
+                                             }
+                              },
+                     "ping":  {
+                                  "description":  "Kiem tra do tre va tinh trang ket noi cua bot",
+                                  "errors":  {
+                                                 "notInvoker":  "Chi nguoi da goi lenh moi duoc su dung cac nut nay."
+                                             },
+                                  "embeds":  {
+                                                 "status":  {
+                                                                "title":  "Trang thai he thong",
+                                                                "latencyField":  "Do tre",
+                                                                "botLabel":  "Bot",
+                                                                "wsLabel":  "WebSocket"
+                                                            },
+                                                 "detailed":  {
+                                                                  "title":  "Thong tin chi tiet",
+                                                                  "fields":  {
+                                                                                 "botVersion":  "Phien ban Bot",
+                                                                                 "discordVersion":  "Phien ban discord.js",
+                                                                                 "nodeVersion":  "Phien ban Node.js",
+                                                                                 "uptime":  "Thoi gian hoat dong",
+                                                                                 "memory":  "Bo nho su dung",
+                                                                                 "platform":  "Nen tang",
+                                                                                 "shards":  "So luong shard"
+                                                                             }
+                                                              }
+                                             },
+                                  "buttons":  {
+                                                  "refresh":  "Lam moi",
+                                                  "detailed":  "Chi tiet"
+                                              }
+                              },
+                     "ban":  {
+                                 "description":  "Cam mot thanh vien khoi server",
+                                 "defaultReason":  "Khong co ly do duoc cung cap",
+                                 "options":  {
+                                                 "user":  "Thanh vien can cam",
+                                                 "reason":  "Ly do cam",
+                                                 "days":  "So ngay xoa tin nhan (0-7)"
+                                             },
+                                 "embeds":  {
+                                                "success":  {
+                                                                "title":  "Cam thanh cong",
+                                                                "description":  "Da cam {user} khoi server",
+                                                                "fields":  {
+                                                                               "reason":  "Ly do",
+                                                                               "deleteMessages":  "Xoa tin nhan",
+                                                                               "moderator":  "Thuc hien boi",
+                                                                               "user":  "Thanh vien",
+                                                                               "userId":  "ID thanh vien",
+                                                                               "days":  "ngay",
+                                                                               "date":  "Ngay"
+                                                                           },
+                                                                "footer":  "Cam boi {moderator}",
+                                                                "footerServer":  "Server: {server}"
+                                                            },
+                                                "error":  {
+                                                              "title":  "Loi khi cam",
+                                                              "description":  "Khong the cam thanh vien nay"
+                                                          }
+                                            },
+                                 "dm":  {
+                                            "title":  "Ban da bi cam khoi {server}",
+                                            "description":  "**Ly do:** {reason}",
+                                            "footer":  "Neu ban cho rang day la su nham lan, hay lien he voi ban quan tri server.",
+                                            "error":  "Khong the gui DM cho {user}"
+                                        },
+                                 "banReason":  "Cam boi {moderator}",
+                                 "errors":  {
+                                                "noPermission":  "Ban khong co quyen cam thanh vien!",
+                                                "cannotBan":  "Toi khong the cam thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
+                                                "userNotFound":  "Khong tim thay thanh vien nay trong server",
+                                                "general":  "Da xay ra loi khi cam {user}: {error}"
+                                            }
+                             },
+                     "kick":  {
+                                  "description":  "Duoi mot thanh vien khoi server",
+                                  "defaultReason":  "Khong co ly do duoc cung cap",
+                                  "options":  {
+                                                  "user":  "Thanh vien can duoi",
+                                                  "reason":  "Ly do duoi"
+                                              },
+                                  "embeds":  {
+                                                 "success":  {
+                                                                 "title":  "Duoi thanh cong",
+                                                                 "description":  "Da duoi {user} khoi server",
+                                                                 "fields":  {
+                                                                                "reason":  "Ly do",
+                                                                                "moderator":  "Thuc hien boi",
+                                                                                "user":  "Thanh vien",
+                                                                                "userId":  "ID thanh vien",
+                                                                                "date":  "Ngay"
+                                                                            },
+                                                                 "footer":  "Duoi boi {moderator}",
+                                                                 "footerServer":  "Server: {server}"
+                                                             },
+                                                 "error":  {
+                                                               "title":  "Loi khi duoi",
+                                                               "description":  "Khong the duoi thanh vien nay"
+                                                           }
+                                             },
+                                  "errors":  {
+                                                 "noPermission":  "Ban khong co quyen duoi thanh vien!",
+                                                 "cannotKick":  "Toi khong the duoi thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
+                                                 "userNotFound":  "Khong tim thay thanh vien nay trong server",
+                                                 "general":  "Da xay ra loi khi duoi {user}: {error}"
+                                             }
+                              },
+                     "about":  {
+                                   "description":  "Hien thi thong tin chi tiet ve Luna bot",
+                                   "canvas":  {
+                                                  "tagline":  "Tro ly AI thong minh cua ban",
+                                                  "technicalTitle":  "Tong quan ky thuat",
+                                                  "technicalItems":  {
+                                                                         "model":  "Mo hinh AI",
+                                                                         "uptime":  "Thoi gian hoat dong",
+                                                                         "node":  "Node.js",
+                                                                         "memory":  "Bo nho",
+                                                                         "servers":  "So may chu"
+                                                                     },
+                                                  "featuresTitle":  "Tinh nang",
+                                                  "featuresItems":  {
+                                                                        "chat":  {
+                                                                                     "label":  "Tro chuyen AI",
+                                                                                     "value":  "Mention @Luna"
+                                                                                 },
+                                                                        "image":  {
+                                                                                      "label":  "Tao hinh anh",
+                                                                                      "value":  "imagine [de bai]"
+                                                                                  },
+                                                                        "code":  {
+                                                                                     "label":  "Ho tro lap trinh",
+                                                                                     "value":  "code [yeu cau]"
+                                                                                 },
+                                                                        "moderation":  {
+                                                                                           "label":  "Quan ly tin nhan",
+                                                                                           "value":  "clear history"
+                                                                                       }
+                                                                    },
+                                                  "footer":  "Luna Bot v{version} - Phat trien boi s4ory - {date}"
+                                              },
+                                   "embed":  {
+                                                 "footer":  "Su dung cac nut ben duoi de tim hieu ve Luna"
+                                             },
+                                   "buttons":  {
+                                                   "invite":  "Moi Luna",
+                                                   "docs":  "Tai lieu",
+                                                   "support":  "Ho tro",
+                                                   "website":  "Website"
+                                               },
+                                   "fallback":  {
+                                                    "title":  "Luna AI - Tro ly thong minh cua ban",
+                                                    "description":  "Luna la tro ly AI than thien, luon san sang tro chuyen va ho tro cong dong cua ban.",
+                                                    "fields":  {
+                                                                   "model":  "Mo hinh AI",
+                                                                   "runtime":  "Thoi gian chay",
+                                                                   "servers":  "So may chu",
+                                                                   "memory":  "Bo nho",
+                                                                   "node":  "Node.js"
+                                                               },
+                                                    "footer":  "Luna Bot v{version} - Phat trien boi s4ory"
+                                                }
+                               },
+                     "quotas":  {
+                                    "description":  "Xem thong ke han ngach tin nhan",
+                                    "subcommands":  {
+                                                        "user":  {
+                                                                     "description":  "Xem thong ke han ngach tin nhan cua nguoi dung",
+                                                                     "options":  {
+                                                                                     "target":  {
+                                                                                                    "description":  "Nguoi dung can xem (de trong de xem cua ban)"
+                                                                                                }
+                                                                                 }
+                                                                 },
+                                                        "system":  {
+                                                                       "description":  "Xem thong ke han ngach toan he thong (Owner/Admin)"
+                                                                   }
+                                                    },
+                                    "errors":  {
+                                                   "general":  "Khong the lay thong ke: {message}",
+                                                   "noPermissionOther":  "Ban khong co quyen xem thong ke cua nguoi khac.",
+                                                   "noPermissionSystem":  "Ban khong co quyen xem thong ke he thong."
+                                               },
+                                    "roles":  {
+                                                  "owner":  "Owner",
+                                                  "admin":  "Admin",
+                                                  "helper":  "Helper",
+                                                  "user":  "Nguoi dung"
+                                              },
+                                    "labels":  {
+                                                   "noLimit":  "Khong gioi han",
+                                                   "limitPerDay":  "{count} lan/ngay",
+                                                   "usageCount":  "{count} lan"
+                                               },
+                                    "embeds":  {
+                                                   "user":  {
+                                                                "title":  "Thong ke han ngach tin nhan - {username}",
+                                                                "fields":  {
+                                                                               "role":  "Vai tro",
+                                                                               "dailyLimit":  "Han muc moi ngay",
+                                                                               "today":  "Hom nay",
+                                                                               "week":  "Tuan nay",
+                                                                               "month":  "Thang nay",
+                                                                               "total":  "Tong cong",
+                                                                               "remainingToday":  "Con lai hom nay"
+                                                                           },
+                                                                "historyTitle":  "Hoat dong gan day",
+                                                                "historyEmpty":  "Chua co du lieu.",
+                                                                "historyEntry":  "- {count} lan - {operation}",
+                                                                "footer":  "User ID: {id}"
+                                                            },
+                                                   "system":  {
+                                                                  "title":  "Thong ke han ngach he thong",
+                                                                  "fields":  {
+                                                                                 "totalUsers":  "Tong nguoi dung",
+                                                                                 "dailyUsage":  "Su dung hom nay",
+                                                                                 "weeklyUsage":  "Su dung tuan nay",
+                                                                                 "monthlyUsage":  "Su dung thang nay",
+                                                                                 "totalUsage":  "Tong so lan su dung"
+                                                                             },
+                                                                  "topTitle":  "Top 10 nguoi dung hom nay",
+                                                                  "topEntry":  "{position}. \u003c@{userId}\u003e: {count} lan ({role})",
+                                                                  "footer":  "Yeu cau boi {tag}"
+                                                              }
+                                               }
+                                },
+                     "image":  {
+                                   "description":  "Ve mot hinh anh tu y tuong cua ban",
+                                   "options":  {
+                                                   "prompt":  {
+                                                                  "description":  "Mo ta buc tranh ban muon minh tao"
+                                                              }
+                                               },
+                                   "progress":  {
+                                                    "initializing":  "Dang khoi tao viec tao anh..."
+                                                },
+                                   "errors":  {
+                                                  "noResult":  "Khong the nhan duoc hinh anh da tao.",
+                                                  "general":  "Khong the tao anh. Vui long thu lai sau."
+                                              }
+                               }
+                 },
+    "handlers":  {
+
+                 },
+    "services":  {
+
+                 },
+    "errors":  {
+
+               }
 }
