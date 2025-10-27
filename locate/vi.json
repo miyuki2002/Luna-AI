@@ -1,304 +1,304 @@
 ﻿{
     "common":  {
                    "footer":  {
-                                  "credit":  "Luna AI - Phat trien boi s4ory",
+                                  "credit":  "Luna AI - Phát triển bởi s4ory",
                                   "versionUptime":  "Luna v{version} - {uptime}"
                               }
                },
     "commands":  {
                      "help":  {
-                                  "description":  "Hien thi danh sach lenh va thong tin tro giup",
+                                  "description":  "Hiển thị danh sách lệnh và thông tin trợ giúp",
                                   "select":  {
-                                                 "placeholder":  "Chon danh muc lenh",
-                                                 "categoryDescription":  "Xem cac lenh trong danh muc {category}",
+                                                 "placeholder":  "Chọn danh mục lệnh",
+                                                 "categoryDescription":  "Xem các lệnh trong danh mục {category}",
                                                  "all":  {
-                                                             "label":  "Tat ca",
-                                                             "description":  "Hien thi toan bo lenh"
+                                                             "label":  "Tất cả",
+                                                             "description":  "Hiển thị toàn bộ lệnh"
                                                          }
                                              },
                                   "categories":  {
                                                      "AIcore":  {
                                                                     "label":  "AI Core",
-                                                                    "description":  "Cac lenh su dung tri tue nhan tao"
+                                                                    "description":  "Các lệnh sử dụng trí tuệ nhân tạo"
                                                                 },
                                                      "Core":  {
-                                                                  "label":  "Cot loi",
-                                                                  "description":  "Nhung tinh nang quan trong cua bot"
+                                                                  "label":  "Cốt lõi",
+                                                                  "description":  "Những tính năng quan trọng của bot"
                                                               },
                                                      "moderation":  {
-                                                                        "label":  "Kiem duyet",
-                                                                        "description":  "Cong cu ho tro moderator"
+                                                                        "label":  "Kiểm duyệt",
+                                                                        "description":  "Công cụ hỗ trợ moderator"
                                                                     },
                                                      "social":  {
-                                                                    "label":  "Xa hoi",
-                                                                    "description":  "Tinh nang tuong tac cong dong"
+                                                                    "label":  "Xã hội",
+                                                                    "description":  "Tính năng tương tác cộng đồng"
                                                                 },
                                                      "system":  {
-                                                                    "label":  "He thong",
-                                                                    "description":  "Lenh quan tri he thong"
+                                                                    "label":  "Hệ thống",
+                                                                    "description":  "Lệnh quản trị hệ thống"
                                                                 },
                                                      "setting":  {
-                                                                     "label":  "Cai dat",
-                                                                     "description":  "Tuy chon chi danh cho owner"
+                                                                     "label":  "Cài đặt",
+                                                                     "description":  "Tùy chọn chỉ dành cho owner"
                                                                  }
                                                  },
                                   "embeds":  {
-                                                 "welcomeTitle":  "Tro giup Luna AI",
-                                                 "welcomeDescription":  "Su dung menu o ben duoi de duyet cac lenh.",
-                                                 "allTitle":  "Tat ca danh muc",
-                                                 "categoryTitle":  "Tro giup lenh - {category}"
+                                                 "welcomeTitle":  "Trợ giúp Luna AI",
+                                                 "welcomeDescription":  "Sử dụng menu ở bên dưới để duyệt các lệnh.",
+                                                 "allTitle":  "Tất cả danh mục",
+                                                 "categoryTitle":  "Trợ giúp lệnh - {category}"
                                              },
                                   "messages":  {
-                                                   "allCategoriesDescription":  "Cac danh muc lenh kha dung:",
-                                                   "emptyCategory":  "Chua co lenh nao trong danh muc nay.",
-                                                   "categoryDetails":  "Cac lenh trong {category}:",
-                                                   "optionRequired":  "(bat buoc)",
-                                                   "optionOptional":  "(tuy chon)",
-                                                   "noOptions":  "Khong co tuy chon.",
-                                                   "menuExpired":  "Menu tro giup da het han. Dung /help de tao menu moi."
+                                                   "allCategoriesDescription":  "Các danh mục lệnh khả dụng:",
+                                                   "emptyCategory":  "Chưa có lệnh nào trong danh mục này.",
+                                                   "categoryDetails":  "Các lệnh trong {category}:",
+                                                   "optionRequired":  "(bắt buộc)",
+                                                   "optionOptional":  "(tùy chọn)",
+                                                   "noOptions":  "Không có tùy chọn.",
+                                                   "menuExpired":  "Menu trợ giúp đã hết hạn. Dùng /help để tạo menu mới."
                                                },
                                   "errors":  {
-                                                 "notInvoker":  "Ban khong the su dung menu nay. Hay chay /help de tao menu rieng.",
-                                                 "noPermission":  "Ban khong co quyen xem danh muc nay."
+                                                 "notInvoker":  "Bạn không thể sử dụng menu này. Hãy chạy /help để tạo menu riêng.",
+                                                 "noPermission":  "Bạn không có quyền xem danh mục này."
                                              }
                               },
                      "ping":  {
-                                  "description":  "Kiem tra do tre va tinh trang ket noi cua bot",
+                                  "description":  "Kiểm tra độ trễ và tình trạng kết nối của bot",
                                   "errors":  {
-                                                 "notInvoker":  "Chi nguoi da goi lenh moi duoc su dung cac nut nay."
+                                                 "notInvoker":  "Chỉ người đã gọi lệnh mới được sử dụng các nút này."
                                              },
                                   "embeds":  {
                                                  "status":  {
-                                                                "title":  "Trang thai he thong",
-                                                                "latencyField":  "Do tre",
+                                                                "title":  "Trạng thái hệ thống",
+                                                                "latencyField":  "Độ trễ",
                                                                 "botLabel":  "Bot",
                                                                 "wsLabel":  "WebSocket"
                                                             },
                                                  "detailed":  {
-                                                                  "title":  "Thong tin chi tiet",
+                                                                  "title":  "Thông tin chi tiết",
                                                                   "fields":  {
-                                                                                 "botVersion":  "Phien ban Bot",
-                                                                                 "discordVersion":  "Phien ban discord.js",
-                                                                                 "nodeVersion":  "Phien ban Node.js",
-                                                                                 "uptime":  "Thoi gian hoat dong",
-                                                                                 "memory":  "Bo nho su dung",
-                                                                                 "platform":  "Nen tang",
-                                                                                 "shards":  "So luong shard"
+                                                                                 "botVersion":  "Phiên bản Bot",
+                                                                                 "discordVersion":  "Phiên bản discord.js",
+                                                                                 "nodeVersion":  "Phiên bản Node.js",
+                                                                                 "uptime":  "Thời gian hoạt động",
+                                                                                 "memory":  "Bộ nhớ sử dụng",
+                                                                                 "platform":  "Nền tảng",
+                                                                                 "shards":  "Số lượng shard"
                                                                              }
                                                               }
                                              },
                                   "buttons":  {
-                                                  "refresh":  "Lam moi",
-                                                  "detailed":  "Chi tiet"
+                                                  "refresh":  "Làm mới",
+                                                  "detailed":  "Chi tiết"
                                               }
                               },
                      "ban":  {
-                                 "description":  "Cam mot thanh vien khoi server",
-                                 "defaultReason":  "Khong co ly do duoc cung cap",
+                                 "description":  "Cấm một thành viên khỏi server",
+                                 "defaultReason":  "Không có lý do được cung cấp",
                                  "options":  {
-                                                 "user":  "Thanh vien can cam",
-                                                 "reason":  "Ly do cam",
-                                                 "days":  "So ngay xoa tin nhan (0-7)"
+                                                 "user":  "Thành viên cần cấm",
+                                                 "reason":  "Lý do cấm",
+                                                 "days":  "Số ngày xóa tin nhắn (0-7)"
                                              },
                                  "embeds":  {
                                                 "success":  {
-                                                                "title":  "Cam thanh cong",
-                                                                "description":  "Da cam {user} khoi server",
+                                                                "title":  "Cấm thành công",
+                                                                "description":  "Đã cấm {user} khỏi server",
                                                                 "fields":  {
-                                                                               "reason":  "Ly do",
-                                                                               "deleteMessages":  "Xoa tin nhan",
-                                                                               "moderator":  "Thuc hien boi",
-                                                                               "user":  "Thanh vien",
-                                                                               "userId":  "ID thanh vien",
-                                                                               "days":  "ngay",
-                                                                               "date":  "Ngay"
+                                                                               "reason":  "Lý do",
+                                                                               "deleteMessages":  "Xóa tin nhắn",
+                                                                               "moderator":  "Thực hiện bởi",
+                                                                               "user":  "Thành viên",
+                                                                               "userId":  "ID thành viên",
+                                                                               "days":  "ngày",
+                                                                               "date":  "ngày"
                                                                            },
-                                                                "footer":  "Cam boi {moderator}",
+                                                                "footer":  "Cấm bởi {moderator}",
                                                                 "footerServer":  "Server: {server}"
                                                             },
                                                 "error":  {
-                                                              "title":  "Loi khi cam",
-                                                              "description":  "Khong the cam thanh vien nay"
+                                                              "title":  "Lỗi khi cấm",
+                                                              "description":  "Không thể cấm thành viên này"
                                                           }
                                             },
                                  "dm":  {
-                                            "title":  "Ban da bi cam khoi {server}",
-                                            "description":  "**Ly do:** {reason}",
-                                            "footer":  "Neu ban cho rang day la su nham lan, hay lien he voi ban quan tri server.",
-                                            "error":  "Khong the gui DM cho {user}"
+                                            "title":  "Bạn đã bị cấm khỏi {server}",
+                                            "description":  "**Lý do:** {reason}",
+                                            "footer":  "Nếu bạn cho rằng đây là sự nhầm lẫn, hãy liên hệ với ban quản trị server.",
+                                            "error":  "Không thể gửi DM cho {user}"
                                         },
-                                 "banReason":  "Cam boi {moderator}",
+                                 "banReason":  "Cấm bởi {moderator}",
                                  "errors":  {
-                                                "noPermission":  "Ban khong co quyen cam thanh vien!",
-                                                "cannotBan":  "Toi khong the cam thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
-                                                "userNotFound":  "Khong tim thay thanh vien nay trong server",
-                                                "general":  "Da xay ra loi khi cam {user}: {error}"
+                                                "noPermission":  "Bạn không có quyền cấm thành viên!",
+                                                "cannotBan":  "Tôi không thể cấm thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.",
+                                                "userNotFound":  "Không tìm thấy thành viên này trong server",
+                                                "general":  "Đã xảy ra lỗi khi cấm {user}: {error}"
                                             }
                              },
                      "kick":  {
-                                  "description":  "Duoi mot thanh vien khoi server",
-                                  "defaultReason":  "Khong co ly do duoc cung cap",
+                                  "description":  "Đuổi một thành viên khỏi server",
+                                  "defaultReason":  "Không có lý do được cung cấp",
                                   "options":  {
-                                                  "user":  "Thanh vien can duoi",
-                                                  "reason":  "Ly do duoi"
+                                                  "user":  "Thành viên cần đuổi",
+                                                  "reason":  "Lý do đuổi"
                                               },
                                   "embeds":  {
                                                  "success":  {
-                                                                 "title":  "Duoi thanh cong",
-                                                                 "description":  "Da duoi {user} khoi server",
+                                                                 "title":  "Đuổi thành công",
+                                                                 "description":  "Đã đuổi {user} khỏi server",
                                                                  "fields":  {
-                                                                                "reason":  "Ly do",
-                                                                                "moderator":  "Thuc hien boi",
-                                                                                "user":  "Thanh vien",
-                                                                                "userId":  "ID thanh vien",
-                                                                                "date":  "Ngay"
+                                                                                "reason":  "Lý do",
+                                                                                "moderator":  "Thực hiện bởi",
+                                                                                "user":  "Thành viên",
+                                                                                "userId":  "ID thành viên",
+                                                                                "date":  "ngày"
                                                                             },
-                                                                 "footer":  "Duoi boi {moderator}",
+                                                                 "footer":  "Đuổi bởi {moderator}",
                                                                  "footerServer":  "Server: {server}"
                                                              },
                                                  "error":  {
-                                                               "title":  "Loi khi duoi",
-                                                               "description":  "Khong the duoi thanh vien nay"
+                                                               "title":  "Lỗi khi đuổi",
+                                                               "description":  "Không thể đuổi thành viên này"
                                                            }
                                              },
                                   "errors":  {
-                                                 "noPermission":  "Ban khong co quyen duoi thanh vien!",
-                                                 "cannotKick":  "Toi khong the duoi thanh vien nay. Co the ho co quyen cao hon toi hoac ban.",
-                                                 "userNotFound":  "Khong tim thay thanh vien nay trong server",
-                                                 "general":  "Da xay ra loi khi duoi {user}: {error}"
+                                                 "noPermission":  "Bạn không có quyền đuổi thành viên!",
+                                                 "cannotKick":  "Tôi không thể đuổi thành viên này. Có thể họ có quyền cao hơn tôi hoặc bạn.",
+                                                 "userNotFound":  "Không tìm thấy thành viên này trong server",
+                                                 "general":  "Đã xảy ra lỗi khi đuổi {user}: {error}"
                                              }
                               },
                      "about":  {
-                                   "description":  "Hien thi thong tin chi tiet ve Luna bot",
+                                   "description":  "Hiển thị thông tin chi tiết về Luna bot",
                                    "canvas":  {
-                                                  "tagline":  "Tro ly AI thong minh cua ban",
-                                                  "technicalTitle":  "Tong quan ky thuat",
+                                                  "tagline":  "Trợ lý AI thông minh của bạn",
+                                                  "technicalTitle":  "Tổng quan kỹ thuật",
                                                   "technicalItems":  {
-                                                                         "model":  "Mo hinh AI",
-                                                                         "uptime":  "Thoi gian hoat dong",
+                                                                         "model":  "Mô hình AI",
+                                                                         "uptime":  "Thời gian hoạt động",
                                                                          "node":  "Node.js",
-                                                                         "memory":  "Bo nho",
-                                                                         "servers":  "So may chu"
+                                                                         "memory":  "Bộ nhớ",
+                                                                         "servers":  "Số máy chủ"
                                                                      },
-                                                  "featuresTitle":  "Tinh nang",
+                                                  "featuresTitle":  "Tính năng",
                                                   "featuresItems":  {
                                                                         "chat":  {
-                                                                                     "label":  "Tro chuyen AI",
+                                                                                     "label":  "Trò chuyện AI",
                                                                                      "value":  "Mention @Luna"
                                                                                  },
                                                                         "image":  {
-                                                                                      "label":  "Tao hinh anh",
-                                                                                      "value":  "imagine [de bai]"
+                                                                                      "label":  "Tạo hình ảnh",
+                                                                                      "value":  "imagine [đề bài]"
                                                                                   },
                                                                         "code":  {
-                                                                                     "label":  "Ho tro lap trinh",
-                                                                                     "value":  "code [yeu cau]"
+                                                                                     "label":  "Hỗ trợ lập trình",
+                                                                                     "value":  "code [yêu cầu]"
                                                                                  },
                                                                         "moderation":  {
-                                                                                           "label":  "Quan ly tin nhan",
+                                                                                           "label":  "Quản lý tin nhắn",
                                                                                            "value":  "clear history"
                                                                                        }
                                                                     },
-                                                  "footer":  "Luna Bot v{version} - Phat trien boi s4ory - {date}"
+                                                  "footer":  "Luna Bot v{version} - Phát triển bởi s4ory - {date}"
                                               },
                                    "embed":  {
-                                                 "footer":  "Su dung cac nut ben duoi de tim hieu ve Luna"
+                                                 "footer":  "Sử dụng các nút bên dưới để tìm hiểu về Luna"
                                              },
                                    "buttons":  {
-                                                   "invite":  "Moi Luna",
-                                                   "docs":  "Tai lieu",
-                                                   "support":  "Ho tro",
+                                                   "invite":  "Mời Luna",
+                                                   "docs":  "Tài liệu",
+                                                   "support":  "Hỗ trợ",
                                                    "website":  "Website"
                                                },
                                    "fallback":  {
-                                                    "title":  "Luna AI - Tro ly thong minh cua ban",
-                                                    "description":  "Luna la tro ly AI than thien, luon san sang tro chuyen va ho tro cong dong cua ban.",
+                                                    "title":  "Luna AI - Trợ lý thông minh của bạn",
+                                                    "description":  "Luna là trợ lý AI thân thiện, luôn sẵn sàng trò chuyện và hỗ trợ cộng đồng của bạn.",
                                                     "fields":  {
-                                                                   "model":  "Mo hinh AI",
-                                                                   "runtime":  "Thoi gian chay",
-                                                                   "servers":  "So may chu",
-                                                                   "memory":  "Bo nho",
+                                                                   "model":  "Mô hình AI",
+                                                                   "runtime":  "Thời gian chạy",
+                                                                   "servers":  "Số máy chủ",
+                                                                   "memory":  "Bộ nhớ",
                                                                    "node":  "Node.js"
                                                                },
-                                                    "footer":  "Luna Bot v{version} - Phat trien boi s4ory"
+                                                    "footer":  "Luna Bot v{version} - Phát triển bởi s4ory"
                                                 }
                                },
                      "quotas":  {
-                                    "description":  "Xem thong ke han ngach tin nhan",
+                                    "description":  "Xem thống kê hạn ngạch tin nhắn",
                                     "subcommands":  {
                                                         "user":  {
-                                                                     "description":  "Xem thong ke han ngach tin nhan cua nguoi dung",
+                                                                     "description":  "Xem thống kê hạn ngạch tin nhắn của người dùng",
                                                                      "options":  {
                                                                                      "target":  {
-                                                                                                    "description":  "Nguoi dung can xem (de trong de xem cua ban)"
+                                                                                                    "description":  "Người dùng cần xem (để trống để xem của bạn)"
                                                                                                 }
                                                                                  }
                                                                  },
                                                         "system":  {
-                                                                       "description":  "Xem thong ke han ngach toan he thong (Owner/Admin)"
+                                                                       "description":  "Xem thống kê hạn ngạch toàn hệ thống (Owner/Admin)"
                                                                    }
                                                     },
                                     "errors":  {
-                                                   "general":  "Khong the lay thong ke: {message}",
-                                                   "noPermissionOther":  "Ban khong co quyen xem thong ke cua nguoi khac.",
-                                                   "noPermissionSystem":  "Ban khong co quyen xem thong ke he thong."
+                                                   "general":  "Không thể lấy thống kê: {message}",
+                                                   "noPermissionOther":  "Bạn không có quyền xem thống kê của người khác.",
+                                                   "noPermissionSystem":  "Bạn không có quyền xem thống kê hệ thống."
                                                },
                                     "roles":  {
                                                   "owner":  "Owner",
                                                   "admin":  "Admin",
                                                   "helper":  "Helper",
-                                                  "user":  "Nguoi dung"
+                                                  "user":  "Người dùng"
                                               },
                                     "labels":  {
-                                                   "noLimit":  "Khong gioi han",
-                                                   "limitPerDay":  "{count} lan/ngay",
-                                                   "usageCount":  "{count} lan"
+                                                   "noLimit":  "Không giới hạn",
+                                                   "limitPerDay":  "{count} lần/ngày",
+                                                   "usageCount":  "{count} lần"
                                                },
                                     "embeds":  {
                                                    "user":  {
-                                                                "title":  "Thong ke han ngach tin nhan - {username}",
+                                                                "title":  "Thống kê hạn ngạch tin nhắn - {username}",
                                                                 "fields":  {
-                                                                               "role":  "Vai tro",
-                                                                               "dailyLimit":  "Han muc moi ngay",
-                                                                               "today":  "Hom nay",
-                                                                               "week":  "Tuan nay",
-                                                                               "month":  "Thang nay",
-                                                                               "total":  "Tong cong",
-                                                                               "remainingToday":  "Con lai hom nay"
+                                                                               "role":  "Vai trò",
+                                                                               "dailyLimit":  "Hạn mức mỗi ngày",
+                                                                               "today":  "Hôm nay",
+                                                                               "week":  "Tuần này",
+                                                                               "month":  "Tháng này",
+                                                                               "total":  "Tổng cộng",
+                                                                               "remainingToday":  "Còn lại hôm nay"
                                                                            },
-                                                                "historyTitle":  "Hoat dong gan day",
-                                                                "historyEmpty":  "Chua co du lieu.",
-                                                                "historyEntry":  "- {count} lan - {operation}",
+                                                                "historyTitle":  "Hoạt động gần đây",
+                                                                "historyEmpty":  "Chưa có dữ liệu.",
+                                                                "historyEntry":  "- {count} lần - {operation}",
                                                                 "footer":  "User ID: {id}"
                                                             },
                                                    "system":  {
-                                                                  "title":  "Thong ke han ngach he thong",
+                                                                  "title":  "Thống kê hạn ngạch hệ thống",
                                                                   "fields":  {
-                                                                                 "totalUsers":  "Tong nguoi dung",
-                                                                                 "dailyUsage":  "Su dung hom nay",
-                                                                                 "weeklyUsage":  "Su dung tuan nay",
-                                                                                 "monthlyUsage":  "Su dung thang nay",
-                                                                                 "totalUsage":  "Tong so lan su dung"
+                                                                                 "totalUsers":  "Tổng người dùng",
+                                                                                 "dailyUsage":  "Sử dụng hôm nay",
+                                                                                 "weeklyUsage":  "Sử dụng tuần này",
+                                                                                 "monthlyUsage":  "Sử dụng tháng này",
+                                                                                 "totalUsage":  "Tổng số lần sử dụng"
                                                                              },
-                                                                  "topTitle":  "Top 10 nguoi dung hom nay",
-                                                                  "topEntry":  "{position}. \u003c@{userId}\u003e: {count} lan ({role})",
-                                                                  "footer":  "Yeu cau boi {tag}"
+                                                                  "topTitle":  "Top 10 người dùng hôm nay",
+                                                                  "topEntry":  "{position}. \u003c@{userId}\u003e: {count} lần ({role})",
+                                                                  "footer":  "Yêu cầu bởi {tag}"
                                                               }
                                                }
                                 },
                      "image":  {
-                                   "description":  "Ve mot hinh anh tu y tuong cua ban",
+                                   "description":  "Vẽ một hình ảnh từ ý tưởng của bạn",
                                    "options":  {
                                                    "prompt":  {
-                                                                  "description":  "Mo ta buc tranh ban muon minh tao"
+                                                                  "description":  "Mô tả bức tranh bạn muốn mình tạo"
                                                               }
                                                },
                                    "progress":  {
-                                                    "initializing":  "Dang khoi tao viec tao anh..."
+                                                    "initializing":  "Đang khởi tạo việc tạo ảnh..."
                                                 },
                                    "errors":  {
-                                                  "noResult":  "Khong the nhan duoc hinh anh da tao.",
-                                                  "general":  "Khong the tao anh. Vui long thu lai sau."
+                                                  "noResult":  "Không thể nhận được hình ảnh đã tạo.",
+                                                  "general":  "Không thể tạo ảnh. Vui lòng thử lại sau."
                                               }
                                }
                  },
