@@ -90,16 +90,16 @@ module.exports = {
       
       const clearEmbed = new EmbedBuilder()
         .setColor(0x00FF00)
-        .setTitle(`🧹 Đã xóa cảnh cáo`)
+        .setTitle(t(interaction, 'commands.clearwarnings.embeds.success.title'))
         .setDescription(aiResponse)
         .addFields(
-          { name: 'Thành viên', value: `${targetUser.tag}`, inline: true },
-          { name: 'ID', value: targetUser.id, inline: true },
-          { name: 'Số cảnh cáo đã xóa', value: `${deletedCount}`, inline: true },
-          { name: 'Loại xóa', value: type === 'all' ? 'Tất cả' : 'Mới nhất', inline: true },
-          { name: 'Lý do', value: reason, inline: false }
+          { name: t(interaction, 'commands.clearwarnings.embeds.success.fields.member'), value: `${targetUser.tag}`, inline: true },
+          { name: t(interaction, 'commands.clearwarnings.embeds.success.fields.id'), value: targetUser.id, inline: true },
+          { name: t(interaction, 'commands.clearwarnings.embeds.success.fields.deletedCount'), value: `${deletedCount}`, inline: true },
+          { name: t(interaction, 'commands.clearwarnings.embeds.success.fields.type'), value: type === 'all' ? t(interaction, 'commands.clearwarnings.embeds.success.fields.all') : t(interaction, 'commands.clearwarnings.embeds.success.fields.latest'), inline: true },
+          { name: t(interaction, 'commands.clearwarnings.embeds.success.fields.reason'), value: reason, inline: false }
         )
-        .setFooter({ text: `Cleared by ${interaction.user.tag}` })
+        .setFooter({ text: t(interaction, 'commands.clearwarnings.embeds.success.footer', { moderator: interaction.user.tag }) })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [clearEmbed] });
