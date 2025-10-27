@@ -1,4 +1,4 @@
-const {
+﻿const {
 	SlashCommandBuilder,
 	AttachmentBuilder,
 	EmbedBuilder,
@@ -15,9 +15,8 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('about')
-		.setDescription(t('en', 'commands.about.description'))
+		.setDescription(t('en-US', 'commands.about.description'))
 		.setDescriptionLocalizations({
-			en: t('en', 'commands.about.description'),
 			vi: t('vi', 'commands.about.description'),
 		}),
 
@@ -213,3 +212,4 @@ function drawSimpleInfoBox(ctx, x, y, width, height, title, items) {
 		yOffset += 30;
 	});
 }
+

@@ -1,4 +1,4 @@
-const {
+﻿const {
 	SlashCommandBuilder,
 	EmbedBuilder,
 	ActionRowBuilder,
@@ -13,9 +13,8 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('help')
-		.setDescription(t('en', 'commands.help.description'))
+		.setDescription(t('en-US', 'commands.help.description'))
 		.setDescriptionLocalizations({
-			en: t('en', 'commands.help.description'),
 			vi: t('vi', 'commands.help.description'),
 		}),
 
@@ -230,3 +229,4 @@ function getCategoryMetadata(context, category) {
 function capitalizeFirstLetter(value) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
+

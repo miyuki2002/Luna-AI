@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
+﻿const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const packageJson = require('../../package.json');
 const stringUtils = require('../../utils/string');
 const { translate: t } = require('../../utils/i18n');
@@ -6,9 +6,8 @@ const { translate: t } = require('../../utils/i18n');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ping')
-		.setDescription(t('en', 'commands.ping.description'))
+		.setDescription(t('en-US', 'commands.ping.description'))
 		.setDescriptionLocalizations({
-			en: t('en', 'commands.ping.description'),
 			vi: t('vi', 'commands.ping.description'),
 		}),
 
@@ -142,14 +141,15 @@ function createActionRow(context, enabled = true) {
 		new ButtonBuilder()
 			.setCustomId('refresh_status')
 			.setLabel(t(context, 'commands.ping.buttons.refresh'))
-			.setEmoji('🔄')
+			.setEmoji('ðŸ”„')
 			.setStyle(ButtonStyle.Primary)
 			.setDisabled(!enabled),
 		new ButtonBuilder()
 			.setCustomId('detailed_info')
 			.setLabel(t(context, 'commands.ping.buttons.detailed'))
-			.setEmoji('ℹ️')
+			.setEmoji('â„¹ï¸')
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(!enabled),
 	);
 }
+
