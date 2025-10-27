@@ -14,7 +14,7 @@ class GuildAgentService {
     this.confirmationTimeout = 30000; // 30 seconds
     this.undoWindow = 5 * 60 * 1000; // 5 minutes
     
-    // Action registry
+    // Đăng ký các hành động
     this.actions = {
       ban: this.banUser.bind(this),
       kick: this.kickUser.bind(this),
@@ -25,13 +25,13 @@ class GuildAgentService {
       unmute: this.unmuteUser.bind(this)
     };
 
-    // Conversation memory
+    // Bộ nhớ cuộc trò chuyện
     this.conversationMemory = new Map();
     
-    // Pending confirmations
+    // Các xác nhận đang chờ
     this.pendingConfirmations = new Map();
     
-    // Recent actions for undo
+    // Các hành động gần đây để hoàn tác
     this.recentActions = new Map();
     
     logger.info('GUILD_AGENT', 'GuildAgentService initialized');
@@ -44,45 +44,45 @@ class GuildAgentService {
    */
   async parseNaturalCommand(message) {
     try {
-      // Get conversation context
+      // Lấy context cuộc trò chuyện
       const context = this.getConversationContext(message.author.id);
       
-      // Use Natural Language Processor
+      // Sử dụng Natural Language Processor
       const parsedCommand = await naturalLanguageProcessor.analyzeCommand(
         message.content, 
         message, 
         context
       );
       
-      // Validate confidence threshold
+      // Kiểm tra ngưỡng tin cậy
       if (parsedCommand.confidence < this.commandConfidenceThreshold) {
         return {
           mode: 'CHAT_MODE',
           confidence: parsedCommand.confidence,
-          reason: 'Confidence too low for command execution'
+          reason: 'Độ tin cậy quá thấp để thực thi lệnh'
         };
       }
 
-      // Validate action exists
+      // Kiểm tra hành động có tồn tại
       if (parsedCommand.action && !this.actions[parsedCommand.action]) {
         return {
           mode: 'CHAT_MODE',
           confidence: parsedCommand.confidence,
-          reason: 'Unknown action type'
+          reason: 'Loại hành động không xác định'
         };
       }
 
-      // Store in conversation memory
+      // Lưu vào bộ nhớ cuộc trò chuyện
       this.updateConversationContext(message.author.id, parsedCommand);
 
       return parsedCommand;
 
     } catch (error) {
-      logger.error('GUILD_AGENT', 'Error parsing natural command:', error);
+      logger.error('GUILD_AGENT', 'Lỗi khi phân tích lệnh tự nhiên:', error);
       return {
         mode: 'CHAT_MODE',
         confidence: 0,
-        reason: 'Error parsing command'
+        reason: 'Lỗi phân tích lệnh'
       };
     }
   }
@@ -170,14 +170,14 @@ Phân tích:`;
   }
 
   /**
-   * Extract mentions từ tin nhắn
-   * @param {Object} message - Discord message object
-   * @returns {Array} - Array of mentioned users
+   * Trích xuất mentions từ tin nhắn
+   * @param {Object} message - Đối tượng tin nhắn Discord
+   * @returns {Array} - Mảng các user được mention
    */
   extractMentions(message) {
     const mentions = [];
     
-    // User mentions
+    // Mentions người dùng
     message.mentions.users.forEach(user => {
       const member = message.guild?.members.cache.get(user.id);
       mentions.push({
@@ -193,24 +193,24 @@ Phân tích:`;
   }
 
   /**
-   * Validate permissions cho user thực hiện action
-   * @param {Object} user - User object
-   * @param {string} action - Action type
-   * @param {Object} message - Message object
-   * @returns {Promise<Object>} - Permission validation result
+   * Kiểm tra quyền cho user thực hiện hành động
+   * @param {Object} user - Đối tượng user
+   * @param {string} action - Loại hành động
+   * @param {Object} message - Đối tượng tin nhắn
+   * @returns {Promise<Object>} - Kết quả kiểm tra quyền
    */
   async validatePermissions(user, action, message) {
     try {
-      // Use PermissionSafetyService for comprehensive validation
+      // Sử dụng PermissionSafetyService để kiểm tra toàn diện
       const userPermissionCheck = await permissionSafetyService.validateUserPermissions(user, action, message);
       if (!userPermissionCheck.allowed) {
         return userPermissionCheck;
       }
 
-      // Check bot permissions
+      // Kiểm tra quyền bot
       const botMember = message.guild.members.me;
       if (!botMember) {
-        return { allowed: false, reason: 'Bot not found in guild' };
+        return { allowed: false, reason: 'Không tìm thấy bot trong guild' };
       }
 
       const requiredPermissions = {
@@ -228,26 +228,26 @@ Phân tích:`;
         if (!botMember.permissions.has(permission)) {
           return { 
             allowed: false, 
-            reason: `Bot missing permission: ${permission}` 
+            reason: `Bot thiếu quyền: ${permission}` 
           };
         }
       }
 
-      return { allowed: true, reason: 'All permissions valid' };
+      return { allowed: true, reason: 'Tất cả quyền đều hợp lệ' };
 
     } catch (error) {
-      logger.error('GUILD_AGENT', 'Error validating permissions:', error);
-      return { allowed: false, reason: 'Error checking permissions' };
+      logger.error('GUILD_AGENT', 'Lỗi khi kiểm tra quyền:', error);
+      return { allowed: false, reason: 'Lỗi kiểm tra quyền' };
     }
   }
 
   /**
-   * Execute moderation action
-   * @param {string} action - Action type
-   * @param {Array} targets - Target users
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Execution result
+   * Thực thi hành động moderation
+   * @param {string} action - Loại hành động
+   * @param {Array} targets - Các user mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả thực thi
    */
   async executeAction(action, targets, params, message) {
     try {
@@ -259,10 +259,10 @@ Phân tích:`;
       const results = [];
       const startTime = Date.now();
 
-      // Execute action for each target
+      // Thực thi hành động cho từng mục tiêu
       for (const target of targets) {
         try {
-          // Validate target safety
+          // Kiểm tra an toàn mục tiêu
           const safetyCheck = permissionSafetyService.validateTargetSafety(target, message, action);
           if (!safetyCheck.allowed) {
             results.push({
@@ -282,7 +282,7 @@ Phân tích:`;
             timestamp: Date.now()
           });
 
-          // Log successful action
+          // Ghi log hành động thành công
           await this.logAction({
             guildId: message.guild.id,
             moderatorId: message.author.id,
@@ -301,7 +301,7 @@ Phân tích:`;
             timestamp: Date.now()
           });
 
-          // Log failed action
+          // Ghi log hành động thất bại
           await this.logAction({
             guildId: message.guild.id,
             moderatorId: message.author.id,
@@ -315,7 +315,7 @@ Phân tích:`;
         }
       }
 
-      // Store for undo functionality
+      // Lưu trữ để hoàn tác
       this.storeRecentAction(message.author.id, {
         action: action,
         targets: targets,
@@ -331,7 +331,7 @@ Phân tích:`;
       };
 
     } catch (error) {
-      logger.error('GUILD_AGENT', `Error executing action ${action}:`, error);
+      logger.error('GUILD_AGENT', `Lỗi khi thực thi hành động ${action}:`, error);
       return {
         success: false,
         error: error.message,
@@ -342,15 +342,15 @@ Phân tích:`;
 
   /**
    * Ban user
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Ban result
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả ban
    */
   async banUser(target, params, message) {
     const member = message.guild.members.cache.get(target.id);
     if (!member) {
-      throw new Error(`User ${target.displayName} not found in guild`);
+      throw new Error(`Không tìm thấy user ${target.displayName} trong guild`);
     }
 
     const duration = this.parseDuration(params.duration);
@@ -371,15 +371,15 @@ Phân tích:`;
 
   /**
    * Kick user
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Kick result
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả kick
    */
   async kickUser(target, params, message) {
     const member = message.guild.members.cache.get(target.id);
     if (!member) {
-      throw new Error(`User ${target.displayName} not found in guild`);
+      throw new Error(`Không tìm thấy user ${target.displayName} trong guild`);
     }
 
     const reason = `${params.reason} - Kicked by ${message.author.tag}`;
@@ -394,25 +394,25 @@ Phân tích:`;
 
   /**
    * Mute user
-   * @param {Object} target - Target user
-   * @param {Object} params - Action parameters
-   * @param {Object} message - Original message
-   * @returns {Promise<Object>} - Mute result
+   * @param {Object} target - User mục tiêu
+   * @param {Object} params - Tham số hành động
+   * @param {Object} message - Tin nhắn gốc
+   * @returns {Promise<Object>} - Kết quả mute
    */
   async muteUser(target, params, message) {
     const member = message.guild.members.cache.get(target.id);
     if (!member) {
-      throw new Error(`User ${target.displayName} not found in guild`);
+      throw new Error(`Không tìm thấy user ${target.displayName} trong guild`);
     }
 
     const duration = this.parseDuration(params.duration);
     const reason = `${params.reason} - Muted by ${message.author.tag}`;
 
     if (duration === 'permanent') {
-      throw new Error('Permanent mute not supported, use ban instead');
+      throw new Error('Không hỗ trợ mute vĩnh viễn, hãy sử dụng ban thay thế');
     }
 
-    const timeoutMs = duration * 60 * 1000; // Convert minutes to milliseconds
+    const timeoutMs = duration * 60 * 1000; // Chuyển đổi phút thành milliseconds
     await member.timeout(timeoutMs, reason);
 
     return {
