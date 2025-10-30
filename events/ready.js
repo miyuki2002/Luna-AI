@@ -61,14 +61,6 @@ async function startbot(client, loadCommands) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
       initSystem.markReady('conversationHistory');
     }
-
-    try {
-      await dashboardService.start();
-      initSystem.markReady('dashboarde');
-    } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi khởi chạy dashboard:', error);
-      initSystem.markReady('dashboard');
-    }
     
     try {
       await storageDB.initializeProfiles();
