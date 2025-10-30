@@ -45,10 +45,11 @@ export function RoleDistributionCard({ distribution }: RoleDistributionCardProps
               </Pie>
               <Tooltip
                 contentStyle={{ backgroundColor: "rgba(15,23,42,0.9)", borderRadius: "12px", border: "1px solid rgba(14,165,233,0.3)" }}
-                formatter={(value: number, _name, props) => [
-                  `${formatNumber(value)} (${Math.round((value / total) * 100)}%)`,
-                  props?.payload?.role ?? "role"
-                ]}
+                formatter={(value: number, _name, props) => {
+                  const count = typeof value === "number" ? value : Number(value ?? 0);
+                  const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                  return [`${formatNumber(count)} (${percentage}%)`, props?.payload?.role ?? "role"];
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
