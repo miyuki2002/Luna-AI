@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `example.env` updated with dashboard-specific variables to simplify configuration.
 
 ### Technical
-- Version bumped to 1.1.1 to capture the dashboard integration release.
+- Version bumped to 1.1.1 unrelease.
 
 ## [1.1.0] - 2025-10-28
 ### Added
