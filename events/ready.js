@@ -9,7 +9,7 @@ const logger = require('../utils/logger.js');
 // const AutoUpdateService = require('../services/AutoUpdateService');
 const APIProviderManager = require('../services/providers.js');
 const CommandsJSONService = require('../services/CommandsJSONService');
-const dashboardService = require("./services/dashboardService.js");
+const dashboardService = require("../services/dashboardService.js");
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -62,8 +62,14 @@ async function startbot(client, loadCommands) {
       initSystem.markReady('conversationHistory');
     }
 
-    dashboardService.start();
-
+    try {
+      await dashboardService.start();
+      initSystem.markReady('dashboarde');
+    } catch (error) {
+      logger.error('SYSTEM', 'Lỗi khi khởi chạy dashboard:', error);
+      initSystem.markReady('dashboard');
+    }
+    
     try {
       await storageDB.initializeProfiles();
       const db = mongoClient.getDb();
