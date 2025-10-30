@@ -12,6 +12,7 @@ class InitSystem extends EventEmitter {
       profiles: false,
       conversationHistory: false,
       guildProfiles: false,
+      dashboard: false,
     };
   }
 

@@ -6,9 +6,10 @@ const GuildProfileDB = require('../services/guildprofiledb.js');
 const ownerService = require('../services/ownerService.js');
 const { setupGuildHandlers } = require('../handlers/guildHandler');
 const logger = require('../utils/logger.js');
-const AutoUpdateService = require('../services/AutoUpdateService');
+// const AutoUpdateService = require('../services/AutoUpdateService');
 const APIProviderManager = require('../services/providers.js');
 const CommandsJSONService = require('../services/CommandsJSONService');
+const dashboardService = require("../services/dashboardService.js");
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -60,7 +61,7 @@ async function startbot(client, loadCommands) {
       logger.error('SYSTEM', 'Lỗi khi khởi tạo cấu trúc lịch sử cuộc trò chuyện:', error);
       initSystem.markReady('conversationHistory');
     }
-
+    
     try {
       await storageDB.initializeProfiles();
       const db = mongoClient.getDb();
