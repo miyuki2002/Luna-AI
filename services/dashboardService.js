@@ -113,5 +113,9 @@ process.on("SIGTERM", () => {
   dashboardService.stop();
   process.exit(0);
 });
+process.on("SIGUSR2", () => {
+  dashboardService.stop();
+  process.exit(0);
+});
 
 module.exports = dashboardService;
