@@ -13,7 +13,6 @@ const { handleResetdbInteraction } = require("./handlers/resetdbHandler");
 const { startbot } = require("./events/ready");
 const { setupGuildHandlers } = require("./handlers/guildHandler");
 const logger = require("./utils/logger.js");
-const dashboardService = require("./services/dashboardService.js");
 
 const client = new Client({
 	intents: [
@@ -29,8 +28,6 @@ const client = new Client({
 
 client.commands = new Collection();
 client.features = ["EXPERIENCE_POINTS"];
-
-dashboardService.start();
 
 startbot(client, () => loadCommands(client));
 
