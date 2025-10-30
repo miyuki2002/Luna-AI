@@ -4,6 +4,17 @@ All notable changes to Luna bot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-10-31
+### Added
+- Auto-managed Horizon UI dashboard service that boots alongside the bot and streams logs through `DASHBOARD` category (`services/dashboardService.js`).
+- Environment toggles for enabling/disabling dashboard or selecting npm script (`LUNA_DASHBOARD_ENABLED`, `LUNA_DASHBOARD_SCRIPT`).
+### Changed
+- `README.md` now documents dashboard setup, shared environment variables, and lifecycle integration instructions.
+- `example.env` updated with dashboard-specific variables to simplify configuration.
+
+### Technical
+- Version bumped to 1.1.1 to capture the dashboard integration release.
+
 ## [1.1.0] - 2025-10-28
 ### Added
 - Multi-provider AI core with provider manager, failover strategies, and task-specific prompt tuning to keep chat, thinking, and coding flows responsive.
