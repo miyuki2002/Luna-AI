@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { RocketIcon, RefreshCcwIcon } from "lucide-react";
+import { RocketIcon, RefreshCcw } from "lucide-react";
 import { DashboardStats } from "@/lib/stats";
 import { formatNumber } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ export const HeroHeader = memo(function HeroHeader({
           className="border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
           disabled={refreshing}
         >
-          <RefreshCcwIcon className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCcw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           Làm mới dữ liệu
         </Button>
       </div>
