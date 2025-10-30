@@ -1,4 +1,11 @@
 import { Db, MongoClient } from "mongodb";
+import { config as loadEnv } from "dotenv";
+import path from "node:path";
+
+if (!process.env.MONGODB_URI) {
+  const rootEnvPath = path.resolve(process.cwd(), "..", ".env");
+  loadEnv({ path: rootEnvPath });
+}
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB;
