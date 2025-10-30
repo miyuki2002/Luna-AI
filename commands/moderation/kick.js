@@ -41,8 +41,9 @@ module.exports = {
 			});
 		}
 
-		const reason = interaction.options.getString('reason')?.trim()
-			|| t(interaction, 'commands.kick.defaultReason');
+		const reason =
+			interaction.options.getString('reason')?.trim() ||
+			t(interaction, 'commands.kick.defaultReason');
 
 		if (!targetMember.kickable) {
 			return interaction.reply({
@@ -54,12 +55,17 @@ module.exports = {
 		await interaction.deferReply();
 
 		try {
+			const prompts = require('../../config/prompts.js');
+			const prompt = prompts.moderation.kick
+				.replace('${username}', targetUser.username)
+				.replace('${reason}', reason);
+
+			const aiResponse = await ConversationService.getCompletion(prompt);
+
 			const kickEmbed = new EmbedBuilder()
-				.setColor(0xFFA500)
+				.setColor(0xffa500)
 				.setTitle(t(interaction, 'commands.kick.embeds.success.title'))
-				.setDescription(t(interaction, 'commands.kick.embeds.success.description', {
-					user: targetUser.tag,
-				}))
+				.setDescription(aiResponse)
 				.addFields(
 					{
 						name: t(interaction, 'commands.kick.embeds.success.fields.user'),
@@ -108,7 +114,12 @@ module.exports = {
 				await interaction.editReply({ embeds: [kickEmbed] });
 			} catch (error) {
 				if (error.code === 50013 || error.message.includes('permission')) {
-					await handlePermissionError(interaction, 'embedLinks', interaction.user.username, 'editReply');
+					await handlePermissionError(
+						interaction,
+						'embedLinks',
+						interaction.user.username,
+						'editReply',
+					);
 				} else {
 					throw error;
 				}
@@ -119,7 +130,7 @@ module.exports = {
 				description: t(interaction, 'commands.kick.embeds.success.description', {
 					user: targetUser.tag,
 				}),
-				color: 0xFFA500,
+				color: 0xffa500,
 				fields: [
 					{
 						name: t(interaction, 'commands.kick.embeds.success.fields.user'),
@@ -167,6 +178,3 @@ module.exports = {
 		}
 	},
 };
-
-
-
