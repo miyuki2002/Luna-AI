@@ -1,4 +1,5 @@
 const { spawn } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 const logger = require("../utils/logger.js");
 
@@ -22,6 +23,15 @@ class DashboardService {
     }
 
     this.isStarting = true;
+
+    if (!fs.existsSync(this.dashboardDir)) {
+      logger.warn(
+        "DASHBOARD",
+        `Dashboard directory not found at ${this.dashboardDir}. Skipping bootstrap.`
+      );
+      this.isStarting = false;
+      return;
+    }
 
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     const script =
