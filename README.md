@@ -11,7 +11,6 @@
 Luna là bot Discord được hỗ trợ bởi nhiều nhà cung cấp AI bao gồm Perplexity, Alibaba Qwen, OpenRouter và OpenAI. Bot có tính cách thân thiện và hỗ trợ nhiều tác vụ như trò chuyện, tạo mã nguồn và tạo hình ảnh. Tích hợp hệ thống cấp độ và thành tựu để khuyến khích tương tác người dùng.
 > Luna Bot hỗ trợ cả **local offline models** và **cloud providers** để đảm bảo độ tin cậy tối đa. Ngoài ra model LLM Luna được build dựa trên Qwen3 235B (sẽ được cập nhật sau tại Hugging Face).
 
-**Phien ban 1.1.1**: Horizon UI dashboard tu dong khoi dong cung bot, chia se log va su dung chung cau hinh MongoDB.
 **Phiên bản 1.1.0**: Kiến trúc hoàn toàn mới với hệ thống đa nhà cung cấp AI, tự động chuyển đổi khi lỗi và thiết kế modular để tăng độ tin cậy và dễ bảo trì.
 
 ## Tính Năng Chính
@@ -64,7 +63,7 @@ Luna đã được tái cấu trúc hoàn toàn với hệ thống đa nhà cung
 3. Tạo file `.env` từ `example.env`
 4. Cấu hình API keys cho các nhà cung cấp mong muốn
 5. Chạy bot: `npm start` 
-> Lan dau chay, vao thu muc `dashboard` va cai dat phu thuoc: `cd dashboard && npm install`.
+> Khởi chạy lần đầu, cài đặt dependencies cho dashboard: `cd dashboard && npm install`.
 
 ## Các Lệnh Có Sẵn
 
