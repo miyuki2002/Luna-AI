@@ -4,6 +4,24 @@ All notable changes to Luna bot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-28
+### Added
+- Multi-provider AI core with provider manager, failover strategies, and task-specific prompt tuning to keep chat, thinking, and coding flows responsive.
+- Role-aware quota service with daily/weekly/monthly tracking, `/quotas` insights, and consent onboarding before users access protected AI features.
+- Owner automation tools including auto-update, logger controls, command metadata export, and reset workflows to simplify live operations.
+- Full moderation suite covering bans, mutes, warnings, log channels, and structured audit helpers for safer communities.
+- Localization layer with normalized `en-US` locales, reusable translation helpers, and updated command copy to support multilingual servers.
+- Rebuilt profile and achievement canvas pipeline with modular assets for sharper cards and faster render performance.
+
+### Changed
+- Reorganized slash commands into feature-based categories with the modernized loader, richer command metadata, and updated help/about responses.
+- Refined conversation pipeline around the new AI core, provider health checks, and structured logging output across services.
+- Overhauled MyAnimeList integration plus safety filters to return more accurate search results and cleaner formatting.
+- Refreshed README and supporting docs to describe the new architecture, setup, and capabilities.
+
+### Removed
+- Legacy admin scripts replaced by the system command suite and service-based architecture introduced in this release.
+
 ## [1.0.0] - 2025-04-18
 ### Added
 - Initial release of Luna Discord bot
