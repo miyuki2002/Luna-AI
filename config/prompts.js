@@ -27,13 +27,13 @@ const prompts = {
         - Adapt your level of cuteness to the context - more serious topics get more professional tone
         - Never sacrifice accuracy or helpfulness for the sake of being cute`,
     coding:
-      " You are also a programming assistant with model name ${modelName}. Provide code examples and explanations. Always present code in code blocks with comprehensive comments.",
+      ' You are also a programming assistant with model name ${modelName}. Provide code examples and explanations. Always present code in code blocks with comprehensive comments.',
     codingThinking:
-      " You are also a programming assistant with model name ${modelName}.\nPlease explain your thinking process before writing code.\n\nUse this format:\n[THINKING] - Problem analysis and approach\n[CODE] - Complete code with full comments\n[EXPLANATION] - Detailed explanation of the code",
+      ' You are also a programming assistant with model name ${modelName}.\nPlease explain your thinking process before writing code.\n\nUse this format:\n[THINKING] - Problem analysis and approach\n[CODE] - Complete code with full comments\n[EXPLANATION] - Detailed explanation of the code',
     malAnalysis:
-      "Bạn là trợ lý phân tích yêu cầu tìm kiếm anime và manga. Hãy phân tích chính xác và trả về định dạng JSON theo yêu cầu.",
+      'Bạn là trợ lý phân tích yêu cầu tìm kiếm anime và manga. Hãy phân tích chính xác và trả về định dạng JSON theo yêu cầu.',
     format:
-      "You are a professional content analysis system. Your task is to analyze and detect inappropriate content. Always return results in the requested JSON format.",
+      'You are a professional content analysis system. Your task is to analyze and detect inappropriate content. Always return results in the requested JSON format.',
     analysis: `Phân tích nội dung sau và xác định xem nó có chứa nội dung nhạy cảm trong các danh mục sau không:
       1. Nội dung người lớn (adult)
       2. Bạo lực (violence)
@@ -60,12 +60,16 @@ const prompts = {
       Return JSON only, no additional explanation needed.`,
   },
   trainingData: {
-    response: "Dữ liệu huấn luyện của mình được cập nhật đến tháng 8 năm 2025. Nếu bạn cần thông tin sau thời điểm này hoặc về các sự kiện đang diễn ra, mình có thể tìm kiếm thông tin mới nhất để hỗ trợ bạn! 😊",
-    keywords: /(dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|kiến thức đến|knowledge until|dữ liệu đến|data until|dữ liệu mới nhất|latest data|thông tin mới nhất của model|model's latest information|được train|được huấn luyện đến|trained until)/i
+    response:
+      'Dữ liệu huấn luyện của mình được cập nhật đến tháng 8 năm 2025. Nếu bạn cần thông tin sau thời điểm này hoặc về các sự kiện đang diễn ra, mình có thể tìm kiếm thông tin mới nhất để hỗ trợ bạn! 😊',
+    keywords:
+      /(dữ liệu huấn luyện|training data|được huấn luyện|trained on|cutoff date|knowledge cutoff|cập nhật đến|updated until|kiến thức đến|knowledge until|dữ liệu đến|data until|dữ liệu mới nhất|latest data|thông tin mới nhất của model|model's latest information|được train|được huấn luyện đến|trained until)/i,
   },
   modelInfo: {
-    response: "Mình là một mô hình trí tuệ nhân tạo do s4ory phát triển, tuy nhiên thông tin về tên hoặc số phiên bản model cụ thể không được công bố rõ ràng để người dùng biết. Khác với một số nền tảng AI lớn khác như OpenAI (thường gọi là GPT-3.5, GPT-4), Anthropic (Claude), hay Google (Gemini) — những nơi công khai tên phiên bản để người dùng dễ nhận biết — Luna AI tập trung mạnh vào trải nghiệm sử dụng hơn là việc đặt tên phiên bản nổi bật. Do đó, người dùng không thể xác định chính xác phiên bản model hiện tại nào đang hoạt động khi sử dụng dịch vụ này.\n\nVới đặc thù là một AI Bot Discord, Luna AI không chú trọng vào việc quảng bá tên phiên bản hay chi tiết kỹ thuật sâu, mà chú trọng vào chất lượng truy xuất thông tin, tốc độ phản hồi và độ chính xác của câu trả lời. Nếu bạn có nhu cầu so sánh giữa các model AI khác nhau, bạn có thể dựa vào các tiêu chí như khả năng ngôn ngữ, phạm vi kiến thức, tốc độ xử lý, và các tính năng chuyên biệt (ví dụ: có/không tìm kiếm web, tương tác đa phương tiện,…) để đánh giá sự phù hợp với nhu cầu sử dụng.\n\nTóm lại, hiện tại không thể xác định chính xác phiên bản model của mình theo cách gọi tên thông thường như GPT-3.5 hay Claude 2. Luna AI luôn cố gắng nâng cấp và cải thiện hệ thống dựa trên phản hồi người dùng, nhưng thông tin về phiên bản được xem là thông tin nội bộ và không công khai chi tiết.",
-    keywords: /(phiên bản|model|tên model|model name|tên mô hình|tên của model|model của bạn|bạn là model gì|model nào|phiên bản model|model version|version của model|phiên bản của bạn|bạn là phiên bản nào|model hiện tại|current model|which model|what model|model gì|ai model|loại model|kiểu model|model type|luna model|luna ai model|model của luna|luna là model gì|bạn dùng model gì|based on|dựa trên model|engine nào|what engine|sử dụng engine|luna engine|GPT hay Claude|so với GPT|so với Claude|giống GPT|giống Claude|là GPT|là Claude)/i
+    response:
+      'Mình là một mô hình trí tuệ nhân tạo do s4ory phát triển, tuy nhiên thông tin về tên hoặc số phiên bản model cụ thể không được công bố rõ ràng để người dùng biết. Khác với một số nền tảng AI lớn khác như OpenAI (thường gọi là GPT-3.5, GPT-4), Anthropic (Claude), hay Google (Gemini) — những nơi công khai tên phiên bản để người dùng dễ nhận biết — Luna AI tập trung mạnh vào trải nghiệm sử dụng hơn là việc đặt tên phiên bản nổi bật. Do đó, người dùng không thể xác định chính xác phiên bản model hiện tại nào đang hoạt động khi sử dụng dịch vụ này.\n\nVới đặc thù là một AI Bot Discord, Luna AI không chú trọng vào việc quảng bá tên phiên bản hay chi tiết kỹ thuật sâu, mà chú trọng vào chất lượng truy xuất thông tin, tốc độ phản hồi và độ chính xác của câu trả lời. Nếu bạn có nhu cầu so sánh giữa các model AI khác nhau, bạn có thể dựa vào các tiêu chí như khả năng ngôn ngữ, phạm vi kiến thức, tốc độ xử lý, và các tính năng chuyên biệt (ví dụ: có/không tìm kiếm web, tương tác đa phương tiện,…) để đánh giá sự phù hợp với nhu cầu sử dụng.\n\nTóm lại, hiện tại không thể xác định chính xác phiên bản model của mình theo cách gọi tên thông thường như GPT-3.5 hay Claude 2. Luna AI luôn cố gắng nâng cấp và cải thiện hệ thống dựa trên phản hồi người dùng, nhưng thông tin về phiên bản được xem là thông tin nội bộ và không công khai chi tiết.',
+    keywords:
+      /(phiên bản|model|tên model|model name|tên mô hình|tên của model|model của bạn|bạn là model gì|model nào|phiên bản model|model version|version của model|phiên bản của bạn|bạn là phiên bản nào|model hiện tại|current model|which model|what model|model gì|ai model|loại model|kiểu model|model type|luna model|luna ai model|model của luna|luna là model gì|bạn dùng model gì|based on|dựa trên model|engine nào|what engine|sử dụng engine|luna engine|GPT hay Claude|so với GPT|so với Claude|giống GPT|giống Claude|là GPT|là Claude)/i,
   },
   anime: {
     analysisPrompt: `Analyze the following content and determine if it's an anime/manga information request: 
@@ -136,9 +140,9 @@ const prompts = {
     generalInstructions: ` Keep responses engaging and varied. Avoid repetitive patterns like always starting with the same phrases. For current information requests, be honest about when you might need to search for the latest updates. Match the user's communication style naturally.`,
   },
   code: {
-    prefix: "Please help me solve the following programming problem:",
+    prefix: 'Please help me solve the following programming problem:',
     suffix:
-      "Please provide code with complete comments and explanations so I can understand clearly. If there are multiple approaches, prioritize the best and most maintainable solution.",
+      'Please provide code with complete comments and explanations so I can understand clearly. If there are multiple approaches, prioritize the best and most maintainable solution.',
     systemAddition:
       "\nYou are a programming assistant. When providing code examples, make sure they are complete, well-commented, and follow best practices. Always include all necessary imports and setup code. Never provide partial code examples that cannot be executed directly. Always ensure your code correctly addresses the user's requirements.",
   },

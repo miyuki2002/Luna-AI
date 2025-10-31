@@ -1,0 +1,99 @@
+﻿{
+  "common": {
+    "footer": {
+      "credit": "Luna AI - Phat trien boi s4ory",
+      "versionUptime": "Luna v{version} - {uptime}"
+    }
+  },
+  "commands": {
+    "help": {
+      "description": "Hien thi danh sach lenh va thong tin tro giup",
+      "select": {
+        "placeholder": "Chon danh muc lenh",
+        "categoryDescription": "Xem cac lenh trong danh muc {category}",
+        "all": {
+          "label": "Tat ca",
+          "description": "Hien thi toan bo lenh"
+        }
+      },
+      "categories": {
+        "AIcore": {
+          "label": "AI Core",
+          "description": "Cac lenh su dung tri tue nhan tao"
+        },
+        "Core": {
+          "label": "Cot loi",
+          "description": "Nhung tinh nang quan trong cua bot"
+        },
+        "moderation": {
+          "label": "Kiem duyet",
+          "description": "Cong cu ho tro moderator"
+        },
+        "social": {
+          "label": "Xa hoi",
+          "description": "Tinh nang tuong tac cong dong"
+        },
+        "system": {
+          "label": "He thong",
+          "description": "Lenh quan tri he thong"
+        },
+        "setting": {
+          "label": "Cai dat",
+          "description": "Tuy chon chi danh cho owner"
+        }
+      },
+      "embeds": {
+        "welcomeTitle": "Tro giup Luna AI",
+        "welcomeDescription": "Su dung menu o ben duoi de duyet cac lenh.",
+        "allTitle": "Tat ca danh muc",
+        "categoryTitle": "Tro giup lenh - {category}"
+      },
+      "messages": {
+        "allCategoriesDescription": "Cac danh muc lenh kha dung:",
+        "emptyCategory": "Chua co lenh nao trong danh muc nay.",
+        "categoryDetails": "Cac lenh trong {category}:",
+        "optionRequired": "(bat buoc)",
+        "optionOptional": "(tuy chon)",
+        "noOptions": "Khong co tuy chon.",
+        "menuExpired": "Menu tro giup da het han. Dung /help de tao menu moi."
+      },
+      "errors": {
+        "notInvoker": "Ban khong the su dung menu nay. Hay chay /help de tao menu rieng.",
+        "noPermission": "Ban khong co quyen xem danh muc nay."
+      }
+    },
+    "ping": {
+      "description": "Kiem tra do tre va tinh trang ket noi cua bot",
+      "errors": {
+        "notInvoker": "Chi nguoi da goi lenh moi duoc su dung cac nut nay."
+      },
+      "embeds": {
+        "status": {
+          "title": "Trang thai he thong",
+          "latencyField": "Do tre",
+          "botLabel": "Bot",
+          "wsLabel": "WebSocket"
+        },
+        "detailed": {
+          "title": "Thong tin chi tiet",
+          "fields": {
+            "botVersion": "Phien ban Bot",
+            "discordVersion": "Phien ban discord.js",
+            "nodeVersion": "Phien ban Node.js",
+            "uptime": "Thoi gian hoat dong",
+            "memory": "Bo nho su dung",
+            "platform": "Nen tang",
+            "shards": "So luong shard"
+          }
+        }
+      },
+      "buttons": {
+        "refresh": "Lam moi",
+        "detailed": "Chi tiet"
+      }
+    }
+  },
+  "handlers": {},
+  "services": {},
+  "errors": {}
+}

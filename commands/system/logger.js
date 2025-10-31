@@ -1,10 +1,11 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const logger = require('../../utils/logger.js');
+require('dotenv').config();
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('logger')
-    .setDescription('Quản lý cài đặt hệ thống ghi log')
+    .setDescription('Quản lý cài đặt hệ thống ghi log (chỉ dành cho owner)')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand(subcommand =>
       subcommand
@@ -68,6 +69,14 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    const ownerId = process.env.OWNER_ID;
+    if (interaction.user.id !== ownerId) {
+      return interaction.reply({ 
+        content: 'Bạn không có quyền sử dụng lệnh này!', 
+        ephemeral: true 
+      });
+    }
+
     const subcommand = interaction.options.getSubcommand();
 
     switch (subcommand) {

@@ -1,0 +1,99 @@
+﻿{
+  "common": {
+    "footer": {
+      "credit": "Luna AI - Developed by s4ory",
+      "versionUptime": "Luna v{version} - {uptime}"
+    }
+  },
+  "commands": {
+    "help": {
+      "description": "View the full list of commands and helpful information",
+      "select": {
+        "placeholder": "Choose a command category",
+        "categoryDescription": "View commands in the {category} category",
+        "all": {
+          "label": "All",
+          "description": "Show all commands"
+        }
+      },
+      "categories": {
+        "AIcore": {
+          "label": "AI Core",
+          "description": "AI powered commands"
+        },
+        "Core": {
+          "label": "Core",
+          "description": "Essential utilities"
+        },
+        "moderation": {
+          "label": "Moderation",
+          "description": "Moderation tools for staff"
+        },
+        "social": {
+          "label": "Social",
+          "description": "Community and social features"
+        },
+        "system": {
+          "label": "System",
+          "description": "System administration commands"
+        },
+        "setting": {
+          "label": "Settings",
+          "description": "Owner only settings"
+        }
+      },
+      "embeds": {
+        "welcomeTitle": "Luna AI Help",
+        "welcomeDescription": "Use the dropdown menu below to explore commands.",
+        "allTitle": "All Categories",
+        "categoryTitle": "Command Help - {category}"
+      },
+      "messages": {
+        "allCategoriesDescription": "Available command categories:",
+        "emptyCategory": "No commands available in this category.",
+        "categoryDetails": "Commands available in {category}:",
+        "optionRequired": "(required)",
+        "optionOptional": "(optional)",
+        "noOptions": "No options.",
+        "menuExpired": "The help menu has expired. Use /help to generate a new one."
+      },
+      "errors": {
+        "notInvoker": "You cannot use this menu. Run /help to generate your own.",
+        "noPermission": "You do not have permission to view this category."
+      }
+    },
+    "ping": {
+      "description": "Check the bot latency and connection status",
+      "errors": {
+        "notInvoker": "Only the user who ran the command can use these buttons."
+      },
+      "embeds": {
+        "status": {
+          "title": "System Status",
+          "latencyField": "Latency",
+          "botLabel": "Bot",
+          "wsLabel": "WebSocket"
+        },
+        "detailed": {
+          "title": "Detailed Information",
+          "fields": {
+            "botVersion": "Bot Version",
+            "discordVersion": "discord.js version",
+            "nodeVersion": "Node.js version",
+            "uptime": "Uptime",
+            "memory": "Memory Usage",
+            "platform": "Platform",
+            "shards": "Shards"
+          }
+        }
+      },
+      "buttons": {
+        "refresh": "Refresh",
+        "detailed": "Details"
+      }
+    }
+  },
+  "handlers": {},
+  "services": {},
+  "errors": {}
+}

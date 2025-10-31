@@ -5,6 +5,7 @@ const ownerService = require("./ownerService.js");
 const prompts = require("../config/prompts.js");
 const textUtils = require("../utils/textUtils.js");
 const AICore = require("./AICore.js");
+const { AI_RESPONSE_LOCALE } = require("../utils/i18n.js");
 
 class ConversationService {
   constructor() {
@@ -273,6 +274,12 @@ class ConversationService {
   async processChatCompletion(prompt, userId, additionalConfig = {}) {
     try {
       let systemPrompt = additionalConfig.systemPrompt || prompts.system.main;
+      
+      // Thêm locale instruction vào system prompt
+      const localeInstruction = AI_RESPONSE_LOCALE === 'vi' 
+        ? 'Bạn phải trả lời bằng tiếng Việt.' 
+        : 'You must respond in English.';
+      systemPrompt += `\n\nIMPORTANT: ${localeInstruction}`;
 
       await conversationManager.loadConversationHistory(userId, systemPrompt, AICore.getModelName());
 

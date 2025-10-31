@@ -13,7 +13,7 @@ module.exports = {
     const ownerId = process.env.OWNER_ID;
     if (interaction.user.id !== ownerId) {
       return interaction.reply({ 
-        content: 'Bạn không có quyền sử dụng lệnh này. Chỉ owner mới có thể reset cơ sở dữ liệu.', 
+        content: 'Bạn không có quyền sử dụng lệnh này!', 
         ephemeral: true 
       });
     }
@@ -23,13 +23,11 @@ module.exports = {
         new ButtonBuilder()
           .setCustomId('resetdb_confirm')
           .setLabel('Đồng ý')
-          .setStyle(ButtonStyle.Success)
-          .setEmoji('✅'),
+          .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId('resetdb_cancel')
           .setLabel('Từ chối')
-          .setStyle(ButtonStyle.Danger)
-          .setEmoji('❌')
+          .setStyle(ButtonStyle.Danger),
       );
 
     await interaction.reply({
