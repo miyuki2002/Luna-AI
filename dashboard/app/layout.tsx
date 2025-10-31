@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Luna Control Center",
   description:
-    "Operational dashboard for Luna AI Discord bot with Horizon UI styling.",
+    "Operational dashboard for Luna AI Discord bot with modern UI design.",
   viewport: {
     width: "device-width",
     initialScale: 1,

@@ -32,8 +32,6 @@ async function startbot(client, loadCommands) {
     // } catch (error) {
     //   logger.error('SYSTEM', `Lỗi khi auto-update:`, error);
     // }
-
-    // Provider initialization is handled by AICore singleton
     
     try {
       await AICore.waitForProviders();
@@ -123,6 +121,15 @@ async function startbot(client, loadCommands) {
       logger.error('SYSTEM', 'Lỗi khi đồng bộ guilds:', error);
       logger.error('SYSTEM', 'Stack trace:', error.stack);
     }
+
+    // try {
+    //   dashboardService.start();
+    //   initSystem.markReady('dashboard');
+    //   logger.info('SYSTEM', 'Dashboard service đã được khởi động');
+    // } catch (error) {
+    //   logger.error('SYSTEM', 'Lỗi khi khởi động dashboard:', error);
+    //   initSystem.markReady('dashboard');
+    // }
 
     client.user.setPresence({
       activities: [{ name: '/help', type: 1 }],
