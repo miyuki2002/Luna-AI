@@ -4,9 +4,6 @@ const ImageService = require('../services/ImageService');
 const AICore = require('../services/AICore');
 const experience = require('../utils/xp');
 const consentService = require('../services/consentService');
-const guildAgentService = require('../services/GuildAgentService');
-const enhancedMentionHandler = require('../services/EnhancedMentionHandler');
-const contextAwareResponseSystem = require('../services/ContextAwareResponseSystem');
 const { handlePermissionError } = require('../utils/permissionUtils');
 const logger = require('../utils/logger.js');
 
@@ -46,59 +43,12 @@ async function processXp(message, commandExecuted, execute) {
 }
 
 /**
- * Xử lý Guild Agent - phân tích và thực hiện lệnh moderation
- * @param {import('discord.js').Message} message - Đối tượng tin nhắn Discord
- * @returns {Promise<boolean>} - true nếu đã xử lý, false nếu không
- */
-async function handleGuildAgent(message) {
-  if (message.author.bot || !message.guild) return false;
-  
-  try {
-    // Detect mentions and context
-    const mentionContext = enhancedMentionHandler.parseMentionContext(message);
-    
-    // Process with Guild Agent Service
-    const guildAgentResult = await guildAgentService.processMessage(message);
-    
-    // Determine response using context-aware system
-    const responseDecision = await contextAwareResponseSystem.processMessage(
-      message, 
-      mentionContext, 
-      guildAgentResult
-    );
-    
-    // Send response if needed
-    if (responseDecision.shouldRespond) {
-      if (responseDecision.embed) {
-        await message.reply({ embeds: [responseDecision.embed] });
-      } else if (responseDecision.response) {
-        await message.reply(responseDecision.response);
-      }
-      
-      return true;
-    }
-    
-    return false;
-
-  } catch (error) {
-    logger.error('GUILD_AGENT_HANDLER', 'Error handling guild agent:', error);
-    return false;
-  }
-}
-
-/**
  * Xử lý tin nhắn Discord đề cập đến bot (gộp handleMentionMessage và handleChatRequest)
  * @param {import('discord.js').Message} message - Đối tượng tin nhắn Discord
  * @param {import('discord.js').Client} client - Client Discord.js
  */
 async function handleMentionMessage(message, client) {
   if (message.author.bot) return;
-
-  // Try Guild Agent first
-  const guildAgentHandled = await handleGuildAgent(message);
-  if (guildAgentHandled) {
-    return;
-  }
 
   if (message.mentions.has(client.user)) {
     const hasEveryoneOrRoleMention = message.mentions.everyone || message.mentions.roles.size > 0;
@@ -425,7 +375,6 @@ function splitMessageRespectWords(text, maxLength = 2000) {
 
 module.exports = {
   handleMentionMessage,
-  handleGuildAgent,
   processXp,
   splitMessage,
   splitMessageRespectWords
