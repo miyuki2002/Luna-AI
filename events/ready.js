@@ -4,12 +4,12 @@ const storageDB = require('../services/storagedb.js');
 const initSystem = require('../services/initSystem.js');
 const GuildProfileDB = require('../services/guildprofiledb.js');
 const ownerService = require('../services/ownerService.js');
-const { syncAllGuilds } = require('../handlers/guildHandler');
+const { setupGuildHandlers } = require('../handlers/guildHandler');
 const logger = require('../utils/logger.js');
 // const AutoUpdateService = require('../services/AutoUpdateService');
+const APIProviderManager = require('../services/providers.js');
 const CommandsJSONService = require('../services/CommandsJSONService');
 // const dashboardService = require("../services/dashboardService.js");
-const AICore = require('../services/AICore.js');
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -32,11 +32,10 @@ async function startbot(client, loadCommands) {
     // } catch (error) {
     //   logger.error('SYSTEM', `Lỗi khi auto-update:`, error);
     // }
-    
+
     try {
-      await AICore.waitForProviders();
-      const providerManager = AICore.providerManager;
-      const providers = providerManager.providers || [];
+      const providerManager = new APIProviderManager();
+      const providers = providerManager.initializeProviders();
       logger.info('SYSTEM', `Đã khởi tạo ${providers.length} providers: ${providers.map(p => p.name).join(", ")}`);
       initSystem.markReady('providers');
     } catch (error) {
@@ -116,9 +115,9 @@ async function startbot(client, loadCommands) {
     }
 
     try {
-      await syncAllGuilds(client);
+      await setupGuildHandlers(client);
     } catch (error) {
-      logger.error('SYSTEM', 'Lỗi khi đồng bộ guilds:', error);
+      logger.error('SYSTEM', 'Lỗi khi thiết lập guild handlers:', error);
       logger.error('SYSTEM', 'Stack trace:', error.stack);
     }
 
