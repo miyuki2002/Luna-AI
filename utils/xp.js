@@ -25,7 +25,6 @@ async function experience(message, command_executed, execute) {
     return Promise.resolve({ xpAdded: false, reason: "COMMAND_TERMINATED" });
   }
 
-  // Không thêm xp khi tin nhắn đến từ DMs
   if (!message.guild || message.channel.type === "dm") {
     return Promise.resolve({ xpAdded: false, reason: "DM_CHANNEL" });
   }

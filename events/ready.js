@@ -9,7 +9,7 @@ const logger = require('../utils/logger.js');
 // const AutoUpdateService = require('../services/AutoUpdateService');
 const APIProviderManager = require('../services/providers.js');
 const CommandsJSONService = require('../services/CommandsJSONService');
-const dashboardService = require("../services/dashboardService.js");
+// const dashboardService = require("../services/dashboardService.js");
 
 async function startbot(client, loadCommands) {
   client.once('ready', async () => {
@@ -120,6 +120,15 @@ async function startbot(client, loadCommands) {
       logger.error('SYSTEM', 'Lỗi khi thiết lập guild handlers:', error);
       logger.error('SYSTEM', 'Stack trace:', error.stack);
     }
+
+    // try {
+    //   dashboardService.start();
+    //   initSystem.markReady('dashboard');
+    //   logger.info('SYSTEM', 'Dashboard service đã được khởi động');
+    // } catch (error) {
+    //   logger.error('SYSTEM', 'Lỗi khi khởi động dashboard:', error);
+    //   initSystem.markReady('dashboard');
+    // }
 
     client.user.setPresence({
       activities: [{ name: '/help', type: 1 }],
