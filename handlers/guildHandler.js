@@ -266,26 +266,12 @@ async function handleGuildJoin(guild, commands) {
 }
 
 /**
- * Thiết lập xử lý sự kiện guild cho client
- * @deprecated Sử dụng setupGuildEvents từ events/guildEvents.js và syncAllGuilds thay thế
- * @param {Discord.Client} client - Discord client cần thiết lập
- * @param {Array} commands - Mảng các lệnh đã tải (tùy chọn)
- */
+* Thiết lập xử lý sự kiện guild cho client
+* @param {Discord.Client} client - Discord client cần thiết lập
+* @param {Array} commands - Mảng các lệnh đã tải (tùy chọn)
+*/
 async function setupGuildHandlers(client, commands = null) {
-  logger.warn('GUILD', 'setupGuildHandlers is deprecated. Use setupGuildEvents and syncAllGuilds instead.');
-  
-  // Event handlers are now registered in events/guildEvents.js
-  // This function only syncs existing guilds
-  await syncAllGuilds(client, commands);
-}
-
-/**
- * Đồng bộ tất cả guilds hiện tại và deploy commands
- * @param {Discord.Client} client - Discord client
- * @param {Array} commands - Mảng các lệnh đã tải (tùy chọn)
- */
-async function syncAllGuilds(client, commands = null) {
-  logger.info('GUILD', 'ĐỒNG BỘ VÀ DEPLOY CHO TẤT CẢ GUILDS');
+  logger.info('GUILD', 'THIẾT LẬP GUILD HANDLERS');
 
   try {
     logger.info('GUILD', 'Đang chờ MongoDB sẵn sàng...');
@@ -297,6 +283,13 @@ async function syncAllGuilds(client, commands = null) {
       loadCommands(client);
     }
 
+    client.on('guildCreate', async guild => await handleGuildJoin(guild, commands));
+    logger.info('GUILD', 'Đã đăng ký event handler: guildCreate');
+
+    client.on('guildDelete', async guild => await handleGuildLeave(guild));
+    logger.info('GUILD', 'Đã đăng ký event handler: guildDelete');
+
+    logger.info('GUILD', 'BẮT ĐẦU ĐỒNG BỘ VÀ DEPLOY CHO TẤT CẢ GUILDS');
     const guilds = client.guilds.cache;
     logger.info('GUILD', `Tổng số guild: ${guilds.size}`);
     
@@ -355,7 +348,7 @@ async function syncAllGuilds(client, commands = null) {
     }
 
   } catch (error) {
-    logger.error('GUILD', 'LỖI NGHIÊM TRỌNG KHI ĐỒNG BỘ GUILDS:', error);
+    logger.error('GUILD', 'LỖI NGHIÊM TRỌNG KHI THIẾT LẬP GUILD HANDLERS:', error);
     throw error;
   }
 }
@@ -365,7 +358,6 @@ module.exports = {
   handleGuildLeave,
   deployCommandsToGuild,
   setupGuildHandlers,
-  syncAllGuilds,
   getGuildFromDB,
   updateGuildSettings,
   storeGuildInDB
