@@ -49,7 +49,20 @@ class APIProviderManager {
       });
     }
 
-
+    if (process.env.HEROKU_API_KEY) {
+      providers.push({
+        name: "Heroku",
+        baseURL: process.env.HEROKU_BASE_URL || "https://us.inference.heroku.com/v1",
+        apiKey: process.env.HEROKU_API_KEY,
+        models: {
+          default: process.env.HEROKU_DEFAULT_MODEL || "gpt-oss-120b",
+          thinking: process.env.HEROKU_THINKING_MODEL || "gpt-oss-120b"
+        },
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    }
 
     if (process.env.ALIBABA_API_KEY) {
       providers.push({
@@ -66,26 +79,6 @@ class APIProviderManager {
         }
       });
     }
-
-    if (process.env.AWS_BEARER_TOKEN_BEDROCK) {
-      const awsRegion = process.env.AWS_REGION || "ap-southeast-1";
-      providers.push({
-        name: "AWS-Bedrock",
-        baseURL: `https://bedrock-runtime.${awsRegion}.amazonaws.com`,
-        apiKey: process.env.AWS_BEARER_TOKEN_BEDROCK,
-        models: {
-          default: process.env.AWS_BEDROCK_DEFAULT_MODEL || "anthropic.claude-haiku-4-5-20251001-v1:0",
-          thinking: process.env.AWS_BEDROCK_THINKING_MODEL || "anthropic.claude-haiku-4-5-20251001-v1:0",
-          image: process.env.AWS_BEDROCK_IMAGE_MODEL || "anthropic.claude-haiku-4-5-20251001-v1:0"
-        },
-        headers: {
-          "Content-Type": "application/json"
-        },
-        isAWSBedrock: true,
-        awsRegion: awsRegion
-      });
-    }
-
 
     if (process.env.OPENROUTER_API_KEY) {
       providers.push({
@@ -104,7 +97,6 @@ class APIProviderManager {
         }
       });
     }
-
 
     if (process.env.OPENAI_API_KEY) {
       providers.push({
@@ -273,50 +265,6 @@ class APIProviderManager {
       
       try {
         const model = provider.models[modelType] || provider.models.default;
-        
-        if (provider.isAWSBedrock) {
-          const bedrockEndpoint = `/model/${model}/converse`;
-          logger.info("PROVIDERS", `Sử dụng AWS Bedrock model: ${model}`);
-          
-          const bedrockRequestBody = {
-            messages: requestBody.messages || [],
-            inferenceConfig: {
-              maxTokens: requestBody.max_tokens || 4096,
-              temperature: requestBody.temperature || 0.7,
-              topP: requestBody.top_p || 0.9
-            }
-          };
-          
-          const axiosInstance = this.createAxiosInstance(provider);
-          logger.info("PROVIDERS", `Đang gửi request đến ${provider.baseURL}${bedrockEndpoint}`);
-          const response = await axiosInstance.post(bedrockEndpoint, bedrockRequestBody);
-          
-          const bedrockContent = response.data?.output?.message?.content?.[0]?.text;
-          
-          if (!this.isValidResponse(bedrockContent)) {
-            logger.warn("PROVIDERS", `Invalid response from ${provider.name}, switching provider`);
-            this.markProviderAsFailed(provider.name);
-            this.switchToNextProvider();
-            attempts++;
-            continue;
-          }
-          
-          logger.info("PROVIDERS", `Successful request using ${provider.name}`);
-          
-          return {
-            choices: [{
-              message: {
-                content: bedrockContent,
-                role: "assistant"
-              }
-            }],
-            usage: {
-              prompt_tokens: response.data?.usage?.inputTokens || 0,
-              completion_tokens: response.data?.usage?.outputTokens || 0,
-              total_tokens: response.data?.usage?.totalTokens || 0
-            }
-          };
-        }
         
         const finalRequestBody = {
           ...requestBody,
